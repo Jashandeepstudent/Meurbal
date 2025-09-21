@@ -1,0 +1,611 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Task App — Fixed & Upgraded</title>
+<style>
+  :root{
+    --card-w:880px; --card-h:820px; --radius:16px;
+    --accent:#4a90e2; --danger:#e24a4a; --yellow:#f5c542; --bg:#f6f8ff;
+  }
+  *{box-sizing:border-box; font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial;}
+  html,body{height:100%; margin:0; background:var(--bg); }
+  body{ display:flex; align-items:center; justify-content:center; padding:20px; }
+  .card{ width:var(--card-w); max-width:100%; min-height:600px; border-radius:var(--radius); background:linear-gradient(180deg,#fff,#fbfdff); box-shadow:0 30px 60px rgba(16,24,40,0.08); padding:20px; position:relative; overflow:hidden; }
+
+  .header{ display:flex; gap:12px; align-items:center; }
+  .logo{ width:64px; height:64px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:28px; color:#fff; background:linear-gradient(180deg,#f0f0f0,#dcdcdc); color:#333; box-shadow:0 8px 20px rgba(0,0,0,0.06); }
+  .title{ font-size:20px; margin:0; font-weight:800; }
+  .subtitle{ margin:2px 0 0 0; color:#556; font-size:13px; }
+
+  .header-actions{ margin-left:auto; display:flex; gap:8px; align-items:center; }
+
+  .center{ margin-top:16px; display:grid; gap:14px; }
+
+  input, select, textarea, button { font-family:inherit; }
+  input, select, textarea { padding:10px 12px; border-radius:10px; border:1px solid #e6eef8; font-size:14px; outline:none; width:100%; background:#fff; }
+  .row{ display:flex; gap:12px; }
+  .col{ flex:1; }
+
+  .btn{ display:inline-flex; align-items:center; justify-content:center; gap:8px; padding:8px 14px; border-radius:10px; border:none; cursor:pointer; font-weight:700; font-size:13px; color:white; box-shadow:0 8px 20px rgba(0,0,0,0.06); transition:transform .12s ease; background:var(--accent); }
+  .btn.ghost{ background:#6b7280; }
+  .btn.danger{ background:var(--danger); }
+
+  .muted{ color:#6b7280; font-size:13px; }
+  .hidden{ display:none; }
+
+  /* grids */
+  .boxes-grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:12px; margin-top:12px; }
+  .box-card{ background:linear-gradient(180deg,#fff,#fbfdff); border-radius:12px; padding:12px; box-shadow:0 8px 30px rgba(0,0,0,0.04); min-height:110px; display:flex; flex-direction:column; justify-content:space-between; }
+
+  .modal{ position:fixed; inset:0; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,0.45); z-index:9999; }
+  .modal-card{ width:520px; max-width:95%; background:#fff; border-radius:12px; padding:16px; box-shadow:0 20px 60px rgba(2,6,23,0.15); }
+
+  .progress-wrap{ margin-top:8px; display:flex; gap:12px; align-items:center; }
+  .progress-info{ min-width:260px; }
+  .progress-bar{ flex:1; height:18px; background:#eee; border-radius:12px; overflow:hidden; }
+  .progress-fill{ height:100%; width:0%; background:var(--yellow); transition:width .45s ease; }
+
+  /* study counter area */
+  .study-panel{ display:flex; gap:12px; align-items:center; }
+  .study-timer{ font-size:22px; font-weight:800; }
+  .coins{ font-weight:800; font-size:16px; }
+
+  @media (max-width:900px){ .boxes-grid{ grid-template-columns:1fr; } .row{ flex-direction:column; } }
+</style>
+</head>
+<body>
+<div class="card" id="appCard">
+  <div class="header">
+    <div class="logo" id="logo">✨</div>
+    <div>
+      <h1 class="title" id="mainTitle">Fixed Task App</h1>
+      <div class="subtitle" id="subTitle">Stable — Save to localStorage — Study Counter added</div>
+    </div>
+    <div class="header-actions">
+      <button class="btn ghost" id="btnReset">Reset</button>
+    </div>
+  </div>
+
+  <div class="center">
+    <!-- step1 -->
+    <div id="step1">
+      <h2 style="margin:0 0 8px 0">Welcome — Tell me about you</h2>
+      <div class="row">
+        <div class="col"><input id="name" placeholder="Your name"></div>
+        <div style="width:120px;"><input id="age" type="number" placeholder="Age"></div>
+      </div>
+      <div style="display:flex; gap:10px; margin-top:10px;">
+        <button class="btn" id="btnContinue">Continue</button>
+      </div>
+    </div>
+
+    <div id="step2" class="hidden">
+      <h2 id="greetH">Hello!</h2>
+      <div class="muted">Customize your experience</div>
+      <div style="margin-top:8px;">
+        <button class="btn" id="btnCustomize">Customize</button>
+      </div>
+    </div>
+
+    <div id="step3" class="hidden">
+      <h3 style="margin:0 0 8px 0">Purpose & Theme</h3>
+      <div class="row">
+        <button class="btn" data-purpose="Study" id="purposeStudy">Study</button>
+        <button class="btn ghost" data-purpose="Other" id="purposeOther">Other</button>
+      </div>
+      <div style="margin-top:12px;">
+        <button class="btn" id="themeCute">Cute</button>
+        <button class="btn" id="themeTech">Tech</button>
+        <button class="btn" id="themeCold">Cold</button>
+      </div>
+      <div style="margin-top:12px;">
+        <button class="btn" id="btnFinish">Finish</button>
+      </div>
+    </div>
+
+    <div id="dashboard" class="hidden">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <div>
+          <h2 style="margin:0;">Task Boxes</h2>
+          <div class="muted">Create boxes, add tasks, mark complete to earn EXP & coins.</div>
+        </div>
+
+        <div style="min-width:360px;">
+          <div style="display:flex; gap:10px; align-items:center; justify-content:flex-end;">
+            <div class="progress-info">
+              <div style="font-weight:800;" id="expTitle">EXP 0/20 — LEVEL 0 — BEGINNER</div>
+              <div class="muted" style="font-size:12px;">Study Progress</div>
+            </div>
+            <div class="progress-bar" aria-hidden="true"><div class="progress-fill" id="progressFill"></div></div>
+          </div>
+
+          <!-- Study counter + coins area -->
+          <div class="study-panel" style="margin-top:10px;">
+            <div style="display:flex; flex-direction:column; gap:6px; align-items:flex-end;">
+              <div class="study-timer" id="timerDisplay">25:00</div>
+              <div style="display:flex; gap:8px;">
+                <button class="btn" id="startTimer">Start</button>
+                <button class="btn ghost" id="pauseTimer">Pause</button>
+                <button class="btn ghost" id="resetTimer">Reset</button>
+              </div>
+            </div>
+            <div style="margin-left:16px; display:flex; flex-direction:column; gap:6px; align-items:flex-start;">
+              <div class="coins" id="coinsDisplay">Coins: 0 🪙</div>
+              <div class="muted" id="energyLabel">Energy: 0%</div>
+              <div class="progress-bar" style="width:160px;"><div class="progress-fill" id="energyFill" style="background:linear-gradient(90deg,#2ecc71,#00b894); width:0%"></div></div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <div style="display:flex; gap:12px; margin-top:12px;">
+        <button class="btn" id="btnCreateBox">+ Create Box</button>
+        <button class="btn ghost" id="btnOpenBoxes">Open Boxes</button>
+      </div>
+
+      <div class="boxes-grid" id="boxesGrid" style="margin-top:12px;"></div>
+    </div>
+
+    <!-- create box -->
+    <div id="createBox" class="hidden">
+      <h3>Name your Box</h3>
+      <input id="newBoxName" placeholder="Box name">
+      <div style="display:flex; gap:8px; margin-top:8px;">
+        <input id="newBoxRecAmount" type="number" placeholder="Amount" style="width:120px;">
+        <select id="newBoxRecType" style="flex:1;">
+          <option value="weekly">Week</option>
+          <option value="monthly">Month</option>
+          <option value="yearly">Year</option>
+          <option value="days">Days</option>
+        </select>
+      </div>
+      <div style="margin-top:8px; display:flex; gap:8px;">
+        <button class="btn" id="createBoxFinalize">Create</button>
+        <button class="btn ghost" id="createBoxCancel">Cancel</button>
+      </div>
+    </div>
+
+    <div id="boxDetail" class="hidden">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <div>
+          <h2 id="detailName">Box Name</h2>
+          <div class="muted" id="detailMeta">meta</div>
+        </div>
+        <div style="display:flex; gap:8px;">
+          <button class="btn" id="addTaskBtn">Add Task</button>
+          <button class="btn ghost" id="editBoxBtn">Edit</button>
+          <button class="btn danger" id="deleteBoxBtn">Delete</button>
+        </div>
+      </div>
+
+      <table style="width:100%; border-collapse:collapse; margin-top:8px;">
+        <thead><tr><th style="width:36px"></th><th>Task</th><th>Deadline</th><th>Status</th></tr></thead>
+        <tbody id="tasksTbody"></tbody>
+      </table>
+
+      <div style="margin-top:10px;"><button class="btn ghost" id="backToDash">Back</button></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- task modal -->
+<div id="taskModal" class="modal hidden" aria-hidden="true">
+  <div class="modal-card">
+    <h3>Add Task</h3>
+    <input id="taskName" placeholder="Task name">
+    <div style="display:flex; gap:8px; margin-top:8px;">
+      <input id="taskDate" type="date">
+      <input id="taskTime" type="time">
+    </div>
+    <div style="display:flex; gap:8px; justify-content:flex-end; margin-top:12px;">
+      <button class="btn ghost" id="taskCancel">Cancel</button>
+      <button class="btn" id="taskAdd">Add</button>
+    </div>
+  </div>
+</div>
+
+<!-- edit box modal (simple) -->
+<div id="editBoxModal" class="modal hidden">
+  <div class="modal-card">
+    <h3>Edit Box</h3>
+    <input id="editBoxName" placeholder="Box name">
+    <div style="display:flex; gap:8px; margin-top:8px;">
+      <input id="editBoxRecAmount" type="number" placeholder="Amount" style="width:120px;">
+      <select id="editBoxRecType" style="flex:1;">
+        <option value="weekly">Week</option>
+        <option value="monthly">Month</option>
+        <option value="yearly">Year</option>
+        <option value="days">Days</option>
+      </select>
+    </div>
+    <div style="display:flex; gap:8px; justify-content:flex-end; margin-top:12px;">
+      <button class="btn ghost" id="editBoxCancel">Cancel</button>
+      <button class="btn" id="editBoxSave">Save</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* -------------------------
+   Stable data model + persistence
+   ------------------------- */
+const STORAGE_KEY = 'fixed_task_app_v2_v1';
+const defaultState = {
+  user: {name:'', age:null, purpose:'', theme:''},
+  boxes: [], // {id, name, recurrence:{type,amount}, items: [{id,text,deadlineISO,done}]}
+  totalEXP: 0,
+  coins: 0,
+  energy: 0 // 0-100
+};
+
+let state = loadState();
+
+function saveState(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+function loadState(){ try{ const s = localStorage.getItem(STORAGE_KEY); return s ? JSON.parse(s) : JSON.parse(JSON.stringify(defaultState)); }catch(e){ console.error(e); return JSON.parse(JSON.stringify(defaultState)); } }
+function resetState(){ state = JSON.parse(JSON.stringify(defaultState)); saveState(); location.reload(); }
+
+/* -------------------------
+   Short helpers
+   ------------------------- */
+const $ = id => document.getElementById(id);
+const show = id => $(id) && $(id).classList.remove('hidden');
+const hide = id => $(id) && $(id).classList.add('hidden');
+const fmt = n => String(n).padStart(2,'0');
+
+/* -------------------------
+   Init UI
+   ------------------------- */
+document.addEventListener('DOMContentLoaded', ()=>{
+  // wire buttons
+  $('btnContinue').addEventListener('click', onContinue);
+  $('btnCustomize').addEventListener('click', ()=>{ hide('step2'); show('step3'); });
+  $('btnFinish').addEventListener('click', finishSetup);
+  $('btnReset').addEventListener('click', ()=>{ if(confirm('Reset everything?')) resetState(); });
+
+  $('themeCute').addEventListener('click', ()=>applyTheme('cute'));
+  $('themeTech').addEventListener('click', ()=>applyTheme('tech'));
+  $('themeCold').addEventListener('click', ()=>applyTheme('cold'));
+  $('purposeStudy').addEventListener('click', ()=>selectPurpose('Study'));
+  $('purposeOther').addEventListener('click', ()=>selectPurpose('Other'));
+
+  $('btnCreateBox').addEventListener('click', ()=>{ hideAll(); show('createBox'); });
+  $('createBoxCancel').addEventListener('click', ()=>{ hideAll(); show('dashboard'); });
+  $('createBoxFinalize').addEventListener('click', createBox);
+
+  $('btnOpenBoxes').addEventListener('click', ()=>{ hideAll(); show('dashboard'); renderBoxes(); });
+
+  $('backToDash').addEventListener('click', ()=>{ hideAll(); show('dashboard'); });
+
+  // task modal
+  $('addTaskBtn').addEventListener('click', ()=>{ if(selectedBoxIndex===null) return alert('Open a box first'); $('taskName').value=''; $('taskDate').value=''; $('taskTime').value=''; show('taskModal'); });
+  $('taskCancel').addEventListener('click', ()=> hide('taskModal'));
+  $('taskAdd').addEventListener('click', addTaskFromModal);
+
+  // edit box modal
+  $('editBoxBtn').addEventListener('click', ()=>{ if(selectedBoxIndex===null) return alert('Open a box first'); openEditBox(); });
+  $('editBoxCancel').addEventListener('click', ()=> hide('editBoxModal'));
+  $('editBoxSave').addEventListener('click', saveEditBox);
+
+  // delete box
+  $('deleteBoxBtn').addEventListener('click', deleteCurrentBox);
+
+  // timer buttons
+  $('startTimer').addEventListener('click', startTimer);
+  $('pauseTimer').addEventListener('click', pauseTimer);
+  $('resetTimer').addEventListener('click', resetTimer);
+
+  // load UI from state
+  if(state.user && state.user.name){
+    $('name').value = state.user.name;
+    $('age').value = state.user.age || '';
+    $('greetH').innerText = `Hello ${state.user.name}`;
+    hide('step1'); show('step2');
+  }
+
+  if(state.user && state.user.theme) applyTheme(state.user.theme, true);
+  updateProgressUI();
+  renderBoxes();
+  // ensure dashboard visible if boxes exist
+  if(state.boxes && state.boxes.length>0 && state.user && state.user.name && state.user.purpose) { hideAll(); show('dashboard'); }
+
+  // initialize timer UI values
+  renderTimerUI();
+});
+
+/* -------------------------
+   UI state trackers
+   ------------------------- */
+let selectedBoxIndex = null;
+
+/* -------------------------
+   User actions
+   ------------------------- */
+function onContinue(){
+  const n = $('name').value.trim(); const a = $('age').value.trim();
+  if(!n || !a) return alert('Enter name and age');
+  state.user.name = n; state.user.age = Number(a);
+  saveState();
+  $('greetH').innerText = `Hello ${n}`;
+  hide('step1'); show('step2');
+}
+
+function selectPurpose(p){ state.user.purpose = p; saveState(); if(p==='Study'){ $('purposeStudy').classList.remove('ghost'); $('purposeOther').classList.add('ghost'); } else { $('purposeOther').classList.remove('ghost'); $('purposeStudy').classList.add('ghost'); } }
+function applyTheme(t, skipSave){ state.user.theme = t; if(!skipSave) saveState(); // visual
+  if(t==='cute'){ document.body.style.background='linear-gradient(135deg,#ffd6e8,#ffeefb)'; $('logo').innerText='🐱'; $('logo').style.background='linear-gradient(180deg,#ff8fbf,#ff6aa2)'; $('logo').style.color='white'; }
+  if(t==='tech'){ document.body.style.background='linear-gradient(135deg,#081126,#12223b)'; $('logo').innerText='🤖'; $('logo').style.background='linear-gradient(180deg,#0ea5ff,#0066ff)'; $('logo').style.color='white'; }
+  if(t==='cold'){ document.body.style.background='linear-gradient(135deg,#d9f1ff,#f2fbff)'; $('logo').innerText='❄️'; $('logo').style.background='linear-gradient(180deg,#5cd6ff,#2bb7ff)'; $('logo').style.color='white'; }
+}
+
+/* finish setup */
+function finishSetup(){ if(!state.user.purpose) selectPurpose('Study'); if(!state.user.theme) applyTheme('cute'); hideAll(); show('dashboard'); updateProgressUI(); renderBoxes(); saveState(); }
+
+/* -------------------------
+   Boxes and tasks
+   ------------------------- */
+function createBox(){
+  const name = $('newBoxName').value.trim() || 'Box';
+  const amount = Number($('newBoxRecAmount').value) || 1;
+  const type = $('newBoxRecType').value;
+  const box = { id: Date.now(), name, recurrence:{type,amount}, items:[] };
+  state.boxes.push(box); saveState();
+  $('newBoxName').value=''; $('newBoxRecAmount').value='';
+  hideAll(); show('dashboard'); renderBoxes();
+}
+
+function renderBoxes(){
+  const grid = $('boxesGrid'); grid.innerHTML='';
+  if(state.boxes.length===0){ grid.innerHTML='<div class="muted">No boxes yet — create one to get started</div>'; return; }
+  state.boxes.forEach((b, idx)=>{
+    const div = document.createElement('div'); div.className='box-card';
+    const pending = b.items.filter(it=>!it.done).length;
+    div.innerHTML = `
+      <div>
+        <div style="font-weight:800">${escapeHtml(b.name)}</div>
+        <div class="muted">Recurrence: ${b.recurrence.type} × ${b.recurrence.amount}</div>
+        <div class="muted">Tasks: ${b.items.length} / 10 — Pending: ${pending}</div>
+      </div>
+      <div style="display:flex; gap:8px;">
+        <button class="btn" data-idx="${idx}" data-action="open">Open</button>
+        <button class="btn ghost" data-idx="${idx}" data-action="edit">Edit</button>
+        <button class="btn danger" data-idx="${idx}" data-action="delete">Delete</button>
+      </div>`;
+    grid.appendChild(div);
+  });
+}
+
+// event delegation for box buttons
+document.getElementById('boxesGrid').addEventListener('click', (e)=>{
+  const btn = e.target.closest('button');
+  if(!btn) return;
+  const idx = Number(btn.dataset.idx);
+  const action = btn.dataset.action;
+  if(action==='open') openBox(idx);
+  if(action==='edit') { selectedBoxIndex = idx; openEditBox(); }
+  if(action==='delete') { if(confirm('Delete this box?')){ state.boxes.splice(idx,1); saveState(); renderBoxes(); hideAll(); show('dashboard'); } }
+});
+
+function openBox(idx){
+  selectedBoxIndex = idx;
+  const b = state.boxes[idx];
+  if(!b) return;
+  hideAll(); show('boxDetail');
+  $('detailName').innerText = b.name;
+  $('detailMeta').innerText = `Recurrence: ${b.recurrence.type} × ${b.recurrence.amount}`;
+  renderTasksForCurrent();
+}
+
+function renderTasksForCurrent(){
+  const tbody = $('tasksTbody'); tbody.innerHTML='';
+  if(selectedBoxIndex===null){ tbody.innerHTML='<tr><td colspan="4" class="muted">Open a box to see tasks</td></tr>'; return; }
+  const box = state.boxes[selectedBoxIndex];
+  if(box.items.length===0){ tbody.innerHTML='<tr><td colspan="4" class="muted">No tasks yet. Add one.</td></tr>'; return; }
+  box.items.forEach((t, i)=>{
+    const tr = document.createElement('tr');
+    const d = new Date(t.deadlineISO);
+    const now = new Date();
+    const overdue = (!t.done && d < now);
+    const status = t.done ? '<span style="color:green;font-weight:700">Completed</span>' : (overdue? '<span style="color:#e24a4a;font-weight:700">Overdue</span>' : '<span style="color:#ffb020;font-weight:700">Pending</span>');
+    const action = t.done || overdue ? '' : `<button class="btn" data-action="complete" data-idx="${i}">Mark Complete</button>`;
+    tr.innerHTML = `<td style="width:36px"><input type="checkbox" data-idx="${i}" class="task-check"></td>
+      <td>${escapeHtml(t.text)}</td>
+      <td>${d.toLocaleString()}</td>
+      <td>${status} ${action}</td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+// complete button handler (delegation)
+$('tasksTbody').addEventListener('click', (e)=>{
+  const btn = e.target.closest('button');
+  if(!btn) return;
+  if(btn.dataset.action==='complete'){
+    const idx = Number(btn.dataset.idx);
+    markTaskComplete(idx);
+  }
+});
+
+function addTaskFromModal(){
+  const name = $('taskName').value.trim();
+  const date = $('taskDate').value;
+  const time = $('taskTime').value;
+  if(!name || !date || !time) return alert('Fill all fields');
+  const iso = parseToISO(date, time);
+  if(!iso) return alert('Invalid date/time');
+  const box = state.boxes[selectedBoxIndex];
+  if(!box) return alert('Open a box first');
+  if(box.items.length>=10) return alert('Max 10 tasks per box');
+  const task = { id: Date.now(), text:name, deadlineISO:iso, done:false };
+  box.items.push(task);
+  saveState();
+  hide('taskModal');
+  renderTasksForCurrent();
+  renderBoxes();
+}
+
+function parseToISO(dateStr, timeStr){
+  const m = dateStr && dateStr.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  const t = timeStr && timeStr.match(/^(\d{2}):(\d{2})$/);
+  if(!m || !t) return null;
+  const iso = `${m[1]}-${m[2]}-${m[3]}T${t[1]}:${t[2]}:00`;
+  const d = new Date(iso);
+  if(isNaN(d.getTime())) return null;
+  return d.toISOString();
+}
+
+function markTaskComplete(i){
+  const box = state.boxes[selectedBoxIndex];
+  if(!box) return;
+  const task = box.items[i];
+  if(!task) return;
+  const dline = new Date(task.deadlineISO);
+  if(new Date() > dline) return alert('Deadline passed — cannot mark complete');
+  if(task.done) return;
+  task.done = true;
+  state.totalEXP += 5;
+  state.coins += 1;
+  state.energy = Math.min(100, state.energy + 5);
+  saveState();
+  updateProgressUI();
+  renderTasksForCurrent();
+  renderBoxes();
+}
+
+/* edit box */
+function openEditBox(){
+  const b = state.boxes[selectedBoxIndex];
+  if(!b) return;
+  $('editBoxName').value = b.name;
+  $('editBoxRecAmount').value = b.recurrence.amount;
+  $('editBoxRecType').value = b.recurrence.type;
+  show('editBoxModal');
+}
+
+function saveEditBox(){
+  const name = $('editBoxName').value.trim() || 'Box';
+  const amt = Number($('editBoxRecAmount').value) || 1;
+  const type = $('editBoxRecType').value;
+  const b = state.boxes[selectedBoxIndex];
+  b.name = name; b.recurrence = {type, amount:amt};
+  saveState();
+  hide('editBoxModal');
+  renderBoxes(); renderTasksForCurrent();
+}
+
+/* delete current box */
+function deleteCurrentBox(){
+  if(selectedBoxIndex===null) return;
+  if(!confirm('Delete this box and all tasks?')) return;
+  state.boxes.splice(selectedBoxIndex,1);
+  selectedBoxIndex = null;
+  saveState();
+  hideAll(); show('dashboard'); renderBoxes();
+}
+
+/* -------------------------
+   Progress / EXP UI
+   ------------------------- */
+function updateProgressUI(){
+  const maxPerLevel = 20;
+  const lvl = Math.floor(state.totalEXP / maxPerLevel);
+  const progress = state.totalEXP % maxPerLevel;
+  const percent = Math.round((progress / maxPerLevel) * 100);
+  const title = lvl >=3 ? 'ADVANCED' : (lvl>=2 ? 'INTERMEDIATE' : 'BEGINNER');
+  $('expTitle').innerText = `EXP ${state.totalEXP}/${maxPerLevel} — LEVEL ${lvl} — ${title}`;
+  $('progressFill').style.width = Math.min(100, percent) + '%';
+  $('coinsDisplay').innerText = `Coins: ${state.coins} 🪙`;
+  $('energyLabel').innerText = `Energy: ${state.energy}%`;
+  $('energyFill').style.width = `${state.energy}%`;
+}
+
+/* -------------------------
+   Timer (Pomodoro-style) — robust implementation
+   ------------------------- */
+let timer = {
+  running: false,
+  workSeconds: 25*60,
+  breakSeconds: 5*60,
+  remaining: 25*60,
+  mode: 'work', // 'work' or 'break'
+  intervalId: null
+};
+
+function renderTimerUI(){
+  const mm = Math.floor(timer.remaining/60);
+  const ss = timer.remaining % 60;
+  $('timerDisplay').innerText = `${fmt(mm)}:${fmt(ss)}`;
+  // pause button state
+}
+
+function startTimer(){
+  if(timer.running) return;
+  timer.running = true;
+  // if we are at 0 remaining, reset according to mode
+  if(timer.remaining <= 0) timer.remaining = (timer.mode === 'work' ? timer.workSeconds : timer.breakSeconds);
+  timer.intervalId = setInterval(()=>{
+    timer.remaining -= 1;
+    if(timer.remaining <= 0){
+      // session finished
+      clearInterval(timer.intervalId);
+      timer.running = false;
+      onTimerComplete();
+    }
+    renderTimerUI();
+  }, 1000);
+}
+
+function pauseTimer(){
+  if(!timer.running) return;
+  clearInterval(timer.intervalId);
+  timer.running = false;
+}
+
+function resetTimer(){
+  pauseTimer();
+  timer.mode = 'work';
+  timer.remaining = timer.workSeconds;
+  renderTimerUI();
+}
+
+function onTimerComplete(){
+  // when a work session finishes, reward user; for break session, just switch mode
+  if(timer.mode === 'work'){
+    // reward: 5 EXP, 1 coin, +10 energy (capped)
+    state.totalEXP += 5;
+    state.coins += 1;
+    state.energy = Math.min(100, state.energy + 10);
+    saveState();
+    updateProgressUI();
+    alert('Work session complete! +5 EXP, +1 coin');
+    // switch to break
+    timer.mode = 'break';
+    timer.remaining = timer.breakSeconds;
+    renderTimerUI();
+    // auto start break? keep paused. user decides.
+  } else {
+    // break ended -> switch to work
+    timer.mode = 'work';
+    timer.remaining = timer.workSeconds;
+    renderTimerUI();
+  }
+}
+
+/* -------------------------
+   Utilities & small helpers
+   ------------------------- */
+function hideAll(){ const ids=['step1','step2','step3','dashboard','createBox','boxDetail']; ids.forEach(id=>hide(id)); hide('taskModal'); hide('editBoxModal'); }
+
+function escapeHtml(text){ if(!text) return ''; return text.replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+// global keyboard: Esc closes modals
+document.addEventListener('keydown', (e)=>{ if(e.key==='Escape'){ hide('taskModal'); hide('editBoxModal'); } });
+
+// persist periodically
+setInterval(()=>{ saveState(); }, 3000);
+
+</script>
+</body>
+</html>

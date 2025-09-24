@@ -1963,313 +1963,709 @@ setTimeout(()=> showPendingOTPModalForMe(), 120);
 <!-- END: Leaderboard, Ratings & UID Integration -->
 
 
-<!-- Firebase + Real-time WhatsApp-like chat integration (appended by assistant) -->
 <!-- Firebase SDKs -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
 <script>
-// === Firebase init and realtime features ===
+// Firebase config (from user)
+const firebaseConfig = {
+  apiKey: "AIzaSyAByLACmttf6BY6r0hEmZKYontfVqnDNpM",
+  authDomain: "mndpschoolrspura.firebaseapp.com",
+  projectId: "mndpschoolrspura",
+  storageBucket: "mndpschoolrspura.firebasestorage.app",
+  messagingSenderId: "810534224714",
+  appId: "1:810534224714:web:a3055b4a6b3bca507337b3",
+  measurementId: "G-2610K130EN"
+};
+
+// Init Firebase
+const appFB = firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+// Status box (black box)
+const statusBox = document.createElement('div');
+statusBox.id = "firebaseStatusBox";
+statusBox.style.position = "fixed";
+statusBox.style.bottom = "10px";
+statusBox.style.left = "10px";
+statusBox.style.padding = "8px 12px";
+statusBox.style.background = "#000";
+statusBox.style.color = "#0f0";
+statusBox.style.fontSize = "12px";
+statusBox.style.fontFamily = "monospace";
+statusBox.style.borderRadius = "6px";
+statusBox.style.zIndex = 99999;
+statusBox.textContent = "Firebase: Initializing...";
+document.addEventListener("DOMContentLoaded", ()=>document.body.appendChild(statusBox));
+
+function setFBStatus(msg, color="#0f0") {
+  const box = document.getElementById("firebaseStatusBox");
+  if(box) { box.textContent = "Firebase: " + msg; box.style.color = color; }
+
+
+
+// --- BEGIN: Ensure Manage Profile loads the user's profile for editing ---
+async function loadMyProfileIfExists() {
+  try {
+    const storedMy = localStorage.getItem('profiles_my_uid_v1');
+    if (!storedMy) return null;
+    myUID = String(storedMy);
+    // First try users/{myUID} doc to get linked profileUid
+    try {
+      const userDoc = await db.collection('users').doc(String(myUID)).get();
+      if (userDoc.exists) {
+        const data = userDoc.data();
+        const profileUid = data && data.profileUid ? String(data.profileUid) : null;
+        if (profileUid) {
+          const profDoc = await db.collection('profiles').doc(String(profileUid)).get();
+          if (profDoc.exists) {
+            myProfile = profDoc.data();
+          }
+        }
+      }
+    } catch(e){ console.warn('loadMyProfile: users lookup failed', e); }
+    // Fallback: try find profile in loaded profiles array by myUID
+    if (!myProfile) {
+      const found = profiles.find(p => String(p.uid) === String(myUID));
+      if (found) myProfile = found;
+    }
+    // If we found a profile, update UI/text
+    if (myProfile) {
+      const btn = document.getElementById('profileBtn');
+      if (btn) btn.textContent = 'Manage Profile';
+      // ensure profile is present in profiles array
+      const idx = profiles.findIndex(p => String(p.uid) === String(myProfile.uid));
+      if (idx === -1) profiles.push(myProfile); else profiles[idx] = myProfile;
+      setFBStatus('My profile loaded');
+      return myProfile;
+    }
+    return null;
+  } catch(err){
+    console.warn('loadMyProfileIfExists error', err);
+    setFBStatus('MyProfile load err','red');
+    return null;
+  }
+}
+
+// Replace profileBtn click to guarantee we attempt to load myProfile before opening the form
+(function patchProfileBtnClick(){
+  const btn = document.getElementById('profileBtn');
+  if (!btn) return;
+  // remove inline onclick if present and add safer async handler
+  try { btn.removeAttribute('onclick'); } catch(e){}
+  btn.addEventListener('click', async function(evt){
+    // if myProfile not yet loaded, try to load it
+    if (typeof myProfile === 'undefined' || myProfile === null) {
+      await loadMyProfileIfExists();
+    }
+    // open the form (openProfileForm will detect myProfile and prefill)
+    try { openProfileForm(); } catch(e){ console.warn('openProfileForm error', e); }
+  });
+})();
+// --- END manage profile patch ---
+
+
+}
+
+// Basic profile save/load (will be augmented later)
+async function saveProfileToFirebase(profile) {
+  try {
+    await db.collection("profiles").doc(String(profile.uid)).set(profile);
+    setFBStatus("Profile saved ("+profile.uid+")");
+  } catch(e) {
+    console.error("Firebase save error", e);
+    setFBStatus("Save error: "+e.message, "red");
+  }
+}
+
+// Load all profiles from Firestore
+async function loadProfilesFromFirebase() {
+  try {
+    const snapshot = await db.collection("profiles").get();
+    profiles = [];
+    snapshot.forEach(doc => { profiles.push(doc.data()); });
+    setFBStatus("Profiles loaded: "+profiles.length);
+    displayProfiles();
+  } catch(e) {
+    console.error("Firebase load error", e);
+    setFBStatus("Load error: "+e.message, "red");
+  }
+}
+
+// Hook profile save event to Firestore (existing form will call saveProfileToFirebase after submit)
 (function(){
-  // Config (from user)
-  const firebaseConfig = {
-    apiKey: "AIzaSyAByLACmttf6BY6r0hEmZKYontfVqnDNpM",
-    authDomain: "mndpschoolrspura.firebaseapp.com",
-    projectId: "mndpschoolrspura",
-    storageBucket: "mndpschoolrspura.firebasestorage.app",
-    messagingSenderId: "810534224714",
-    appId: "1:810534224714:web:a3055b4a6b3bca507337b3",
-    measurementId: "G-2610K130EN"
-  };
-
-  // init
-  try {
-    firebase.initializeApp(firebaseConfig);
-    window.db = firebase.firestore();
-  } catch(e){ console.warn('Firebase init error', e); }
-
-  // status box
-  const statusBox = document.createElement('div');
-  statusBox.id = "firebaseStatusBox";
-  statusBox.style.position = "fixed";
-  statusBox.style.bottom = "10px";
-  statusBox.style.left = "10px";
-  statusBox.style.padding = "8px 12px";
-  statusBox.style.background = "#000";
-  statusBox.style.color = "#0f0";
-  statusBox.style.fontSize = "12px";
-  statusBox.style.fontFamily = "monospace";
-  statusBox.style.borderRadius = "6px";
-  statusBox.style.zIndex = 99999;
-  statusBox.textContent = "Firebase: Initializing...";
-  document.addEventListener("DOMContentLoaded", ()=>document.body.appendChild(statusBox));
-  window.setFBStatus = function(msg, color="#0f0"){ const b=document.getElementById('firebaseStatusBox'); if(b){ b.textContent = 'Firebase: '+msg; b.style.color = color; } };
-
-  // enable persistence
-  try {
-    firebase.firestore().enablePersistence({ synchronizeTabs: true }).then(()=>{
-      setFBStatus('Persistence enabled');
-    }).catch(err=>{
-      console.warn('persistence error', err);
-      setFBStatus('Persistence not enabled', 'yellow');
+  const form = document.getElementById('profileForm');
+  if(form){
+    form.addEventListener('submit', function(){
+      setTimeout(()=>{ if(myProfile) saveProfileToFirebase(myProfile); }, 150);
     });
-  } catch(e){ /* ignore */ }
+  }
+})();
 
-  const firestore = window.db;
+document.addEventListener("DOMContentLoaded", ()=>{
+  loadProfilesFromFirebase();
+});
+</script>
 
-  // helpers
+
+<script>
+(function(){
+  const db = firebase.firestore();
+  const FieldValue = firebase.firestore.FieldValue;
+
   function chatIdFor(a,b){
     if(a===undefined||b===undefined) return null;
-    const sa=String(a), sb=String(b);
+    const sa = String(a), sb = String(b);
     return 'chat_' + (sa < sb ? sa + '_' + sb : sb + '_' + sa);
   }
 
-  // Realtime: profiles collection -> keep local profiles up-to-date and refresh UI
-  let profilesUnsub = null;
-  function enableProfilesRealtime(){
-    try {
-      if(profilesUnsub) profilesUnsub();
-      profilesUnsub = firestore.collection('profiles').onSnapshot(snap=>{
-        profiles = [];
-        snap.forEach(doc=>{
-          const d = doc.data() || {};
-          if(!d.uid) d.uid = doc.id;
-          profiles.push(d);
-        });
-        displayProfiles();
-        displaySaved();
-        if(typeof refreshLeaderboard === 'function') refreshLeaderboard();
-        setFBStatus('Profiles synced');
-      }, err=>{ console.warn('profiles snapshot', err); setFBStatus('Profiles err','red'); });
-    } catch(e){ console.warn('enableProfilesRealtime', e); }
-  }
-
-  // subscribe to user's notifications realtime
-  let notifUnsub = null;
-  function subscribeNotificationsFor(uid){
+  async function writeMessageToFirestore(msgObj){
     try{
-      if(notifUnsub) notifUnsub();
-      if(!uid) return;
-      notifUnsub = firestore.collection('users').doc(String(uid)).collection('notifications').orderBy('time','desc')
-        .onSnapshot(snap=>{
-          unreadNotifications = []; readNotifications = [];
-          snap.forEach(doc=>{
-            const d = doc.data() || {};
-            const obj = { uid: d.fromUid || doc.id, name: d.name || 'Unknown', lastMessage: d.lastMessage || '', time: d.time || '', _docId: doc.id, read: !!d.read };
-            if(obj.read) readNotifications.push(obj); else unreadNotifications.push(obj);
-          });
-          saveMessagingState();
-          setFBStatus('Notifs synced');
-        }, err=>{ console.warn('notif snapshot', err); });
-    }catch(e){ console.warn('subscribeNotificationsFor failed', e); }
+      const chatId = chatIdFor(msgObj.fromUid, msgObj.toUid);
+      if(!chatId) return;
+      const chatRef = db.collection('chats').doc(chatId);
+      await chatRef.set({ participants: [String(msgObj.fromUid), String(msgObj.toUid)], lastMessage: msgObj.text, lastTime: new Date().toISOString() }, { merge: true });
+      await chatRef.collection('messages').add(Object.assign({}, msgObj, { time: new Date().toISOString() }));
+      setFBStatus('Message saved');
+    }catch(e){ console.warn('writeMessageToFirestore failed', e); setFBStatus('Msg save err','red'); }
   }
 
-  // presence tracking
-  function setPresence(online){
+  // Wrap existing sendMessage to also persist to Firestore and update recipient notifications
+  const origSend = window.sendMessage || function(){};
+  window.sendMessage = function(){
+    try{ origSend(); }catch(e){ console.warn('origSend failed', e); }
     try{
-      const uid = (typeof myUID !== 'undefined' && myUID) ? String(myUID) : null;
-      if(!uid) return;
-      firestore.collection('users').doc(uid).set({ online: !!online, lastActive: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true }).catch(()=>{});
-    }catch(e){ console.warn('setPresence', e); }
-  }
-  window.addEventListener('focus', ()=> setPresence(true));
-  window.addEventListener('blur', ()=> setPresence(false));
-  window.addEventListener('beforeunload', ()=> setPresence(false));
-  setTimeout(()=> setPresence(true), 1000);
-
-  // typing indicator
-  const typingTimers = {};
-  function setTypingForChat(otherUid, isTyping){
-    try{
-      const uidFrom = (typeof myUID !== 'undefined' && myUID) ? String(myUID) : null;
-      if(!uidFrom || !otherUid) return;
-      const chatId = chatIdFor(uidFrom, otherUid);
-      const chatRef = firestore.collection('chats').doc(chatId);
-      if(isTyping){
-        chatRef.set({ typing: { [uidFrom]: true } }, { merge: true }).catch(()=>{});
-        if(typingTimers[chatId]) clearTimeout(typingTimers[chatId]);
-        typingTimers[chatId] = setTimeout(()=> chatRef.set({ typing: { [uidFrom]: false } }, { merge: true }).catch(()=>{}), 2500);
-      } else {
-        chatRef.set({ typing: { [uidFrom]: false } }, { merge: true }).catch(()=>{});
-      }
-    }catch(e){ console.warn('setTypingForChat', e); }
-  }
-
-  // subscribe to chat (messages + chat doc)
-  let chatMessagesUnsub = null;
-  let chatDocUnsub = null;
-  function subscribeToChatWith(otherUid){
-    try{
-      if(chatMessagesUnsub) { chatMessagesUnsub(); chatMessagesUnsub = null; }
-      if(chatDocUnsub) { chatDocUnsub(); chatDocUnsub = null; }
-      const uidFrom = (typeof myUID !== 'undefined' && myUID) ? String(myUID) : null;
-      if(!uidFrom || !otherUid) return;
-      const chatId = chatIdFor(uidFrom, otherUid);
-      const msgsRef = firestore.collection('chats').doc(chatId).collection('messages').orderBy('time','asc');
-      chatMessagesUnsub = msgsRef.onSnapshot(async snap=>{
-        messages[otherUid] = [];
-        const batch = firestore.batch();
-        let needSeenUpdate = false;
-        for(const doc of snap.docs){
-          const d = doc.data() || {};
-          d._id = doc.id;
-          if(d.time && d.time.toDate) d.time = d.time.toDate().toLocaleString();
-          messages[otherUid].push(d);
-          if(d.fromUid !== uidFrom){
-            // ensure seenBy includes me
-            if(!Array.isArray(d.seenBy) || !d.seenBy.includes(uidFrom)){
-              const mRef = firestore.collection('chats').doc(chatId).collection('messages').doc(doc.id);
-              batch.update(mRef, { seenBy: firebase.firestore.FieldValue.arrayUnion(uidFrom) });
-              needSeenUpdate = true;
-            }
-          }
-        }
-        if(needSeenUpdate){
-          try { await batch.commit(); setFBStatus('Marked seen'); } catch(e){ console.warn('seen commit', e); }
-        }
-        renderChat();
-      }, err=>{ console.warn('msgs snapshot', err); setFBStatus('Chat msgs err','red'); });
-
-      // chat doc for typing & metadata
-      const chatDocRef = firestore.collection('chats').doc(chatId);
-      chatDocUnsub = chatDocRef.onSnapshot(docSnap=>{
-        if(!docSnap.exists) return;
-        const d = docSnap.data() || {};
-        // typing
-        if(d.typing){
-          const typingNames = Object.keys(d.typing).filter(k => String(k) !== String(myUID) && d.typing[k]).map(k => getProfileNameByUID(k) || 'Someone');
-          const typingEl = document.getElementById('chatTypingIndicator');
-          if(typingEl) typingEl.textContent = typingNames.length ? (typingNames.join(', ') + ' is typing...') : '';
-        }
-      }, err=>{ console.warn('chat doc snapshot', err); });
-    }catch(e){ console.warn('subscribeToChatWith', e); }
-  }
-
-  // Wrap openChat to subscribe to chat
-  (function(){
-    const orig = window.openChat || function(){};
-    window.openChat = function(profile){
-      try { orig(profile); } catch(e){ console.warn('orig openChat', e); }
-      const otherUid = profile && profile.uid ? profile.uid : profile;
-      if(typeof myProfile === 'undefined' || !myProfile){
-        if(typeof loadMyProfileIfExists === 'function') loadMyProfileIfExists().then(()=> subscribeToChatWith(otherUid)).catch(()=> subscribeToChatWith(otherUid));
-      } else {
-        subscribeToChatWith(otherUid);
-      }
-      // ensure typing indicator element exists
-      const chatArea = document.getElementById('chatMessages');
-      if(chatArea && !document.getElementById('chatTypingIndicator')){
-        const el = document.createElement('div'); el.id = 'chatTypingIndicator'; el.style.fontSize='13px'; el.style.opacity='0.8'; el.style.margin='6px 12px'; chatArea.parentNode.insertBefore(el, chatArea.nextSibling);
-      }
-    };
-  })();
-
-  // Override sendMessage to persist to Firestore (and still show immediate UI via real-time listener)
-  (function(){
-    const origSend = window.sendMessage || function(){};
-    window.sendMessage = async function(){
-      try { /* we avoid calling origSend to prevent double-local writes; messages will be populated by onSnapshot */ } catch(e){}
-      try{
-        const input = document.getElementById('chatInput');
-        if(!input) return;
-        const text = input.value.trim();
-        if(!text) return;
-        const toUid = currentChatUID;
-        const fromUid = (typeof myUID !== 'undefined' && myUID) ? String(myUID) : 'me';
-        const chatId = chatIdFor(fromUid, toUid);
-        if(!chatId) return;
-        const chatRef = firestore.collection('chats').doc(chatId);
-        const msgsRef = chatRef.collection('messages');
-        const newMsgRef = msgsRef.doc();
-        const msg = { fromUid: fromUid, toUid: String(toUid), text: text, time: firebase.firestore.FieldValue.serverTimestamp(), seenBy: [fromUid] };
-        const batch = firestore.batch();
-        batch.set(newMsgRef, msg);
-        batch.set(chatRef, { participants: [fromUid, String(toUid)], lastMessage: text, lastTime: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
-        await batch.commit();
-        // add notification for recipient
-        try {
-          const notif = { fromUid: fromUid, name: getProfileNameByUID(fromUid) || 'Sender', lastMessage: text, time: new Date().toISOString(), read: false };
-          await firestore.collection('users').doc(String(toUid)).collection('notifications').add(notif);
-        } catch(e){ console.warn('notif write', e); }
-        input.value = '';
-        setTypingForChat(toUid, false);
-        setFBStatus('Message sent');
-      } catch(e){ console.error('sendMessage persist failed', e); setFBStatus('Send err','red'); }
-    };
-  })();
-
-  // hook input typing
-  (function(){
-    const input = document.getElementById('chatInput');
-    if(!input) return;
-    let t=null;
-    input.addEventListener('input', function(){
       if(!currentChatUID) return;
-      setTypingForChat(currentChatUID, true);
-      if(t) clearTimeout(t);
-      t = setTimeout(()=> setTypingForChat(currentChatUID, false), 2400);
-    });
-    input.addEventListener('blur', function(){ if(currentChatUID) setTypingForChat(currentChatUID, false); });
-  })();
+      const arr = messages[currentChatUID] || [];
+      const last = arr[arr.length - 1];
+      if(last && last.fromUid){
+        writeMessageToFirestore(last);
+        // create a notification for recipient in users/{toUid}/notifications
+        if(last.toUid){
+          const notif = { fromUid: String(last.fromUid), name: getProfileNameByUID(last.fromUid) || 'Sender', lastMessage: last.text, time: new Date().toISOString(), read: false };
+          db.collection('users').doc(String(last.toUid)).collection('notifications').add(notif).then(()=> setFBStatus('Notif saved')).catch(e=> setFBStatus('Notif save err','red'));
+        }
+      }
+    }catch(e){ console.warn('sendMessage wrapper failed', e); }
+  };
 
-  // ensure manage profile loads my profile and subscribe notifications & presence
-  async function loadMyProfileIfExists(){
-
-    try{
-      const stored = localStorage.getItem('profiles_my_uid_v1');
-      if(!stored) return null;
-      myUID = String(stored);
-      // try to load user doc for linked profile uid
+  // Wrap existing saveProfile to also update user's savedProfiles on Firestore
+  if(window.saveProfile){
+    const origSaveProfile = window.saveProfile;
+    window.saveProfile = function(p){
+      try{ origSaveProfile(p); }catch(e){ console.warn('origSaveProfile failed', e); }
       try{
-        const userDoc = await firestore.collection('users').doc(String(myUID)).get();
-        if(userDoc.exists){
-          const ud = userDoc.data();
-          if(ud && ud.profileUid){
-            const profDoc = await firestore.collection('profiles').doc(String(ud.profileUid)).get();
-            if(profDoc.exists){
-              myProfile = profDoc.data();
-            }
+        if(typeof myUID !== 'undefined' && myUID !== null){
+          const userRef = db.collection('users').doc(String(myUID));
+          const isSaved = savedProfiles.some(sp => String(sp.uid) === String(p.uid));
+          if(isSaved){
+            userRef.set({ savedProfiles: firebase.firestore.FieldValue.arrayUnion(String(p.uid)) }, { merge: true });
+            setFBStatus('Saved profile synced');
+          } else {
+            // remove by arrayRemove
+            userRef.update({ savedProfiles: firebase.firestore.FieldValue.arrayRemove(String(p.uid)) }).then(()=> setFBStatus('Unsaved synced')).catch(()=>{});
           }
         }
-      } catch(e){ console.warn('user doc load', e); }
-      // fallback to profiles array
-      if(!myProfile){
-        const found = profiles.find(x => String(x.uid) === String(myUID));
-        if(found) myProfile = found;
-      }
-      if(myProfile){
-        const btn = document.getElementById('profileBtn'); if(btn) btn.textContent = 'Manage Profile';
-        setFBStatus('My profile loaded');
-        // subscribe to my notifications
-        subscribeNotificationsFor(myUID);
-        // presence
-        setPresence(true);
-        return myProfile;
-      }
-      return null;
-    }catch(e){ console.warn('loadMyProfileIfExists', e); setFBStatus('MyProfile err','red'); return null; }
+      }catch(e){ console.warn('saveProfile-firestore sync failed', e); }
+    };
   }
 
-  // patch profile button to await myProfile load then open form
-  (function(){
-    const btn = document.getElementById('profileBtn');
-    if(!btn) return;
-    try{ btn.removeAttribute('onclick'); }catch(e){}
-    btn.addEventListener('click', async function(){
-      if(typeof myProfile === 'undefined' || myProfile === null) await loadMyProfileIfExists();
-      try{ openProfileForm(); }catch(e){ console.warn('openProfileForm err', e); }
-    });
-  })();
+  // Load user-specific document (saved profiles + notifications) and mirror to local app state
+  async function loadUserData(uid){
+    if(!uid) return;
+    try{
+      const userDoc = await db.collection('users').doc(String(uid)).get();
+      if(userDoc.exists){
+        const data = userDoc.data();
+        // sync savedProfiles
+        if(Array.isArray(data.savedProfiles)){
+          savedProfiles = [];
+          data.savedProfiles.forEach(pid => {
+            const p = profiles.find(x => String(x.uid) === String(pid));
+            if(p) savedProfiles.push(p);
+          });
+          displaySaved();
+          updateSaveButtonState();
+        }
+      }
+      // load notifications subcollection for the user
+      const notifSnap = await db.collection('users').doc(String(uid)).collection('notifications').get();
+      unreadNotifications = [];
+      readNotifications = [];
+      notifSnap.forEach(doc=>{
+        const d = doc.data();
+        const obj = { uid: d.fromUid || doc.id, name: d.name || 'Unknown', lastMessage: d.lastMessage || '', time: d.time || '', _docId: doc.id, read: !!d.read };
+        if(d.read) readNotifications.push(obj); else unreadNotifications.push(obj);
+      });
+      saveMessagingState();
+      // optionally, load chats where participants contain uid (only metadata to start)
+      const chatsSnap = await db.collection('chats').where('participants','array-contains',String(uid)).get();
+      setFBStatus('User data loaded');
+    }catch(e){ console.warn('loadUserData failed', e); setFBStatus('User load err','red'); }
+  }
 
-  // Start realtime profiles listener on DOM ready
-  document.addEventListener('DOMContentLoaded', ()=>{
-    try{ enableProfilesRealtime(); }catch(e){ console.warn(e); }
-    // attempt load my profile if available
-    setTimeout(()=> loadMyProfileIfExists(), 600);
+  // On startup, set Manage/Create button depending on stored myUID and Firestore data
+  document.addEventListener('DOMContentLoaded', async function(){
+    try{
+      const storedMy = localStorage.getItem('profiles_my_uid_v1');
+      if(storedMy){
+        myUID = storedMy;
+        const btn = document.getElementById('profileBtn');
+        if(btn) btn.textContent = 'Manage Profile';
+        await loadUserData(myUID);
+        setFBStatus('Ready (user '+String(myUID)+')');
+      } else {
+        setFBStatus('Ready (no user)');
+      }
+    }catch(e){ console.warn(e); }
   });
 
-  setFBStatus('Realtime chat scripts injected');
-})();
+  // Extend saveProfileToFirebase to also create/merge a users/{myUID} doc for saved state & link profile
+  if(window.saveProfileToFirebase){
+    const origSaveFB = window.saveProfileToFirebase;
+    window.saveProfileToFirebase = async function(profile){
+      try{ await origSaveFB(profile); }catch(e){ console.warn('origSaveFB failed', e); }
+      try{
+        // set myUID to profile.uid if not set
+        if(typeof myUID === 'undefined' || myUID === null) myUID = String(profile.uid);
+        localStorage.setItem('profiles_my_uid_v1', String(myUID));
+        const userRef = db.collection('users').doc(String(myUID));
+        await userRef.set({ profileUid: String(profile.uid) }, { merge: true });
+        // ensure profile doc has hireCount & rating fields set
+        const profRef = db.collection('profiles').doc(String(profile.uid));
+        await profRef.set({ hireCount: Number(profile.hireCount || 0), ratingsSum: Number(profile.ratingsSum || 0), ratingsCount: Number(profile.ratingsCount || 0) }, { merge: true });
+        const btn = document.getElementById('profileBtn'); if(btn) btn.textContent = 'Manage Profile';
+        await loadUserData(myUID);
+        setFBStatus('Profile & user linked');
+      }catch(e){ console.warn('post-saveProfileToFirebase failed', e); setFBStatus('Post-save err','red'); }
+    };
+  }
+
+  // Rating UI injection into openProfile
+  function ensureRatingUI(){
+    const container = document.querySelector('.open-profile .profile-actions');
+    if(!container) return;
+    if(document.getElementById('ratingStars')) return;
+    const wrap = document.createElement('div');
+    wrap.className = 'profile-rating';
+    wrap.style.marginLeft = '12px';
+    wrap.innerHTML = '<div style="font-weight:800;color:#fff">Rate this profile</div><div class="rating-stars" id="ratingStars"></div><div class="rating-result" id="ratingResult"></div>';
+    container.appendChild(wrap);
+    const stars = document.getElementById('ratingStars');
+    for(let i=1;i<=5;i++){
+      const sp = document.createElement('span');
+      sp.textContent = '★';
+      sp.dataset.value = i;
+      sp.onclick = function(){
+        const val = Number(this.dataset.value);
+        submitRating(currentOpenProfile.uid, val);
+      };
+      stars.appendChild(sp);
+    }
+  }
+  if(window.openProfile){
+    const origOpen = window.openProfile;
+    window.openProfile = function(p){
+      try{ origOpen(p); }catch(e){ console.warn('origOpenProfile failed', e); }
+      ensureRatingUI();
+      const rr = document.getElementById('ratingResult');
+      const avg = (p.ratingsCount && p.ratingsCount>0) ? (p.ratingsSum / p.ratingsCount).toFixed(1) : 'No ratings';
+      if(rr) rr.textContent = avg==='No ratings' ? avg : 'Average: '+avg+' ('+(p.ratingsCount||0)+' votes)';
+    };
+  }
+
+  async function submitRating(uid, rating){
+    if(!uid) return;
+    try{
+      const profRef = db.collection('profiles').doc(String(uid));
+      await db.runTransaction(async (tx) => {
+        const doc = await tx.get(profRef);
+        if(!doc.exists){
+          tx.set(profRef, { ratingsSum: rating, ratingsCount: 1 }, { merge: true });
+        } else {
+          const data = doc.data();
+          const sum = (data.ratingsSum || 0) + rating;
+          const cnt = (data.ratingsCount || 0) + 1;
+          tx.update(profRef, { ratingsSum: sum, ratingsCount: cnt });
+        }
+      });
+      setFBStatus('Rating saved');
+      // update local copy and UI
+      const idx = profiles.findIndex(x=>String(x.uid)===String(uid));
+      if(idx!==-1){
+        profiles[idx].ratingsSum = (profiles[idx].ratingsSum||0) + rating;
+        profiles[idx].ratingsCount = (profiles[idx].ratingsCount||0) + 1;
+      }
+      displayProfiles();
+      if(currentOpenProfile && String(currentOpenProfile.uid) === String(uid)){
+        openProfile(profiles.find(x=>String(x.uid)===String(uid)));
+      }
+    }catch(e){ console.warn('submitRating failed', e); setFBStatus('Rating err','red'); }
+  }
+
+  // increment hireCount on profile when OTP verification succeeds
+  async function confirmHireAndIncrement(toUid){
+    try{
+      const profRef = db.collection('profiles').doc(String(toUid));
+      await profRef.update({ hireCount: firebase.firestore.FieldValue.increment(1) });
+      setFBStatus('Hire incremented');
+      // update local
+      const idx = profiles.findIndex(x=>String(x.uid)===String(toUid));
+      if(idx!==-1){ profiles[idx].hireCount = (profiles[idx].hireCount||0) + 1; }
+      if(currentOpenProfile && String(currentOpenProfile.uid)===String(toUid)){
+        openProfile(profiles.find(x=>String(x.uid)===String(toUid)));
+      }
+    }catch(e){ console.warn('confirmHireAndIncrement failed', e); setFBStatus('Hire inc err','red'); }
+  }
+
+  // Wrap sendHireOTP to also write OTP to Firestore
+  if(window.sendHireOTP){
+    const origSendHire = window.sendHireOTP;
+    window.sendHireOTP = function(fromUid, toUid, toName){
+      try{ origSendHire(fromUid, toUid, toName); }catch(e){ console.warn('origSendHire failed', e); }
+      try{
+        const rec = { otp: String(Math.floor(100000 + Math.random()*900000)), fromUid: String(fromUid), toUid: String(toUid), time: new Date().toISOString(), used: false };
+        db.collection('hireOtps').add(rec).then(()=> setFBStatus('OTP stored in Firestore'));
+      }catch(e){ console.warn('sendHireOTP firestore write failed', e); setFBStatus('OTP save err','red'); }
+    };
+  }
+
+  // Expose verifyHireOTP to validate OTPs stored in Firestore and increment hire counter
+  window.verifyHireOTP = async function(otpCode){
+    try{
+      const q = await db.collection('hireOtps').where('otp','==',String(otpCode)).where('used','==',false).get();
+      if(q.empty){ alert('Invalid or used OTP'); return; }
+      const doc = q.docs[0];
+      const data = doc.data();
+      await db.collection('hireOtps').doc(doc.id).update({ used: true, usedAt: new Date().toISOString() });
+      await confirmHireAndIncrement(data.toUid);
+      alert('OTP verified — hire counted.');
+    }catch(e){ console.warn('verifyHireOTP failed', e); alert('OTP verification failed'); }
+  };
+
+  // Leaderboard computed client-side and displayed in .leaderboard-list
+  window.refreshLeaderboard = function(){
+    try{
+      const arr = profiles.map(p=>{
+        const avg = p.ratingsCount && p.ratingsCount>0 ? (p.ratingsSum / p.ratingsCount) : 0;
+        const score = avg*10 + (p.hireCount||0)*5;
+        return Object.assign({}, p, { score });
+      });
+      arr.sort((a,b)=>b.score - a.score);
+      const lbArea = document.querySelector('.leaderboard-list');
+      if(lbArea){
+        lbArea.innerHTML = '';
+        arr.forEach((p,i)=>{
+          const card = document.createElement('div'); card.className='leader-card';
+          const rank = document.createElement('div'); rank.className='leader-rank'; rank.textContent = (i+1);
+          if(i===0) rank.classList.add('leader-gold');
+          else if(i===1) rank.classList.add('leader-silver');
+          else if(i===2) rank.classList.add('leader-bronze');
+          const info = document.createElement('div'); info.className='leader-info';
+          info.innerHTML = `<strong>${p.name}</strong><div class="uid">UID: ${p.uid}</div><div class="meta">Score: ${Math.round(p.score)}</div>`;
+          card.appendChild(rank); card.appendChild(info);
+          lbArea.appendChild(card);
+        });
+      }
+    }catch(e){ console.warn('refreshLeaderboard failed', e); }
+  };
+
+  // Hook into existing loadProfilesFromFirebase to refresh leaderboard afterwards
+  if(window.loadProfilesFromFirebase){
+    const origLoad = window.loadProfilesFromFirebase;
+    window.loadProfilesFromFirebase = async function(){
+      try{ await origLoad(); }catch(e){ console.warn('origLoadProfiles failed', e); }
+      try{ window.refreshLeaderboard(); }catch(e){}
+    };
+  }
+
+  // Mark notification as read and reflect to Firestore (if doc id stored)
+  const origMarkAsRead = window.markAsReadByUID || function(){};
+  window.markAsReadByUID = function(uid){
+    try{ origMarkAsRead(uid); }catch(e){ console.warn('origMarkAsRead failed', e); }
+    try{
+      // find the local unreadNotifications entry and update Firestore doc if we have _docId
+      const idx = unreadNotifications.findIndex(n => String(n.uid) === String(uid));
+      if(idx !== -1){
+        const n = unreadNotifications[idx];
+        if(n._docId && myUID){
+          db.collection('users').doc(String(myUID)).collection('notifications').doc(n._docId).update({ read: true }).then(()=> setFBStatus('Notif marked read')).catch(()=>{});
+        }
+      }
+    }catch(e){ console.warn('markAsRead Firestore update failed', e); }
+  };
+
+  // Small connectivity check
+  db.collection('profiles').limit(1).get().then(()=> setFBStatus('Connected')).catch(e=> setFBStatus('Conn error','red'));
+
+})(); // closure
+</script>
+
+
+<script>
+// --- BEGIN: Delete profile button + status sync ---
+(function(){
+  // Create delete button and insert after the submit button in profile form
+  function createDeleteButtonIfMissing(){
+    const form = document.getElementById('profileForm');
+    if(!form) return;
+    if(document.getElementById('deleteProfileBtn')) return;
+    const del = document.createElement('button');
+    del.type = 'button';
+    del.id = 'deleteProfileBtn';
+    del.textContent = 'Delete Profile';
+    // style similar to back-btn but smaller and placed near submit
+    del.style.marginTop = '6px';
+    del.style.background = '#ff3333';
+    del.style.color = '#fff';
+    del.style.border = 'none';
+    del.style.padding = '10px 14px';
+    del.style.borderRadius = '10px';
+    del.style.cursor = 'pointer';
+    del.style.fontWeight = '800';
+    del.onclick = function(){ confirmAndDelete(); };
+    // insert at end of form
+    form.appendChild(del);
+    updateDeleteBtnVisibility();
+  }
+
+  function updateDeleteBtnVisibility(){
+    const del = document.getElementById('deleteProfileBtn');
+    if(!del) return;
+    if(typeof myProfile !== 'undefined' && myProfile && myProfile.uid){
+      del.style.display = 'inline-block';
+    } else {
+      del.style.display = 'none';
+    }
+  }
+
+  async function confirmAndDelete(){
+    if(!myProfile || !myProfile.uid){
+      alert('No profile to delete.');
+      return;
+    }
+    if(!confirm('Delete your profile permanently? This cannot be undone.')) return;
+    await deleteMyProfile();
+  }
+
+  async function deleteMyProfile(){
+    try{
+      const uid = String(myProfile.uid);
+      // delete profile doc
+      await db.collection('profiles').doc(uid).delete();
+      // remove reference from users/{myUID}
+      if(typeof myUID !== 'undefined' && myUID){
+        try {
+          await db.collection('users').doc(String(myUID)).set({ profileUid: firebase.firestore.FieldValue.delete() }, { merge: true });
+          // remove from savedProfiles array if present
+          await db.collection('users').doc(String(myUID)).update({ savedProfiles: firebase.firestore.FieldValue.arrayRemove(String(uid)) }).catch(()=>{});
+        } catch(e){ console.warn('failed to update user doc on delete', e); }
+      }
+      // local cleanup
+      profiles = profiles.filter(p => String(p.uid) !== uid);
+      savedProfiles = savedProfiles.filter(p => String(p.uid) !== uid);
+      localStorage.removeItem('profiles_my_uid_v1');
+      myProfile = null;
+      myUID = null;
+      const btn = document.getElementById('profileBtn'); if(btn) btn.textContent = 'Create a Profile';
+      displayProfiles(); displaySaved();
+      updateDeleteBtnVisibility();
+      setFBStatus('Profile deleted');
+      alert('Profile deleted successfully.');
+    }catch(e){
+      console.error('deleteMyProfile error', e);
+      setFBStatus('Delete err','red');
+      alert('Delete failed: ' + (e && e.message ? e.message : String(e)));
+    }
+  }
+
+  // Ensure delete button is created on DOM ready
+  document.addEventListener('DOMContentLoaded', function(){
+    createDeleteButtonIfMissing();
+    // create observer to update visibility when myProfile changes (naive approach: poll)
+    setInterval(updateDeleteBtnVisibility, 800);
+  });
+
+  // Make sure saveProfileToFirebase writes profile.status (patch existing function)
+  if(window.saveProfileToFirebase){
+    const orig = window.saveProfileToFirebase;
+    window.saveProfileToFirebase = async function(profile){
+      try{
+        // ensure status field present
+        if(typeof profile.status === 'undefined' && document.getElementById('status')){
+          profile.status = document.getElementById('status').value || 'Free';
+        }
+        // call original (which writes profile doc)
+        await orig(profile);
+        // additionally, ensure profile doc merge includes status explicitly
+        try{
+          await db.collection('profiles').doc(String(profile.uid)).set({ status: profile.status }, { merge: true });
+          setFBStatus('Status synced');
+        }catch(e){ console.warn('status set failed', e); }
+      }catch(e){ console.warn('patched saveProfileToFirebase failed', e); }
+    };
+  }
+})(); 
+// --- END: Delete profile button + status sync ---
+</script>
+
+
+<script>
+// === Improved Delete button handler and Wipe All Profiles (safe dev tool) ===
+(function(){
+  // helper to safely get myProfile or try to load it
+  async function ensureMyProfileLoaded() {
+    try {
+      if (typeof myProfile !== 'undefined' && myProfile && myProfile.uid) return myProfile;
+      if (typeof loadMyProfileIfExists === 'function') {
+        const p = await loadMyProfileIfExists();
+        if (p) return p;
+      }
+      // fallback: try localStorage or profiles array
+      const stored = localStorage.getItem('profiles_my_uid_v1');
+      if (stored) {
+        const found = profiles.find(x => String(x.uid) === String(stored));
+        if (found) { myProfile = found; return myProfile; }
+        try {
+          const prof = await db.collection('profiles').doc(String(stored)).get();
+          if (prof.exists) { myProfile = prof.data(); return myProfile; }
+        } catch(e){ console.warn('ensureMyProfileLoaded db fetch failed', e); }
+      }
+      return null;
+    } catch(e){ console.warn('ensureMyProfileLoaded failed', e); return null; }
+  }
+
+  // Main delete handler wired to the Delete button
+  async function handleDeleteClick(e) {
+    try {
+      const btn = document.getElementById('deleteProfileBtn');
+      if (btn) { btn.disabled = true; btn.style.opacity = '0.6'; }
+      const p = await ensureMyProfileLoaded();
+      if (!p || !p.uid) {
+        alert('No profile found to delete.');
+        if (btn) { btn.disabled = false; btn.style.opacity = '1'; }
+        return;
+      }
+      const confirmText = prompt('Type DELETE to permanently remove your profile (this cannot be undone):');
+      if (String(confirmText).toUpperCase() !== 'DELETE') {
+        alert('Delete cancelled.');
+        if (btn) { btn.disabled = false; btn.style.opacity = '1'; }
+        return;
+      }
+      // perform deletion
+      const uid = String(p.uid);
+      try {
+        await db.collection('profiles').doc(uid).delete();
+      } catch(e) { console.warn('Firestore profile delete failed', e); }
+      // remove references from users collection (if myUID exists)
+      try {
+        const userId = (typeof myUID !== 'undefined' && myUID) ? String(myUID) : null;
+        if (userId) {
+          await db.collection('users').doc(userId).update({ profileUid: firebase.firestore.FieldValue.delete() }).catch(()=>{});
+          await db.collection('users').doc(userId).update({ savedProfiles: firebase.firestore.FieldValue.arrayRemove(uid) }).catch(()=>{});
+        }
+      } catch(e){ console.warn('cleanup user doc failed', e); }
+      // local cleanup
+      profiles = profiles.filter(x => String(x.uid) !== uid);
+      savedProfiles = savedProfiles.filter(x => String(x.uid) !== uid);
+      // remove any simulated unread etc
+      try { localStorage.removeItem('profiles_my_uid_v1'); } catch(e){}
+      myProfile = null; myUID = null;
+      // update UI
+      displayProfiles(); displaySaved();
+      updateSaveButtonState();
+      setFBStatus('Profile deleted');
+      alert('Profile deleted successfully.');
+    } catch(err) {
+      console.error('handleDeleteClick error', err);
+      setFBStatus('Delete err','red');
+      alert('Delete failed: ' + (err && err.message ? err.message : String(err)));
+    } finally {
+      const btn = document.getElementById('deleteProfileBtn');
+      if (btn) { btn.disabled = false; btn.style.opacity = '1'; }
+    }
+  }
+
+  // Wipe all profiles (dangerous) - requires typing DELETE ALL
+  async function wipeAllProfiles() {
+    try {
+      const confirmText = prompt('Type DELETE ALL to remove ALL profiles from Firestore and clear local data (irreversible):');
+      if (String(confirmText).toUpperCase() !== 'DELETE ALL') {
+        alert('Wipe cancelled.');
+        return;
+      }
+      setFBStatus('Wiping all profiles...','yellow');
+      // fetch profiles docs
+      const snap = await db.collection('profiles').get();
+      const docs = snap.docs || [];
+      for (let i = 0; i < docs.length; i++) {
+        try { await db.collection('profiles').doc(docs[i].id).delete(); } catch(e){ console.warn('delete profile doc failed', docs[i].id, e); }
+      }
+      // Optionally clear users' profileUid fields (best-effort)
+      const usersSnap = await db.collection('users').get();
+      for (let u = 0; u < usersSnap.docs.length; u++) {
+        const uid = usersSnap.docs[u].id;
+        try { await db.collection('users').doc(uid).update({ profileUid: firebase.firestore.FieldValue.delete(), savedProfiles: [] }); } catch(e){ /* ignore */ }
+      }
+      // Clear local state
+      profiles = []; savedProfiles = []; myProfile = null; myUID = null;
+      try { localStorage.removeItem('profiles_my_uid_v1'); } catch(e){}
+      displayProfiles(); displaySaved(); updateSaveButtonState();
+      setFBStatus('All profiles wiped');
+      alert('All profiles removed from Firestore and local app.');
+    } catch(e) {
+      console.error('wipeAllProfiles failed', e);
+      setFBStatus('Wipe err','red');
+      alert('Wipe failed: ' + (e && e.message ? e.message : String(e)));
+    }
+  }
+
+  // Attach handlers and add menu item for wipe
+  document.addEventListener('DOMContentLoaded', function(){
+    // wire delete button (if exists) to our handler; otherwise create it
+    let del = document.getElementById('deleteProfileBtn');
+    if (!del) {
+      const form = document.getElementById('profileForm');
+      if (form) {
+        del = document.createElement('button');
+        del.type = 'button';
+        del.id = 'deleteProfileBtn';
+        del.textContent = 'Delete Profile';
+        del.style.marginTop = '6px';
+        del.style.background = '#ff3333';
+        del.style.color = '#fff';
+        del.style.border = 'none';
+        del.style.padding = '10px 14px';
+        del.style.borderRadius = '10px';
+        del.style.cursor = 'pointer';
+        del.style.fontWeight = '800';
+        form.appendChild(del);
+      }
+    }
+    if (del) {
+      del.removeEventListener('click', handleDeleteClick);
+      del.addEventListener('click', handleDeleteClick);
+      // visibility update
+      const show = (typeof myProfile !== 'undefined' && myProfile && myProfile.uid);
+      del.style.display = show ? 'inline-block' : 'none';
+    }
+
+    // add "Wipe All Profiles" to dropdown menu for dev use
+    const menu = document.getElementById('menuDropdown');
+    if (menu && !menu.querySelector('.wipe-all-item')) {
+      const item = document.createElement('div');
+      item.className = 'wipe-all-item';
+      item.textContent = 'Wipe All Profiles (dev)';
+      item.style.color = '#ff3333';
+      item.onclick = function(){ wipeAllProfiles(); };
+      menu.appendChild(item);
+    }
+  });
+
+  // Also expose wipe function globally for console testing
+  window.wipeAllProfiles = wipeAllProfiles;
+})(); 
 </script>
 
 </body>

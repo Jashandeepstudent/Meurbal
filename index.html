@@ -1022,6 +1022,8 @@ function openChat(profile) {
   // remember the notifications tab the user was on before opening chat
   notificationTabBeforeChat = lastNotificationTab || 'unread';
   currentChatUID = profile.uid;
+  // load conversation messages from Firestore and attach realtime listener
+  try{ if(typeof db !== 'undefined' && typeof myUID !== 'undefined' && myUID){ listenToChatMessages(myUID, profile.uid); loadChatMessagesOnce(myUID, profile.uid); } }catch(e){}
 
   const nameEl = document.getElementById("chatWithName");
   if (nameEl) nameEl.textContent = profile.name || "Chat";
@@ -1706,12 +1708,12 @@ setTimeout(()=> showPendingOTPModalForMe(), 120);
     profiles.forEach(p=>{
       if(typeof p.hireCount === 'undefined') p.hireCount = 0;
       if(typeof p.allTimeHires === 'undefined') p.allTimeHires = p.hireCount || 0;
-      if(typeof p.ratingSum === 'undefined') p.ratingSum = 0;
-      if(typeof p.ratingCount === 'undefined') p.ratingCount = 0;
+      if(typeof p.ratingsSum === 'undefined') p.ratingsSum = 0;
+      if(typeof p.ratingsCount === 'undefined') p.ratingsCount = 0;
     });
   }
   // compute rating %
-  function ratingPctOf(p){ return p.ratingCount ? Math.round((p.ratingSum / (p.ratingCount * 5)) * 100) : 0; }
+  function ratingPctOf(p){ return p.ratingsCount ? Math.round((p.ratingsSum / (p.ratingsCount * 5)) * 100) : 0; }
 
   // create menu item in 3-dots dropdown
   try{
@@ -1875,7 +1877,7 @@ setTimeout(()=> showPendingOTPModalForMe(), 120);
         // helper to render rating bar based on profile
         function renderRatingResult(profileObj, hideControls){
           const idx = profiles.findIndex(x=>String(x.uid)===String(profileObj.uid));
-          const pct = idx===-1 ? 0 : Math.round(((profiles[idx].ratingSum || 0) / ((profiles[idx].ratingCount||0) * 5)) * 100) || 0;
+          const pct = idx===-1 ? 0 : Math.round(((profiles[idx].ratingsSum || 0) / ((profiles[idx].ratingsCount||0) * 5)) * 100) || 0;
           // show or hide the selection controls depending on whether the user already voted
           if (hideControls) {
             starRow.style.display = 'none';
@@ -1898,11 +1900,11 @@ setTimeout(()=> showPendingOTPModalForMe(), 120);
           // find or create profile entry
           const idx = profiles.findIndex(x=>String(x.uid)===String(p.uid));
           if(idx===-1){
-            const newP = { uid: p.uid, name: p.name || ('UID '+p.uid), hireCount: p.hireCount||0, allTimeHires: p.allTimeHires||0, ratingSum: score, ratingCount: 1 };
+            const newP = { uid: p.uid, name: p.name || ('UID '+p.uid), hireCount: p.hireCount||0, allTimeHires: p.allTimeHires||0, ratingsSum: score, ratingsCount: 1 };
             profiles.push(newP);
           } else {
-            profiles[idx].ratingSum = (profiles[idx].ratingSum || 0) + score;
-            profiles[idx].ratingCount = (profiles[idx].ratingCount || 0) + 1;
+            profiles[idx].ratingsSum = (profiles[idx].ratingsSum || 0) + score;
+            profiles[idx].ratingsCount = (profiles[idx].ratingsCount || 0) + 1;
           }
           // persist profiles
           try{ if(typeof saveProfilesToStorage === 'function') saveProfilesToStorage(); else localStorage.setItem('profiles_data_v1', JSON.stringify(profiles)); }catch(e){}
@@ -1937,7 +1939,7 @@ setTimeout(()=> showPendingOTPModalForMe(), 120);
           profiles[idx].allTimeHires = (profiles[idx].allTimeHires || 0) + 1;
         } else {
           // if profile not present, create minimal entry
-          profiles.push({ uid: myuid, name: ('UID '+myuid), hireCount: 0, allTimeHires: 1, ratingSum:0, ratingCount:0 });
+          profiles.push({ uid: myuid, name: ('UID '+myuid), hireCount: 0, allTimeHires: 1, ratingsSum:0, ratingsCount:0 });
         }
         // persist
         try{ if(typeof saveProfilesToStorage === 'function') saveProfilesToStorage(); else localStorage.setItem('profiles_data_v1', JSON.stringify(profiles)); }catch(e){}
@@ -1982,6 +1984,64 @@ const firebaseConfig = {
 // Init Firebase
 const appFB = firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
+
+// --- Assistant-injected chat sync helpers: load existing messages and add realtime listeners ---
+const chatListeners = {};
+async function loadChatMessagesOnce(myUid, otherUid){
+  try{
+    if(!myUid || !otherUid || !db) return;
+    const chatId = chatIdFor(myUid, otherUid);
+    if(!chatId) return;
+    const msgs = [];
+    const snap = await db.collection('chats').doc(chatId).collection('messages').orderBy('time').get();
+    snap.forEach(doc=>{
+      const d = doc.data();
+      const fromIsMe = String(d.fromUid) === String(myUid);
+      msgs.push({
+        from: fromIsMe ? 'me' : 'them',
+        text: d.text || d.lastMessage || '',
+        time: d.time ? (new Date(d.time)).toLocaleString() : (d.timeString || ''),
+        fromUid: d.fromUid,
+        toUid: d.toUid,
+        seen: !!d.seen
+      });
+    });
+    // store using the other user's id as key (so UI code that uses messages[otherUid] works)
+    messages[String(otherUid)] = msgs;
+    saveMessagingState();
+    if (String(currentChatUID) === String(otherUid)) try{ renderChat(); }catch(e){}
+  }catch(e){ console.warn('loadChatMessagesOnce failed', e); }
+}
+
+function listenToChatMessages(myUid, otherUid){
+  try{
+    if(!myUid || !otherUid || !db) return;
+    const chatId = chatIdFor(myUid, otherUid);
+    if(!chatId) return;
+    if(chatListeners[chatId]) return; // already listening
+    const ref = db.collection('chats').doc(chatId).collection('messages').orderBy('time');
+    chatListeners[chatId] = ref.onSnapshot(snapshot=>{
+      const msgs = [];
+      snapshot.forEach(doc=>{
+        const d = doc.data();
+        const fromIsMe = String(d.fromUid) === String(myUid);
+        msgs.push({
+          from: fromIsMe ? 'me' : 'them',
+          text: d.text || d.lastMessage || '',
+          time: d.time ? (new Date(d.time)).toLocaleString() : (d.timeString || ''),
+          fromUid: d.fromUid,
+          toUid: d.toUid,
+          seen: !!d.seen
+        });
+      });
+      messages[String(otherUid)] = msgs;
+      saveMessagingState();
+      if (String(currentChatUID) === String(otherUid)) try{ renderChat(); }catch(e){}
+      try{ updateNotificationBadge(); }catch(e){}
+    }, err => { console.warn('chat onSnapshot err', err); });
+  }catch(e){ console.warn('listenToChatMessages failed', e); }
+}
+// --- end injection ---
 
 // Status box (black box)
 const statusBox = document.createElement('div');
@@ -2201,6 +2261,21 @@ document.addEventListener("DOMContentLoaded", ()=>{
       saveMessagingState();
       // optionally, load chats where participants contain uid (only metadata to start)
       const chatsSnap = await db.collection('chats').where('participants','array-contains',String(uid)).get();
+
+      // preload messages and attach listeners for chats involving this user (so other devices will sync)
+      try{
+        chatsSnap.forEach(doc=>{
+          try{
+            const participants = doc.data().participants || [];
+            const other = participants.find(p => String(p) !== String(uid));
+            if(other){
+              try{ listenToChatMessages(uid, other); }catch(e){}
+              try{ loadChatMessagesOnce(uid, other); }catch(e){}
+            }
+          }catch(e){}
+        });
+      }catch(e){}
+
       setFBStatus('User data loaded');
     }catch(e){ console.warn('loadUserData failed', e); setFBStatus('User load err','red'); }
   }

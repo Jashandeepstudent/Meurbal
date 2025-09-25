@@ -531,9 +531,7 @@
     </select>
     <input type="text" id="address" placeholder="Your Address" required>
     <input type="text" id="contact" placeholder="Contact No." required>
-    <label>Portfolio (optional):</label>
-    <input type="file" id="portfolio">
-    <p class="note">If not uploaded, you have to submit portfolio in 2 days.</p>
+    
     <input type="text" id="language" placeholder="Languages Spoken">
     <textarea id="description" placeholder="Short description about you (will show under your name)" rows="3"></textarea>
     <div id="statusSection" style="display:none;">
@@ -1036,7 +1034,8 @@ function openChat(profile) {
 
   showPage("chatPage");
   renderChat();
-}
+updateChatHireButton();
+  }
 
 // Back from chat
 function backFromChat() {
@@ -1351,52 +1350,6 @@ function simulateProfileOwnerReply(uid, name) {
   alert('Reply sent as profile owner. Simulated unread for the sender created (localStorage key: profiles_unread_for_others_v1).');
 }
 
-/* Decorate the Notifications UI after it renders so each Unread box has a "Reply as Owner" button (which uses the function above).
-   We do this by wrapping the existing switchTab function so the original behavior is preserved. */
-(function(){
-  const origSwitch = window.switchTab;
-  window.switchTab = function(tab){
-    origSwitch(tab);
-    if (tab !== 'unread') return;
-    // small delay to ensure DOM for notifications is built
-    setTimeout(()=>{
-      const content = document.getElementById('notificationContent');
-      if (!content) return;
-      // find all top-level notification boxes (heuristic: immediate child divs)
-      const boxes = Array.from(content.children).filter(ch => ch.nodeType === 1);
-      boxes.forEach(box => {
-        // avoid adding the button twice
-        if (box.querySelector('.owner-reply-btn')) return;
-        // find the title text (first child div)
-        const titleDiv = box.querySelector('div');
-        const titleText = titleDiv ? titleDiv.textContent.trim() : '';
-        // create button
-        const ownerBtn = document.createElement('button');
-        ownerBtn.className = 'notif-btn owner-reply-btn';
-        ownerBtn.style.background = 'linear-gradient(90deg,#8b5cf6,#a78bfa)';
-        ownerBtn.style.color = '#fff';
-        ownerBtn.style.marginLeft = '6px';
-        ownerBtn.textContent = 'Reply as Owner';
-        ownerBtn.title = 'Simulate a reply from the profile owner — will create an unread notification for the sender (simulated).';
-        ownerBtn.onclick = function(){
-          // Find the corresponding unreadNotifications entry by matching name or uid
-          const cand = unreadNotifications.find(n => (n.name === titleText) || String(n.uid) === titleText);
-          const uid = cand ? cand.uid : null;
-          const name = cand ? cand.name : titleText;
-          if (!uid) {
-            alert('Could not determine UID for this notification. Try opening the chat and reply normally.');
-            return;
-          }
-          simulateProfileOwnerReply(uid, name);
-        };
-        // append into the actions container if found (heuristic: last child)
-        const actions = box.querySelector('div:nth-child(4)') || box;
-        actions.appendChild(ownerBtn);
-      });
-    }, 60);
-  };
-})();
-
 /* Optional helper: show the simulated "other users' unread" (useful for debugging/testing)
    This does not modify the original UI but can be called from the console:
    window.showSimulatedOtherUnread();
@@ -1496,70 +1449,45 @@ if (window.openProfile) {
   };
 }
 
-// Add "Hire Complete" button to chat header (next to back button)
-(function addChatHireButton(){
+
+// Conditional chat "Hire Complete" button: shown ONLY when current user is the profile owner (and chatting with someone else)
+function updateChatHireButton(){
   const header = document.querySelector('#chatPage > div');
   if (!header) return;
-  // avoid duplicates
-  if (header.querySelector('.hire-complete-chat-btn')) return;
-  const hireBtn = document.createElement('button');
-  hireBtn.textContent = 'Hire Complete';
-  hireBtn.className = 'hire-complete-chat-btn';
-  hireBtn.style.marginLeft = '8px';
-  hireBtn.style.padding = '8px 12px';
-  hireBtn.style.borderRadius = '8px';
-  hireBtn.style.border = 'none';
-  hireBtn.style.cursor = 'pointer';
-  hireBtn.style.fontWeight = '800';
-  hireBtn.style.background = 'linear-gradient(90deg,#ef4444,#f97316)';
-  hireBtn.style.color = '#fff';
-  hireBtn.onclick = function(){
-    if (!currentChatUID) { alert('Open a chat first.'); return; }
-    const fromUid = (typeof myUID !== 'undefined' && myUID !== null) ? myUID : 'me';
-    const toUid = currentChatUID;
-    const toName = document.getElementById('chatWithName')?.textContent || '';
-    sendHireOTP(fromUid, toUid, toName);
-  };
-  header.appendChild(hireBtn);
-})();
-
-// Decorate notifications unread boxes with "Hire Complete" button
-(function wrapSwitchTabForHire(){
-  if (!window.switchTab) return;
-  const orig = window.switchTab;
-  window.switchTab = function(tab){
-    orig(tab);
-    if (tab !== 'unread') return;
-    setTimeout(()=>{
-      const content = document.getElementById('notificationContent');
-      if (!content) return;
-      const boxes = Array.from(content.children).filter(ch => ch.nodeType === 1);
-      boxes.forEach(box => {
-        if (box.querySelector('.hire-complete-notif-btn')) return;
-        // attempt to detect uid from the unreadNotifications array by matching title
-        const titleDiv = box.querySelector('div');
-        const titleText = titleDiv ? titleDiv.textContent.trim() : '';
-        const cand = unreadNotifications.find(n => (n.name === titleText) || String(n.uid) === titleText);
-        const uid = cand ? cand.uid : null;
-        if (!uid) return;
-        const actions = box.querySelector('div:nth-child(4)') || box;
-        const btn = document.createElement('button');
-        btn.className = 'hire-complete-notif-btn notif-btn';
-        btn.style.background = 'linear-gradient(90deg,#ef4444,#f97316)';
-        btn.style.color = '#fff';
-        btn.style.marginLeft = '6px';
-        btn.textContent = 'Hire Complete';
-        btn.onclick = function(){
-          const fromUid = (typeof myUID !== 'undefined' && myUID !== null) ? myUID : 'me';
-          sendHireOTP(fromUid, uid, cand.name);
-        };
-        actions.appendChild(btn);
-      });
-    }, 60);
-  };
-})();
-
+  const existing = header.querySelector('.hire-complete-chat-btn');
+  // Show only when: myUID exists, myProfile exists and matches myUID, and currentChatUID is set and != myUID
+  const canShow = (typeof myUID !== 'undefined' && myUID !== null) 
+                   && (typeof myProfile !== 'undefined' && myProfile && String(myProfile.uid) === String(myUID))
+                   && (typeof currentChatUID !== 'undefined' && currentChatUID && String(currentChatUID) !== String(myUID));
+  if (canShow) {
+    if (existing) return;
+    const hireBtn = document.createElement('button');
+    hireBtn.textContent = 'Hire Complete';
+    hireBtn.className = 'hire-complete-chat-btn';
+    hireBtn.style.marginLeft = '8px';
+    hireBtn.style.padding = '8px 12px';
+    hireBtn.style.borderRadius = '8px';
+    hireBtn.style.border = 'none';
+    hireBtn.style.cursor = 'pointer';
+    hireBtn.style.fontWeight = '800';
+    hireBtn.style.background = 'linear-gradient(90deg,#ef4444,#f97316)';
+    hireBtn.style.color = '#fff';
+    hireBtn.onclick = function(){
+      if (!currentChatUID) { alert('Open a chat first.'); return; }
+      const fromUid = (typeof myUID !== 'undefined' && myUID !== null) ? myUID : 'me';
+      const toUid = currentChatUID;
+      const toName = document.getElementById('chatWithName')?.textContent || '';
+      // send OTP to the other user
+      try { sendHireOTP(fromUid, toUid, toName); } catch(e){ console.warn('sendHireOTP failed', e); alert('Failed to send OTP'); }
+    };
+    header.appendChild(hireBtn);
+  } else {
+    if (existing) existing.remove();
+  }
+}
 // sendHireOTP: create pending OTP record in localStorage and notify
+
+// sendHireOTP: create pending OTP record in localStorage, notify via event, and persist to Firestore (users/{toUid}/notifications) for the recipient.
 function sendHireOTP(fromUid, toUid, toName) {
   try {
     const otp = String(Math.floor(100000 + Math.random()*900000));
@@ -1569,31 +1497,69 @@ function sendHireOTP(fromUid, toUid, toName) {
     try { const raw = localStorage.getItem(OTP_STORAGE_KEY); arr = raw ? JSON.parse(raw) : []; } catch(e){ arr = []; }
     arr.push(rec);
     localStorage.setItem(OTP_STORAGE_KEY, JSON.stringify(arr));
-    // dispatch a same-tab event (so the recipient tab in same window will also show prompt)
+
+    // For local testing: create a simulated unread entry for the recipient so they can see the OTP event when they open their app.
+    try {
+      const key = 'profiles_unread_for_others_v1';
+      const raw2 = localStorage.getItem(key);
+      const otherUnread = raw2 ? JSON.parse(raw2) : [];
+      otherUnread.push({ uid: String(toUid), name: toName || getProfileNameByUID(toUid) || ('UID '+String(toUid)), lastMessage: 'Hire OTP sent', time: (new Date()).toLocaleString() });
+      localStorage.setItem(key, JSON.stringify(otherUnread));
+    } catch(e){ console.warn('failed to write simulated other-unread', e); }
+
+    // Also attempt to persist a notification record for the recipient in Firestore (so other devices/tabs can pick it up)
+    try {
+      if (typeof db !== 'undefined' && db && toUid) {
+        const notif = { fromUid: String(fromUid), name: toName || getProfileNameByUID(fromUid) || '', lastMessage: 'Hire OTP sent', time: new Date().toISOString(), type: 'otp', otp: otp };
+        db.collection('users').doc(String(toUid)).collection('notifications').add(notif).then(()=> {
+          try{ if(typeof setFBStatus === 'function') setFBStatus('OTP notif saved'); }catch(e){}
+        }).catch(e=> { console.warn('OTP notif save failed', e); });
+      }
+    } catch(e){ console.warn('firestore write for OTP failed', e); }
+
+    // dispatch a same-tab event so a listening recipient tab (if present) will show the OTP modal
     window.dispatchEvent(new CustomEvent('profiles-otp-sent', {detail: rec}));
-    // For testing/development we show OTP to the sender — remove in production
-    // show non-blocking OTP box instead of alert
-        try{ document.getElementById('otpSentBox')?.remove(); }catch(e){}
-        const otpBox = document.createElement('div');
-        otpBox.id = 'otpSentBox';
-        otpBox.className = 'otp-card';
-        otpBox.style.position = 'fixed';
-        otpBox.style.right = '20px';
-        otpBox.style.bottom = '20px';
-        otpBox.style.zIndex = 100000;
-        otpBox.innerHTML = `
-          <div style="display:flex;gap:12px;align-items:center;justify-content:space-between;">
-            <div>
-              <div style="font-weight:800">OTP sent to ${escapeHtml(toName || toUid)}</div>
-              <div style="margin-top:6px;font-weight:900;font-family:monospace;">Code (testing): ${otp}</div>
-            </div>
-            <div>
-              <button onclick="document.getElementById('otpSentBox')?.remove()" style="padding:8px 10px;border-radius:8px;border:none;cursor:pointer;font-weight:800;background:linear-gradient(90deg,#ef4444,#f97316);color:#fff;">Close</button>
-            </div>
-          </div>`;
-        document.body.appendChild(otpBox);
+
+    // For developer/testing we show OTP to the sender in a small non-blocking box (remove in production)
+    try{ document.getElementById('otpSentBox')?.remove(); }catch(e){}
+    const otpBox = document.createElement('div');
+    otpBox.id = 'otpSentBox';
+    otpBox.className = 'otp-card';
+    otpBox.style.position = 'fixed';
+    otpBox.style.right = '20px';
+    otpBox.style.bottom = '20px';
+    otpBox.style.zIndex = 100000;
+    otpBox.innerHTML = `
+      <div style="display:flex;gap:12px;align-items:center;justify-content:space-between;">
+        <div>
+          <div style="font-weight:800">OTP sent to ${escapeHtml(toName || toUid)}</div>
+          <div style="margin-top:6px;font-weight:900;font-family:monospace;">Code (testing): ${otp}</div>
+        </div>
+        <div>
+          <button onclick="document.getElementById('otpSentBox')?.remove()" style="padding:8px 10px;border-radius:8px;border:none;cursor:pointer;font-weight:800;background:linear-gradient(90deg,#ef4444,#f97316);color:#fff;">Close</button>
+        </div>
+      </div>`;
+    document.body.appendChild(otpBox);
+
+    // If the local session is the recipient, also add to the local unreadNotifications and show OTP modal
+    try {
+      if (typeof myUID !== 'undefined' && myUID !== null && String(myUID) === String(toUid)) {
+        const existing = unreadNotifications.find(n => String(n.uid) === String(toUid));
+        if (existing) {
+          existing.lastMessage = 'Hire OTP sent';
+          existing.time = (new Date()).toLocaleString();
+        } else {
+          unreadNotifications.push({ uid: String(toUid), name: toName || getProfileNameByUID(toUid) || ('UID '+String(toUid)), lastMessage: 'Hire OTP sent', time: (new Date()).toLocaleString() });
+        }
+        saveMessagingState();
+        // trigger OTP modal for me
+        setTimeout(()=> showPendingOTPModalForMe(), 80);
+      }
+    } catch(e){ console.warn('local unread update failed', e); }
+
   } catch(e){ console.warn('sendHireOTP failed', e); alert('Failed to send OTP'); }
 }
+
 
 // showPendingOTPModalForMe: if there's a pending OTP for myUID, prompt to verify
 function showPendingOTPModalForMe() {
@@ -1681,6 +1647,9 @@ window.addEventListener('profiles-otp-sent', function(ev){ setTimeout(()=> showP
 // run on load (in case OTP was stored while tab was inactive)
 setTimeout(()=> showPendingOTPModalForMe(), 120);
 
+
+// Ensure chat header hire button reflects current user state
+try{ updateChatHireButton(); }catch(e){}
 })(); // end wrapper
 </script>
 <!-- END: Assistant-added: Hire Complete + OTP verification + Hire count -->
@@ -2742,6 +2711,150 @@ document.addEventListener("DOMContentLoaded", ()=>{
   window.wipeAllProfiles = wipeAllProfiles;
 })(); 
 </script>
+
+
+<!-- Assistant-inserted: Override chat hire button + Owner OTP entry modal (adds sender alert, owner OTP verify, firestore update) -->
+<script>
+(function(){
+  // fallback keys if original script used block-scoped consts
+  var _OTP_KEY = (typeof OTP_STORAGE_KEY !== 'undefined') ? OTP_STORAGE_KEY : 'profiles_pending_otp_v1';
+  var _PROFILES_KEY = (typeof PROFILES_PERSIST_KEY !== 'undefined') ? PROFILES_PERSIST_KEY : 'profiles_data_v1';
+
+  function ownerCanAct(){
+    return (typeof myUID !== 'undefined' && myUID !== null) 
+      && (typeof myProfile !== 'undefined' && myProfile && String(myProfile.uid) === String(myUID));
+  }
+
+  // Override / redefine updateChatHireButton so button is visible to both parties.
+  window.updateChatHireButton = function(){
+    try{
+      const header = document.querySelector('#chatPage > div');
+      if (!header) return;
+      // remove any existing instance (recreate to reflect state changes)
+      const existing = header.querySelector('.hire-complete-chat-btn');
+      if (existing) existing.remove();
+
+      const hireBtn = document.createElement('button');
+      hireBtn.textContent = 'Hire Complete';
+      hireBtn.className = 'hire-complete-chat-btn';
+      hireBtn.style.marginLeft = '8px';
+      hireBtn.style.padding = '8px 12px';
+      hireBtn.style.borderRadius = '8px';
+      hireBtn.style.border = 'none';
+      hireBtn.style.cursor = 'pointer';
+      hireBtn.style.fontWeight = '800';
+      hireBtn.style.background = 'linear-gradient(90deg,#ef4444,#f97316)';
+      hireBtn.style.color = '#fff';
+
+      hireBtn.onclick = function(){
+        if (!currentChatUID) { alert('Open a chat first.'); return; }
+        const fromUid = (typeof myUID !== 'undefined' && myUID !== null) ? myUID : null;
+        const toUid = currentChatUID;
+        const toName = document.getElementById('chatWithName')?.textContent || '';
+        const isOwner = ownerCanAct();
+        if (!isOwner) {
+          // Sender clicked — show friendly denial
+          alert('You can only mark a hire complete from the profile owner account.');
+          return;
+        }
+        // Owner clicked: send OTP to the other user and open owner entry modal
+        try {
+          sendHireOTP(fromUid, toUid, toName);
+        } catch(e){ console.warn('sendHireOTP failed', e); alert('Failed to send OTP'); return; }
+        // small delay so storage/event handlers run first
+        setTimeout(()=> showOwnerOTPEntryModal(fromUid, toUid, toName), 250);
+      };
+
+      header.appendChild(hireBtn);
+    } catch(e){ console.warn('updateChatHireButton override failed', e); }
+  };
+
+  // Owner OTP entry modal (owner asks recipient for the OTP they received and enters it here)
+  window.showOwnerOTPEntryModal = function(fromUid, toUid, toName){
+    if (document.getElementById('ownerOtpModal')) return;
+    const modal = document.createElement('div');
+    modal.id = 'ownerOtpModal';
+    modal.className = 'modal open';
+    modal.style.zIndex = 99999;
+    modal.innerHTML = `
+      <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="ownerOtpTitle">
+        <button class="modal-close" onclick="document.getElementById('ownerOtpModal')?.remove()">✕</button>
+        <h4 id="ownerOtpTitle">Enter OTP from ${escapeHtml(toName || toUid)}</h4>
+        <p class="note">A 6-digit OTP was sent to the other user in their unread notifications. Ask them for the code and enter it here to confirm the hire.</p>
+        <div style="margin-top:8px;"><input id="ownerOtpInput" placeholder="6-digit OTP" style="width:100%; padding:10px; font-size:16px; border-radius:8px; border:1px solid #e8eefb;"></div>
+        <div style="margin-top:10px; display:flex; gap:8px;">
+          <button id="ownerOtpVerify" style="flex:1; padding:10px; border-radius:8px; border:none; font-weight:700; background:linear-gradient(90deg,#06b6d4,#0ea5a6); color:#fff;">Verify OTP</button>
+          <button id="ownerOtpCancel" style="flex:1; padding:10px; border-radius:8px; border:none; font-weight:700; background:#eef2ff; color:#111;">Cancel</button>
+        </div>
+        <div id="ownerOtpNote" class="note"></div>
+      </div>`;
+    document.body.appendChild(modal);
+    document.getElementById('ownerOtpCancel').onclick = function(){ modal.remove(); };
+    document.getElementById('ownerOtpVerify').onclick = function(){
+       const v = document.getElementById('ownerOtpInput').value.trim();
+       verifyOwnerOTP(v, fromUid, toUid);
+    };
+  };
+
+  // Verify OTP entered by owner (looks up OTP record previously sent by owner to recipient)
+  window.verifyOwnerOTP = function(value, fromUid, toUid){
+    const OTP_KEY = _OTP_KEY;
+    const PROFILES_KEY = _PROFILES_KEY;
+    if (!value) { try{ document.getElementById('ownerOtpNote').textContent = 'Enter the 6-digit OTP.' }catch(e){}; return; }
+    try {
+      let arr = [];
+      try { const raw = localStorage.getItem(OTP_KEY); arr = raw ? JSON.parse(raw) : []; } catch(e){ arr = []; }
+      // The record created by sendHireOTP has {otp, fromUid, toUid, time, toName}
+      const idx = arr.findIndex(r => String(r.fromUid) === String(fromUid) && String(r.toUid) === String(toUid) && String(r.otp) === String(value));
+      if (idx === -1) {
+        const note = document.getElementById('ownerOtpNote');
+        if (note) note.textContent = 'Incorrect OTP. Ask the other user to re-check their unread notifications.';
+        return;
+      }
+      const rec = arr.splice(idx,1)[0];
+      localStorage.setItem(OTP_KEY, JSON.stringify(arr));
+      // Increment hireCount for owner (fromUid)
+      const ownerUid = String(fromUid);
+      const pidx = profiles.findIndex(p => String(p.uid) === ownerUid);
+      if (pidx !== -1) {
+        profiles[pidx].hireCount = (profiles[pidx].hireCount || 0) + 1;
+      } else {
+        // create a minimal profile entry and set hireCount
+        profiles.push({ uid: ownerUid, name: (myProfile && String(myProfile.uid) === ownerUid) ? myProfile.name : (rec.toName || ('UID '+ownerUid)), hireCount: 1 });
+      }
+      // persist profiles
+      try { if (typeof saveProfilesToStorage === 'function') saveProfilesToStorage(); else localStorage.setItem(PROFILES_KEY, JSON.stringify(profiles)); } catch(e){ console.warn('profiles persist failed', e); }
+      // Update Firestore if available
+      try {
+        if (typeof db !== 'undefined' && db && ownerUid) {
+          try {
+            db.collection('profiles').doc(String(ownerUid)).set({ hireCount: firebase.firestore.FieldValue.increment(1) }, { merge: true }).then(()=> {/*ok*/}).catch(()=>{/*ignore*/});
+          } catch(e){ console.warn('firestore increment failed', e); }
+        }
+      } catch(e){ console.warn(e); }
+      // Update UI
+      try {
+        const el = document.getElementById('profileHireCount');
+        if (el) {
+          const cnt = (profiles.find(p => String(p.uid) === ownerUid) || {}).hireCount || 0;
+          el.textContent = 'Hires: ' + cnt;
+        }
+      } catch(e){}
+      alert('OTP verified — hire completed. Hire count incremented.');
+      document.getElementById('ownerOtpModal')?.remove();
+      // add a small read notification for record keeping
+      try { readNotifications.unshift({ uid: ownerUid, name: getProfileNameByUID(ownerUid) || 'Profile', lastMessage: 'Hire completed (owner verified)', time: new Date().toLocaleString() }); saveMessagingState(); switchTab('read'); } catch(e){}
+      // refresh leaderboards if any
+      try{ if(typeof refreshLeaderboards === 'function') refreshLeaderboards(); }catch(e){}
+    } catch(e){ console.warn('verifyOwnerOTP failed', e); alert('Verification failed.'); }
+  };
+
+  // React to OTP sent event and keep header state fresh
+  try { window.addEventListener('profiles-otp-sent', function(){ setTimeout(()=> { try{ updateChatHireButton(); }catch(e){} }, 60); }); } catch(e){}
+  try { updateChatHireButton(); } catch(e){}
+})();
+</script>
+<!-- End Assistant-inserted -->
 
 </body>
 </html>

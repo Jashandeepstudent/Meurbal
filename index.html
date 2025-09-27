@@ -497,6 +497,25 @@
 
 <body>
 
+<!-- Auth Page -->
+<div id="authPage" class="page" style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh; gap:20px;">
+  <h2>Login / Register</h2>
+  <input type="email" id="emailInput" placeholder="Email" style="padding:10px; border-radius:8px; border:1px solid #ccc; width:250px;">
+  <input type="password" id="passwordInput" placeholder="Password" style="padding:10px; border-radius:8px; border:1px solid #ccc; width:250px;">
+  <button onclick="emailRegister()">Register with Email</button>
+  <button onclick="emailLogin()">Login with Email</button>
+  <button onclick="googleLogin()">Login with Google</button>
+  <div id="phoneLoginBox" style="margin-top:20px;">
+    <input type="text" id="phoneInput" placeholder="+91 9876543210" style="padding:10px; border-radius:8px; border:1px solid #ccc; width:250px;">
+    <div id="recaptcha-container"></div>
+    <button onclick="phoneLogin()">Send OTP</button>
+    <input type="text" id="otpInput" placeholder="Enter OTP" style="padding:10px; border-radius:8px; border:1px solid #ccc; width:250px; margin-top:10px;">
+    <button onclick="verifyOTP()">Verify OTP</button>
+  </div>
+  <p id="authStatus" style="color:red; font-weight:bold;"></p>
+</div>
+
+
 <div class="top-bar" style="position:fixed; top:12px; left:12px; right:12px; display:flex; justify-content:space-between; align-items:center; z-index:100;">
   <div id="menuWrap" style="position:relative;">
     <button class="icon-btn" onclick="toggleMenu()">⋮</button>
@@ -1936,6 +1955,7 @@ try{ updateChatHireButton(); }catch(e){}
 
 <!-- Firebase SDKs -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
 <script>
@@ -2856,5 +2876,473 @@ document.addEventListener("DOMContentLoaded", ()=>{
 </script>
 <!-- End Assistant-inserted -->
 
+
+<script>
+const auth = firebase.auth();
+
+auth.onAuthStateChanged(user => {
+  if (user) {
+    document.getElementById('authPage').style.display = 'none';
+    showPage('home'); 
+  } else {
+    document.querySelectorAll('.page').forEach(p => p.style.display='none');
+    document.getElementById('authPage').style.display = 'flex';
+  }
+});
+
+function emailRegister(){
+  const email = document.getElementById('emailInput').value;
+  const pass = document.getElementById('passwordInput').value;
+  auth.createUserWithEmailAndPassword(email, pass)
+    .catch(e=>document.getElementById('authStatus').textContent=e.message);
+}
+
+function emailLogin(){
+  const email = document.getElementById('emailInput').value;
+  const pass = document.getElementById('passwordInput').value;
+  auth.signInWithEmailAndPassword(email, pass)
+    .catch(e=>document.getElementById('authStatus').textContent=e.message);
+}
+
+function googleLogin(){
+  const provider = new firebase.auth.GoogleAuthProvider();
+  auth.signInWithPopup(provider)
+    .catch(e=>document.getElementById('authStatus').textContent=e.message);
+}
+
+let confirmationResult;
+function phoneLogin(){
+  const phoneNumber = document.getElementById('phoneInput').value;
+  window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container');
+  auth.signInWithPhoneNumber(phoneNumber, window.recaptchaVerifier)
+    .then(result => {
+      confirmationResult = result;
+      document.getElementById('authStatus').textContent = 'OTP sent';
+    })
+    .catch(e => document.getElementById('authStatus').textContent = e.message);
+}
+function verifyOTP(){
+  const code = document.getElementById('otpInput').value;
+  if(confirmationResult){
+    confirmationResult.confirm(code)
+      .then(()=> document.getElementById('authStatus').textContent = 'Phone login successful')
+      .catch(e=>document.getElementById('authStatus').textContent = e.message);
+  }
+}
+</script>
+
+<script>
+
+(function(){
+  const STATES = ['Bihar','Uttar Pradesh','Maharashtra','Karnataka','Tamil Nadu','West Bengal','Delhi','Haryana','Rajasthan','Gujarat','Assam','Odisha','Punjab','Kerala','Jharkhand','Chhattisgarh','Telangana','Andhra Pradesh','Manipur','Meghalaya','Mizoram','Tripura','Nagaland','Goa','Sikkim','Arunachal Pradesh','Uttarakhand','Ladakh','Puducherry','Andaman and Nicobar'];
+
+ function createOnboardingModal(){
+  if(document.getElementById('onboardModal')) return;
+  const modal = document.createElement('div');
+  modal.id = 'onboardModal';
+  modal.className = 'modal open';
+  modal.style.zIndex='99999';
+  modal.innerHTML = `
+    <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="onboardTitle">
+      <button class="modal-close" onclick="document.getElementById('onboardModal')?.remove()">✕</button>
+      <h4 id="onboardTitle">Choose your location</h4>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-top:8px;">
+        <select id="onboard_state" style="padding:10px;border-radius:8px;border:1px solid #e8eefb;">
+          <option value="">-- Select State --</option>
+        </select>
+        <input id="onboard_district" placeholder=" Your District " style="padding:10px;border-radius:8px;border:1px solid #e8eefb;">
+        <div style="display:flex;gap:8px;margin-top:8px;">
+          <button id="onboardSave" style="flex:1;padding:10px;border-radius:8px;border:none;background:linear-gradient(90deg,#06b6d4,#0ea5a6);color:#fff;font-weight:800;">Save</button>
+          <button id="onboardSkip" style="flex:1;padding:10px;border-radius:8px;border:none;background:#eef2ff;color:#111;font-weight:700;">Skip</button>
+        </div>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+
+  const sel = modal.querySelector('#onboard_state');
+  STATES.forEach(s => { 
+    const o = document.createElement('option'); 
+    o.value = s; 
+    o.textContent = s; 
+    sel.appendChild(o); 
+  });
+
+  modal.querySelector('#onboardSave').onclick = function(){
+    const state = modal.querySelector('#onboard_state').value;
+    const district = modal.querySelector('#onboard_district').value.trim();
+    const info = { state, district };
+    if(state) localStorage.setItem('profiles_user_state_v1', state);
+    localStorage.setItem('profiles_user_info_v1', JSON.stringify(info));
+    try{
+      if(document.getElementById('state')) document.getElementById('state').value = state;
+      if(document.getElementById('district')) document.getElementById('district').value = district;
+    }catch(e){}
+    document.getElementById('onboardModal')?.remove();
+    renderStateFilterBadge();
+    if(typeof displayProfiles === 'function') displayProfiles();
+  };
+
+  modal.querySelector('#onboardSkip').onclick = function(){ 
+    document.getElementById('onboardModal')?.remove(); 
+  };
+}
+
+
+  function showOnboardingIfNeeded(){
+    try{
+      if(window.firebase && firebase.auth){
+        firebase.auth().onAuthStateChanged(user=>{
+          if(user){
+            const has = localStorage.getItem('profiles_user_state_v1') || localStorage.getItem('profiles_user_info_v1');
+            if(!has){
+              createOnboardingModal();
+            } else {
+              renderStateFilterBadge();
+              injectStateDistrictFieldsIntoProfileForm();
+              if(typeof displayProfiles === 'function') displayProfiles();
+            }
+          }
+        });
+      } else {
+        // fallback behaviour for non-Firebase preview/testing
+        if(!localStorage.getItem('profiles_user_state_v1') && !sessionStorage.getItem('onboard_shown_once')){
+          createOnboardingModal();
+          sessionStorage.setItem('onboard_shown_once','1');
+        } else {
+          renderStateFilterBadge();
+          injectStateDistrictFieldsIntoProfileForm();
+        }
+      }
+    }catch(e){ console.warn('onboarding check failed', e); }
+  }
+
+  function injectStateDistrictFieldsIntoProfileForm(){
+    const form = document.getElementById('profileForm');
+    if(!form) return;
+    if(document.getElementById('state')) return;
+    const address = document.getElementById('address');
+    if(!address) return;
+    const container = document.createElement('div');
+    container.style.display='flex';
+    container.style.flexDirection='column';
+    container.style.gap='8px';
+    container.style.marginTop='6px';
+    const stateSel = document.createElement('select');
+    stateSel.id = 'state';
+    stateSel.style.padding='10px';
+    stateSel.style.borderRadius='8px';
+    stateSel.style.border='1px solid #e8eefb';
+    const first = document.createElement('option'); first.value=''; first.textContent='-- Select State --'; stateSel.appendChild(first);
+    STATES.forEach(s=>{ const o=document.createElement('option'); o.value=s; o.textContent=s; stateSel.appendChild(o); });
+    const districtInp = document.createElement('input');
+    districtInp.type='text'; districtInp.id='district'; districtInp.placeholder='District (type)';
+    districtInp.style.padding='10px'; districtInp.style.borderRadius='8px'; districtInp.style.border='1px solid #e8eefb';
+    container.appendChild(stateSel); container.appendChild(districtInp);
+    address.insertAdjacentElement('afterend', container);
+    try{
+      const infoRaw = localStorage.getItem('profiles_user_info_v1');
+      if(infoRaw){
+        const info = JSON.parse(infoRaw);
+        if(info.name && document.getElementById('name').value==='') document.getElementById('name').value = info.name;
+        if(info.age && document.getElementById('age').value==='') document.getElementById('age').value = info.age;
+        if(info.state) stateSel.value = info.state;
+        if(info.district) districtInp.value = info.district;
+      } else if(typeof myProfile !== 'undefined' && myProfile){
+        if(myProfile.state) stateSel.value = myProfile.state;
+        if(myProfile.district) districtInp.value = myProfile.district;
+      }
+    }catch(e){}
+  }
+
+  function saveProfilesToStorageIfAvailable(){
+    try{ if(typeof saveProfilesToStorage === 'function') saveProfilesToStorage(); else localStorage.setItem('profiles_data_v1', JSON.stringify(profiles)); }catch(e){}
+  }
+
+  document.addEventListener('DOMContentLoaded', function(){
+    const form = document.getElementById('profileForm');
+    if(form){
+      form.addEventListener('submit', function(){
+        setTimeout(()=>{
+          try{
+            const st = document.getElementById('state') ? document.getElementById('state').value : (localStorage.getItem('profiles_user_state_v1') || '');
+            const dist = document.getElementById('district') ? document.getElementById('district').value : '';
+            if(myProfile){
+              myProfile.state = st || myProfile.state || '';
+              myProfile.district = dist || myProfile.district || '';
+              const idx = profiles.findIndex(p=>String(p.uid)===String(myProfile.uid));
+              if(idx!==-1) profiles[idx] = myProfile;
+              saveProfilesToStorageIfAvailable();
+              if(st) localStorage.setItem('profiles_user_state_v1', st);
+            }
+            renderStateFilterBadge();
+            if(typeof displayProfiles === 'function') displayProfiles();
+          }catch(e){ console.warn('profile form patch failed', e); }
+        }, 80);
+      });
+    }
+    injectStateDistrictFieldsIntoProfileForm();
+    showOnboardingIfNeeded();
+  });
+
+  window.displayProfiles = function(){
+    const container=document.getElementById("profileList");
+    if(!container) return;
+    container.innerHTML='';
+    const search=document.getElementById("searchInput")?document.getElementById("searchInput").value.toLowerCase():"";
+    const userState = localStorage.getItem('profiles_user_state_v1') || '';
+    (profiles||[]).filter(p=>{
+      const statusMatch = p.status==="Free";
+      const skillMatch = currentSkill==='All'||p.skill===currentSkill;
+      const searchMatch = p.name.toLowerCase().includes(search)||p.uid.toString().includes(search);
+      const stateMatch = userState ? String((p.state||'')).toLowerCase() === String(userState).toLowerCase() : true;
+      return statusMatch&&skillMatch&&searchMatch&&stateMatch;
+    }).forEach(p=>{
+      const box=document.createElement('div'); box.className='profile-box';
+      const left=document.createElement('div'); left.style.display='flex'; left.style.gap='12px'; left.style.alignItems='center';
+      const tag=document.createElement('div'); tag.style.width='44px'; tag.style.height='44px'; tag.style.borderRadius='10px'; tag.style.background='linear-gradient(135deg,#1e3a8a,#0ea5a6)'; tag.style.display='flex'; tag.style.alignItems='center'; tag.style.justifyContent='center'; tag.style.color='#fff'; tag.style.fontWeight='800'; tag.textContent = p.name.split(' ').map(s=>s[0]||'').slice(0,2).join('').toUpperCase();
+      const nameContainer=document.createElement('div'); nameContainer.style.display='flex'; nameContainer.style.flexDirection='column';
+      const nameSpan=document.createElement('span'); nameSpan.textContent=p.name; nameSpan.style.fontWeight='700';
+      const descSpan=document.createElement('div'); descSpan.style.fontSize='13px'; descSpan.style.color='#6b7280'; descSpan.textContent = p.description ? (p.description.length>50 ? p.description.slice(0,49)+'…' : p.description) : '';
+      const metaSmall = document.createElement('div'); metaSmall.style.fontSize='12px'; metaSmall.style.color='#6b7280'; metaSmall.textContent = p.state ? (p.state + (p.district ? ' · '+p.district : '')) : '';
+      nameContainer.appendChild(nameSpan); nameContainer.appendChild(descSpan); if(metaSmall.textContent) nameContainer.appendChild(metaSmall);
+      left.appendChild(tag); left.appendChild(nameContainer);
+      const actions=document.createElement('div'); actions.className='profile-actions';
+      const openBtn=document.createElement('button'); openBtn.textContent='Open'; openBtn.onclick=()=>openProfile(p);
+      const saveBtn=document.createElement('span'); saveBtn.innerHTML='⭐';
+      if((savedProfiles||[]).some(sp=>sp.uid===p.uid)) saveBtn.classList.add("saved");
+      saveBtn.className='save-btn';
+      saveBtn.onclick=()=>saveProfile(p);
+      actions.appendChild(openBtn); actions.appendChild(saveBtn);
+      box.appendChild(left); box.appendChild(actions);
+      container.appendChild(box);
+    });
+  };
+
+  function renderStateFilterBadge(){
+    const wrap = document.getElementById('categoryFilter');
+    if(!wrap) return;
+    let badge = document.getElementById('stateFilterBadge');
+    if(!badge){
+      badge = document.createElement('div');
+      badge.id = 'stateFilterBadge';
+      badge.style.margin='12px auto';
+      badge.style.textAlign='center';
+      badge.style.fontWeight='800';
+      badge.style.color='#374151';
+      wrap.parentNode.insertBefore(badge, wrap.nextSibling);
+    }
+    const userState = localStorage.getItem('profiles_user_state_v1') || '';
+    badge.innerHTML = userState ? `Showing profiles from: <strong>${userState}</strong> · <a href="#" id="changeStateLink">Change</a>` : `No state filter set · <a href="#" id="setStateLink">Set preferred state</a>`;
+    document.getElementById('changeStateLink')?.addEventListener('click', function(e){ e.preventDefault(); createOnboardingModal(); });
+    document.getElementById('setStateLink')?.addEventListener('click', function(e){ e.preventDefault(); createOnboardingModal(); });
+  }
+
+  window.clearStateFilter = function(){ localStorage.removeItem('profiles_user_state_v1'); localStorage.removeItem('profiles_user_info_v1'); renderStateFilterBadge(); if(typeof displayProfiles==='function') displayProfiles(); };
+
+  try{ renderStateFilterBadge(); }catch(e){}
+})();
+
+</script>
+<script>
+
+(function(){
+  const STATES = ['Bihar','Uttar Pradesh','Maharashtra','Karnataka','Tamil Nadu','West Bengal','Delhi','Haryana','Rajasthan','Gujarat','Assam','Odisha','Punjab','Kerala','Jharkhand','Chhattisgarh','Telangana','Andhra Pradesh','Manipur','Meghalaya','Mizoram','Tripura','Nagaland','Goa','Sikkim','Arunachal Pradesh','Uttarakhand','Ladakh','Puducherry','Andaman and Nicobar'];
+
+  function createChangeModal(){
+    if(document.getElementById('changeStateModal')) return;
+    const modal = document.createElement('div');
+    modal.id = 'changeStateModal';
+    modal.className = 'modal open';
+    modal.style.zIndex='99999';
+    modal.innerHTML = `
+      <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="changeTitle">
+        <button class="modal-close" id="changeClose">✕</button>
+        <h4 id="changeTitle">Filter by State & District</h4>
+        <div style="display:flex;flex-direction:column;gap:8px;margin-top:8px;">
+          <select id="change_state" style="padding:10px;border-radius:8px;border:1px solid #e8eefb;"><option value="">-- Select State --</option></select>
+          <input id="change_district" placeholder="District (type exactly to match)" style="padding:10px;border-radius:8px;border:1px solid #e8eefb;">
+          <input id="change_age" placeholder="Your age (optional - will be saved to your profile)" type="number" style="padding:10px;border-radius:8px;border:1px solid #e8eefb;">
+          <div style="display:flex;gap:8px;margin-top:8px;">
+            <button id="changeSave" style="flex:1;padding:10px;border-radius:8px;border:none;background:linear-gradient(90deg,#06b6d4,#0ea5a6);color:#fff;font-weight:800;">Apply</button>
+            <button id="changeClear" style="flex:1;padding:10px;border-radius:8px;border:none;background:#eef2ff;color:#111;font-weight:700;">Clear</button>
+          </div>
+        </div>
+      </div>`;
+    document.body.appendChild(modal);
+    const sel = modal.querySelector('#change_state');
+    STATES.forEach(s=>{ const o = document.createElement('option'); o.value = s; o.textContent = s; sel.appendChild(o); });
+    modal.querySelector('#changeClose').onclick = function(){ modal.remove(); };
+    modal.querySelector('#changeClear').onclick = function(){
+      localStorage.removeItem('profiles_user_state_v1');
+      localStorage.removeItem('profiles_user_district_v1');
+      localStorage.removeItem('profiles_user_age_v1');
+      // Also clear from Firebase user doc if present
+      try{
+        if(window.firebase && firebase.auth && firebase.auth().currentUser){
+          const uid = firebase.auth().currentUser.uid;
+          if(firebase.firestore){
+            firebase.firestore().collection('users').doc(uid).update({ state: firebase.firestore.FieldValue.delete(), district: firebase.firestore.FieldValue.delete(), age: firebase.firestore.FieldValue.delete() }).catch(()=>{});
+          }
+          if(firebase.database){
+            firebase.database().ref('users/'+uid).update({ state: null, district: null, age: null }).catch(()=>{});
+          }
+        }
+      }catch(e){}
+      renderStateFilterBadge();
+      if(typeof displayProfiles==='function') displayProfiles();
+      modal.remove();
+    };
+    modal.querySelector('#changeSave').onclick = function(){
+      const state = modal.querySelector('#change_state').value;
+      const district = modal.querySelector('#change_district').value.trim();
+      const age = modal.querySelector('#change_age').value.trim();
+      if(!state){
+        alert('Please select a state to apply the filter.');
+        return;
+      }
+      localStorage.setItem('profiles_user_state_v1', state);
+      localStorage.setItem('profiles_user_district_v1', district);
+      if(age) localStorage.setItem('profiles_user_age_v1', age);
+      // Save to Firebase if possible
+      try{
+        if(window.firebase && firebase.auth && firebase.auth().currentUser){
+          const uid = firebase.auth().currentUser.uid;
+          const payload = {};
+          payload.state = state;
+          payload.district = district || null;
+          if(age) payload.age = Number(age);
+          if(firebase.firestore){
+            firebase.firestore().collection('users').doc(uid).set(payload, { merge: true }).catch(e=>console.warn('firestore save failed',e));
+          }
+          if(firebase.database){
+            firebase.database().ref('users/'+uid).update(payload).catch(e=>console.warn('realtime save failed',e));
+          }
+        }
+      }catch(e){ console.warn('firebase save attempt failed', e); }
+      renderStateFilterBadge();
+      if(typeof displayProfiles==='function') displayProfiles();
+      modal.remove();
+    };
+    // Prefill with existing values if present
+    const existingState = localStorage.getItem('profiles_user_state_v1') || '';
+    const existingDistrict = localStorage.getItem('profiles_user_district_v1') || '';
+    const existingAge = localStorage.getItem('profiles_user_age_v1') || '';
+    if(existingState) modal.querySelector('#change_state').value = existingState;
+    if(existingDistrict) modal.querySelector('#change_district').value = existingDistrict;
+    if(existingAge) modal.querySelector('#change_age').value = existingAge;
+  }
+
+  function injectStateDistrictFieldsIntoProfileForm(){
+    const form = document.getElementById('profileForm');
+    if(!form) return;
+    if(document.getElementById('state')) return;
+    const address = document.getElementById('address');
+    if(!address) return;
+    const container = document.createElement('div');
+    container.style.display='flex';
+    container.style.flexDirection='column';
+    container.style.gap='8px';
+    container.style.marginTop='6px';
+    const stateSel = document.createElement('select');
+    stateSel.id = 'state';
+    stateSel.style.padding='10px';
+    stateSel.style.borderRadius='8px';
+    stateSel.style.border='1px solid #e8eefb';
+    const first = document.createElement('option'); first.value=''; first.textContent='-- Select State --'; stateSel.appendChild(first);
+    STATES.forEach(s=>{ const o=document.createElement('option'); o.value=s; o.textContent=s; stateSel.appendChild(o); });
+    const districtInp = document.createElement('input');
+    districtInp.type='text'; districtInp.id='district'; districtInp.placeholder='District (type exactly to match)';
+    districtInp.style.padding='10px'; districtInp.style.borderRadius='8px'; districtInp.style.border='1px solid #e8eefb';
+    container.appendChild(stateSel); container.appendChild(districtInp);
+    address.insertAdjacentElement('afterend', container);
+    try{
+      // Prefill from profile or localStorage
+      const infoState = localStorage.getItem('profiles_user_state_v1');
+      const infoDistrict = localStorage.getItem('profiles_user_district_v1');
+      if(infoState) stateSel.value = infoState;
+      if(infoDistrict) districtInp.value = infoDistrict;
+      if(typeof myProfile !== 'undefined' && myProfile){
+        if(myProfile.state) stateSel.value = myProfile.state;
+        if(myProfile.district) districtInp.value = myProfile.district;
+      }
+    }catch(e){}
+  }
+
+  document.addEventListener('DOMContentLoaded', function(){
+    injectStateDistrictFieldsIntoProfileForm();
+    renderStateFilterBadge();
+  });
+
+  window.displayProfiles = function(){
+    const container=document.getElementById("profileList");
+    if(!container) return;
+    container.innerHTML='';
+    const search=document.getElementById("searchInput")?document.getElementById("searchInput").value.toLowerCase():"";
+    const userState = (localStorage.getItem('profiles_user_state_v1') || '').toLowerCase();
+    const userDistrict = (localStorage.getItem('profiles_user_district_v1') || '').toLowerCase();
+    (profiles||[]).filter(p=>{
+      const statusMatch = p.status==="Free";
+      const skillMatch = currentSkill==='All'||p.skill===currentSkill;
+      const searchMatch = p.name.toLowerCase().includes(search)||p.uid.toString().includes(search);
+      // Filtering logic: if user selected state && district -> require both match (case-insensitive).
+      // If user selected only state and left district blank -> require state match only.
+      let stateMatch = true;
+      let districtMatch = true;
+      if(userState){
+        stateMatch = String((p.state||'')).toLowerCase() === userState;
+        if(userDistrict){
+          districtMatch = String((p.district||'')).toLowerCase() === userDistrict;
+        }
+      }
+      return statusMatch && skillMatch && searchMatch && stateMatch && districtMatch;
+    }).forEach(p=>{
+      const box=document.createElement('div'); box.className='profile-box';
+      const left=document.createElement('div'); left.style.display='flex'; left.style.gap='12px'; left.style.alignItems='center';
+      const tag=document.createElement('div'); tag.style.width='44px'; tag.style.height='44px'; tag.style.borderRadius='10px'; tag.style.background='linear-gradient(135deg,#1e3a8a,#0ea5a6)'; tag.style.display='flex'; tag.style.alignItems='center'; tag.style.justifyContent='center'; tag.style.color='#fff'; tag.style.fontWeight='800'; tag.textContent = p.name.split(' ').map(s=>s[0]||'').slice(0,2).join('').toUpperCase();
+      const nameContainer=document.createElement('div'); nameContainer.style.display='flex'; nameContainer.style.flexDirection='column';
+      const nameSpan=document.createElement('span'); nameSpan.textContent=p.name; nameSpan.style.fontWeight='700';
+      const descSpan=document.createElement('div'); descSpan.style.fontSize='13px'; descSpan.style.color='#6b7280'; descSpan.textContent = p.description ? (p.description.length>50 ? p.description.slice(0,49)+'…' : p.description) : '';
+      const metaSmall = document.createElement('div'); metaSmall.style.fontSize='12px'; metaSmall.style.color='#6b7280'; metaSmall.textContent = p.state ? (p.state + (p.district ? ' · '+p.district : '')) : '';
+      nameContainer.appendChild(nameSpan); nameContainer.appendChild(descSpan); if(metaSmall.textContent) nameContainer.appendChild(metaSmall);
+      left.appendChild(tag); left.appendChild(nameContainer);
+      const actions=document.createElement('div'); actions.className='profile-actions';
+      const openBtn=document.createElement('button'); openBtn.textContent='Open'; openBtn.onclick=()=>openProfile(p);
+      const saveBtn=document.createElement('span'); saveBtn.innerHTML='⭐';
+      if((savedProfiles||[]).some(sp=>sp.uid===p.uid)) saveBtn.classList.add("saved");
+      saveBtn.className='save-btn';
+      saveBtn.onclick=()=>saveProfile(p);
+      actions.appendChild(openBtn); actions.appendChild(saveBtn);
+      box.appendChild(left); box.appendChild(actions);
+      container.appendChild(box);
+    });
+  };
+
+  function renderStateFilterBadge(){
+    const wrap = document.getElementById('categoryFilter');
+    if(!wrap) return;
+    let badge = document.getElementById('stateFilterBadge');
+    if(!badge){
+      badge = document.createElement('div');
+      badge.id = 'stateFilterBadge';
+      badge.style.margin='12px auto';
+      badge.style.textAlign='center';
+      badge.style.fontWeight='800';
+      badge.style.color='#374151';
+      wrap.parentNode.insertBefore(badge, wrap.nextSibling);
+    }
+    const userState = localStorage.getItem('profiles_user_state_v1') || '';
+    const userDistrict = localStorage.getItem('profiles_user_district_v1') || '';
+    if(userState){
+      badge.innerHTML = `Showing profiles from: <strong>${userState}${userDistrict ? ' · '+userDistrict : ''}</strong> · <a href="#" id="changeStateLink">Change</a> · <a href="#" id="clearStateLink">Clear</a>`;
+    } else {
+      badge.innerHTML = `No state filter set · <a href="#" id="changeStateLink">Set filter</a>`;
+    }
+    document.getElementById('changeStateLink')?.addEventListener('click', function(e){ e.preventDefault(); createChangeModal(); });
+    document.getElementById('clearStateLink')?.addEventListener('click', function(e){ e.preventDefault(); localStorage.removeItem('profiles_user_state_v1'); localStorage.removeItem('profiles_user_district_v1'); localStorage.removeItem('profiles_user_age_v1'); renderStateFilterBadge(); if(typeof displayProfiles==='function') displayProfiles(); });
+  }
+
+})();
+
+</script>
 </body>
 </html>

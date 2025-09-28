@@ -1,9 +1,10 @@
 <!DOCTYPE html>
+
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>Metural</title>
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta charset="utf-8"/>
+<title>Profiles App — Updated (Hire + description + better notifications)</title>
+<meta content="width=device-width,initial-scale=1" name="viewport"/>
 <style>
   :root{
     --primary:#0077ff;
@@ -353,7 +354,6 @@
 }
 
 </style>
-
 <style>
   .icon-btn {
     background: linear-gradient(135deg, #0077ff, #2aa0ff);
@@ -399,8 +399,6 @@
     color: #0077ff;
   }
 </style>
-
-
 <style>
   .notif-btn {
     padding: 6px 12px;
@@ -439,8 +437,6 @@
     font-weight: 700;
   }
 </style>
-
-
 <style>
 /* Improved menu button styles (scoped to .menu-container to avoid affecting other buttons) */
 .menu-container .menu-btn{
@@ -467,7 +463,6 @@
 }
 .menu-container .menu-btn:hover{ transform: translateY(-6px); box-shadow: 0 18px 46px rgba(2,6,23,0.18); }
 </style>
-
 <!-- Added: Leaderboard + Ratings + UID styles -->
 <style>
   /* Leaderboard styles */
@@ -494,199 +489,719 @@
 </style>
 <!-- End injection -->
 </head>
-
 <body>
+<!-- Top-left 3-dots menu -->
+<div id="topMenu" style="position:fixed; top:12px; left:12px; z-index:10000;">
+<button id="menuBtn" style="background:none;border:none;font-size:22px;cursor:pointer;">⋮</button>
+<div id="menuDropdown" style="display:none; position:absolute; top:28px; left:0; background:white; border:1px solid #ccc; border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.15); min-width:160px; overflow:hidden;">
 
+<div onclick="showPage('savedProfilesPage'); closeMenu()" style="padding:10px; cursor:pointer; font-weight:600;">⭐ Saved Profiles</div>
+</div>
+</div>
+<script>
+function closeMenu(){ document.getElementById('menuDropdown').style.display='none'; }
+document.addEventListener('DOMContentLoaded', function(){
+  const btn = document.getElementById('menuBtn');
+  const dd = document.getElementById('menuDropdown');
+  if(btn && dd){
+    btn.addEventListener('click', function(e){
+      e.stopPropagation();
+      dd.style.display = (dd.style.display==='block') ? 'none' : 'block';
+    });
+    document.addEventListener('click', function(){ dd.style.display='none'; });
+  }
+});
+</script>
+<!-- ===== Upgraded Auth UI + Flow (fixed: DOM ready, modal, toggles) ===== -->
+<style>
+/* scoped auth styles (improved modal + toggle) */
+.auth-card{
+  width:360px;
+  max-width:92vw;
+  background: linear-gradient(180deg,#fff,#fbfdff);
+  border-radius:14px;
+  padding:18px;
+  box-shadow: 0 18px 40px rgba(2,6,23,0.08);
+  text-align:left;
+  font-weight:700;
+  color:#071229;
+}
+.auth-row{display:flex; gap:8px; align-items:center; margin-top:10px;}
+.fake-toggle {
+  width:46px; height:26px; border-radius:999px; display:inline-block; position:relative; background:#e6eefc; vertical-align:middle; margin-right:8px; box-shadow: inset 0 2px 6px rgba(0,0,0,0.06);
+}
+.fake-toggle::after { content:''; position:absolute; top:3px; left:3px; width:20px; height:20px; border-radius:50%; background:#fff; transition: transform .18s; box-shadow:0 6px 16px rgba(2,6,23,0.06); }
+.fake-toggle.on { background: linear-gradient(90deg,#06b6d4,#0ea5a6); }
+.fake-toggle.on::after { transform: translateX(20px); }
+.auth-input{ width:100%; padding:10px; border-radius:10px; border:1px solid #e8eefb; font-size:15px; box-sizing:border-box; }
+.auth-primary{ background: linear-gradient(90deg,#0077ff,#2aa0ff); color:#fff; border:none; padding:10px 12px; border-radius:12px; font-weight:800; cursor:pointer; }
+.auth-secondary{ background:#eef2ff; color:#111; border:none; padding:10px 12px; border-radius:12px; font-weight:800; cursor:pointer; }
+.linkish{ color:#0077ff; cursor:pointer; font-weight:800; text-decoration:underline; }
+.google-btn{ width:100%; padding:10px; border-radius:10px; border:1px solid #e6eefc; background:#fff; cursor:pointer; font-weight:800; }
+.auth-small-note{ font-size:13px; color:#6b7280; margin-top:8px; }
+
+/* Modal overlay */
+.modal{
+  display:none;
+  position:fixed;
+  left:0; top:0; right:0; bottom:0;
+  align-items:center;
+  justify-content:center;
+  background: rgba(0,0,0,0.45);
+  z-index:9999;
+}
+.modal.open{ display:flex; }
+.modal-content{
+  background:white;
+  border-radius:12px;
+  padding:18px;
+  width:420px;
+  max-width:94vw;
+  box-shadow:0 18px 48px rgba(2,6,23,0.12);
+  position:relative;
+}
+.modal-close{
+  position:absolute; right:12px; top:8px; background:transparent; border:none; font-size:18px; cursor:pointer;
+}
+</style>
 <!-- Auth Page -->
-<div id="authPage" class="page" style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh; gap:20px;">
-  <h2>Login / Register</h2>
-  <input type="email" id="emailInput" placeholder="Email" style="padding:10px; border-radius:8px; border:1px solid #ccc; width:250px;">
-  <input type="password" id="passwordInput" placeholder="Password" style="padding:10px; border-radius:8px; border:1px solid #ccc; width:250px;">
-  <button onclick="emailRegister()">Register with Email</button>
-  <button onclick="emailLogin()">Login with Email</button>
-  <button onclick="googleLogin()">Login with Google</button>
-  <div id="phoneLoginBox" style="margin-top:20px;">
-    <input type="text" id="phoneInput" placeholder="+91 9876543210" style="padding:10px; border-radius:8px; border:1px solid #ccc; width:250px;">
-    <div id="recaptcha-container"></div>
-    <button onclick="phoneLogin()">Send OTP</button>
-    <input type="text" id="otpInput" placeholder="Enter OTP" style="padding:10px; border-radius:8px; border:1px solid #ccc; width:250px; margin-top:10px;">
-    <button onclick="verifyOTP()">Verify OTP</button>
-  </div>
-  <p id="authStatus" style="color:red; font-weight:bold;"></p>
+<div class="page" id="authPage" style="display:flex; align-items:center; justify-content:center; height:100vh;">
+<div aria-label="Authentication" class="auth-card" role="region">
+<div style="display:flex;justify-content:space-between;align-items:center;">
+<h3 style="margin:0">Welcome</h3>
+<label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+<span class="fake-toggle" id="useContactToggle" title="Use phone/contact instead of email"></span>
+<input id="useContactSwitch" style="display:none" type="checkbox"/>
+<span style="font-size:13px; font-weight:800; color:#374151;">Use Contact</span>
+</label>
 </div>
-
-
-<div class="top-bar" style="position:fixed; top:12px; left:12px; right:12px; display:flex; justify-content:space-between; align-items:center; z-index:100;">
-  <div id="menuWrap" style="position:relative;">
-    <button class="icon-btn" onclick="toggleMenu()">⋮</button>
-    <div id="menuDropdown" class="dropdown">
-      <div onclick="showPage('savedProfilesPage')">Saved Profiles</div>
+<!-- Email / password area -->
+<div id="emailFormArea" style="margin-top:12px;">
+<input autocomplete="email" class="auth-input" id="emailInput" placeholder="Email" type="email"/>
+<div style="height:8px"></div>
+<input autocomplete="current-password" class="auth-input" id="passwordInput" placeholder="Password" type="password"/>
+<div class="auth-row" style="margin-top:12px;">
+<button class="auth-primary" id="primaryAuthBtn">Create account</button>
+<button class="auth-secondary" id="secondaryAuthBtn" style="display:none">Login</button>
+</div>
+<div style="margin-top:12px; text-align:center;">
+<button class="google-btn" id="googleBtn">Continue with Google</button>
+</div>
+<div class="auth-small-note" style="text-align:center;">
+<span class="linkish" id="authToggleLink">Already have an account? Login</span>
+</div>
+</div>
+<!-- Phone/OTP area (hidden by default) -->
+<div id="phoneFormArea" style="margin-top:12px; display:none;">
+<input class="auth-input" id="phoneInput" placeholder="+91 98765 43210" type="text"/>
+<div id="recaptcha-container" style="margin-top:8px;"></div>
+<div style="display:flex; gap:8px; margin-top:8px;">
+<button class="auth-primary" id="sendOtpBtn">Send OTP</button>
+<input class="auth-input" id="otpInput" placeholder="Enter OTP" style="flex:1;" type="text"/>
+</div>
+<div style="display:flex; gap:8px; margin-top:8px;">
+<button class="auth-secondary" id="verifyOtpBtn">Verify OTP</button>
+</div>
+<div class="auth-small-note">Use phone if you prefer contact-based sign in.</div>
+</div>
+<p id="authStatus" style="color:#d73a49; font-weight:800; margin-top:12px;"></p>
+</div>
+</div>
+<!-- Post-register "Complete account" modal (inserts when needed) -->
+<div aria-labelledby="completeTitle" aria-modal="true" class="modal" id="completeAccountModal" role="dialog">
+  <div class="modal-content">
+    <button class="modal-close" onclick="closeCompleteAccountModal()">✕</button>
+    <h4 id="completeTitle">Complete your account</h4>
+    <p class="auth-small-note">Pick a username and enter your age so we can link your profile.</p>
+    <input class="auth-input" id="complete_username" placeholder="Username (public)">
+    <div style="height:8px"></div>
+    <input class="auth-input" id="complete_age" placeholder="Age" type="number">
+    <div style="display:flex; gap:8px; margin-top:12px;">
+      <button class="auth-primary" id="completeSaveBtn">Save &amp; Continue</button>
     </div>
+    <div class="auth-small-note" id="completeAccountStatus"></div>
   </div>
-  <div id="bellWrap" class="bell-container"><button class="icon-btn" onclick="showPage('notificationsPage')">🔔</button></div>
 </div>
+<script>
+/* Robust auth helpers: DOM-ready, fallbacks for auth/db, modal fixes, and proper binding of profile data.
+   Functions are assigned to window so the HTML onclicks continue to work.
+*/
 
+
+(function(){
+  // helpers to get firebase auth / firestore instances (don't override if app already set)
+  function _getAuth(){
+    if(typeof auth !== 'undefined' && auth) return auth;
+    if(typeof firebase !== 'undefined' && firebase.auth) return firebase.auth();
+    return null;
+  }
+  function _getDb(){
+    if(typeof db !== 'undefined' && db) return db;
+    if(typeof firebase !== 'undefined' && firebase.firestore) return firebase.firestore();
+    return null;
+  }
+
+  function showAuthStatus(msg){
+    const el = document.getElementById('authStatus');
+    if(el) el.textContent = msg || '';
+  }
+
+  // Global state
+  window.pendingNewUserUid = null;
+  window.confirmationResult = null;
+  window.authMode = 'register'; // 'register' or 'login'
+
+  // Exposed functions (use firebase instances at call-time)
+  window.emailRegister = async function(){
+    const authInst = _getAuth();
+    if(!authInst){ showAuthStatus('Auth not initialized'); return; }
+    const email = (document.getElementById('emailInput').value || '').trim();
+    const pass = (document.getElementById('passwordInput').value || '').trim();
+    if(!email || !pass){ showAuthStatus('Enter email and password'); return; }
+    try{
+      const result = await authInst.createUserWithEmailAndPassword(email, pass);
+      const user = result && result.user ? result.user : null;
+      if(user && user.uid){
+        window.pendingNewUserUid = String(user.uid);
+        showCompleteAccountModal(user.uid, user);
+      } else {
+        showAuthStatus('Registration succeeded but no user returned');
+      }
+    }catch(err){
+      if(err && err.code === 'auth/email-already-in-use'){
+        showAuthStatus('Email already in use. Attempting sign-in to merge local profile...');
+        try{
+          await authInst.signInWithEmailAndPassword(email, pass);
+          const uid = (authInst.currentUser && authInst.currentUser.uid) ? authInst.currentUser.uid : null;
+          if(uid){
+            localStorage.setItem('profiles_my_uid_v1', String(uid));
+            window.myUID = String(uid);
+            try{ await bindUserProfile(uid); }catch(e){}
+            showPage && typeof showPage === 'function' && showPage('home');
+            showAuthStatus('');
+          }
+        }catch(e2){
+          showAuthStatus(e2 && e2.message ? e2.message : String(e2));
+        }
+      } else {
+        showAuthStatus(err && err.message ? err.message : String(err));
+      }
+    }
+  };
+
+  window.emailLogin = async function(){
+    const authInst = _getAuth();
+    if(!authInst){ showAuthStatus('Auth not initialized'); return; }
+    const email = (document.getElementById('emailInput').value || '').trim();
+    const pass = (document.getElementById('passwordInput').value || '').trim();
+    if(!email || !pass){ showAuthStatus('Enter email and password'); return; }
+    try{
+      const res = await authInst.signInWithEmailAndPassword(email, pass);
+      const uid = res && res.user && res.user.uid ? res.user.uid : (authInst.currentUser && authInst.currentUser.uid ? authInst.currentUser.uid : null);
+      if(uid){
+        localStorage.setItem('profiles_my_uid_v1', String(uid));
+        window.myUID = String(uid);
+        await bindUserProfile(uid);
+        showPage && typeof showPage === 'function' && showPage('home');
+        showAuthStatus('');
+      }
+    }catch(e){
+      showAuthStatus(e && e.message ? e.message : String(e));
+    }
+  };
+
+  window.googleLogin = async function(){
+    const authInst = _getAuth();
+    if(!authInst){ showAuthStatus('Auth not initialized'); return; }
+    try{
+      const provider = new (window.firebase && window.firebase.auth && window.firebase.auth.GoogleAuthProvider ? firebase.auth.GoogleAuthProvider : window.googleProviderConstructor || (function(){return null})())();
+      // fallback: use firebase.auth.GoogleAuthProvider directly if available
+      const prov = (typeof firebase !== 'undefined' && firebase.auth && firebase.auth.GoogleAuthProvider) ? new firebase.auth.GoogleAuthProvider() : null;
+      const chosenProvider = prov || provider;
+      if(!chosenProvider){ showAuthStatus('Google Auth provider not available'); return; }
+      const result = await authInst.signInWithPopup(chosenProvider);
+      const user = result && result.user ? result.user : null;
+      if(user && user.uid){
+        window.pendingNewUserUid = String(user.uid);
+        // Check if users/{uid} exists, else ask for completion
+        const dbInst = _getDb();
+        if(dbInst){
+          try{
+            const doc = await dbInst.collection('users').doc(String(user.uid)).get();
+            if(doc.exists){
+              localStorage.setItem('profiles_my_uid_v1', String(user.uid));
+              window.myUID = String(user.uid);
+              await bindUserProfile(user.uid);
+              showPage && typeof showPage === 'function' && showPage('home');
+            } else {
+              showCompleteAccountModal(user.uid, user);
+            }
+          }catch(e){
+            console.warn('googleLogin db check', e);
+            showCompleteAccountModal(user.uid, user);
+          }
+        } else {
+          showCompleteAccountModal(user.uid, user);
+        }
+      }
+    }catch(e){ showAuthStatus(e && e.message ? e.message : String(e)); }
+  };
+
+  window.phoneLogin = async function(){
+    const authInst = _getAuth();
+    if(!authInst){ showAuthStatus('Auth not initialized'); return; }
+    const phoneNumber = (document.getElementById('phoneInput').value || '').trim();
+    if(!phoneNumber){ showAuthStatus('Enter phone number'); return; }
+    try{
+      // initialize reCAPTCHA if not exists
+      if(!window.recaptchaVerifier && firebase && firebase.auth){
+        try{
+          window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', { 'size': 'invisible' });
+        }catch(e){}
+      }
+      const confirmation = await authInst.signInWithPhoneNumber(phoneNumber, window.recaptchaVerifier);
+      window.confirmationResult = confirmation;
+      showAuthStatus('OTP sent');
+    }catch(e){ showAuthStatus(e && e.message ? e.message : String(e)); }
+  };
+
+  window.verifyOTP = async function(){
+    const authInst = _getAuth();
+    if(!authInst){ showAuthStatus('Auth not initialized'); return; }
+    const code = (document.getElementById('otpInput').value || '').trim();
+    if(!window.confirmationResult){ showAuthStatus('No OTP sent'); return; }
+    try{
+      const res = await window.confirmationResult.confirm(code);
+      const uid = res && res.user && res.user.uid ? res.user.uid : null;
+      if(uid){
+        localStorage.setItem('profiles_my_uid_v1', String(uid));
+        window.myUID = String(uid);
+        window.pendingNewUserUid = String(uid);
+        showCompleteAccountModal(uid, res.user);
+      }
+    }catch(e){ showAuthStatus(e && e.message ? e.message : String(e)); }
+  };
+
+  // Modal functions
+  window.showCompleteAccountModal = function(uid, firebaseUser){
+    const modal = document.getElementById('completeAccountModal');
+    if(!modal) return;
+    modal.classList.add('open');
+    window.pendingNewUserUid = String(uid);
+    // prefill username if google displayName exists
+    const uname = (firebaseUser && firebaseUser.displayName) ? firebaseUser.displayName : '';
+    const nameField = document.getElementById('complete_username');
+    const ageField = document.getElementById('complete_age');
+    if(nameField) nameField.value = uname;
+    if(ageField) ageField.value = '';
+    const status = document.getElementById('completeAccountStatus');
+    if(status) status.textContent = '';
+  };
+  window.closeCompleteAccountModal = function(){
+    const modal = document.getElementById('completeAccountModal');
+    if(!modal) return;
+    modal.classList.remove('open');
+  };
+
+  // Save after modal: persist to users/{uid} and link/create profile
+  window.saveCompleteAccount = async function(){
+    const username = (document.getElementById('complete_username').value || '').trim();
+    const age = Number(document.getElementById('complete_age').value || 0);
+    const statusEl = document.getElementById('completeAccountStatus');
+    if(!window.pendingNewUserUid){ if(statusEl) statusEl.textContent = 'No pending user'; return; }
+    if(!username){ if(statusEl) statusEl.textContent = 'Username required'; return; }
+    if(statusEl) statusEl.textContent = 'Saving…';
+    const uid = String(window.pendingNewUserUid);
+    const dbInst = _getDb();
+    try{
+      if(dbInst){
+        await dbInst.collection('users').doc(String(uid)).set({
+          displayName: username,
+          age: (age > 0 ? Number(age) : null),
+          email: (_getAuth() && _getAuth().currentUser && _getAuth().currentUser.email) ? _getAuth().currentUser.email : null,
+          updatedAt: new Date().toISOString()
+        }, { merge: true });
+      }
+      // Link or create profile
+      try{
+        if(typeof window.myProfile !== 'undefined' && window.myProfile && window.myProfile.uid){
+          const profileUid = String(window.myProfile.uid);
+          if(dbInst){
+            await dbInst.collection('profiles').doc(String(profileUid)).set({ ownerUid: String(uid) }, { merge: true });
+            await dbInst.collection('users').doc(String(uid)).set({ profileUid: String(profileUid) }, { merge: true });
+          }
+        } else {
+          const profileUid = String(uid);
+          const p = {
+            uid: profileUid,
+            name: username,
+            age: (age > 0 ? Number(age) : null),
+            skill: '',
+            address: '',
+            contact: (_getAuth() && _getAuth().currentUser && _getAuth().currentUser.phoneNumber) ? _getAuth().currentUser.phoneNumber : '',
+            language: '',
+            description: '',
+            status: 'Free',
+            ownerUid: String(uid),
+            createdAt: new Date().toISOString()
+          };
+          if(dbInst) await dbInst.collection('profiles').doc(String(profileUid)).set(p, { merge: true });
+          if(dbInst) await dbInst.collection('users').doc(String(uid)).set({ profileUid: String(profileUid) }, { merge: true });
+        }
+      }catch(e){ console.warn('profile linking failed', e); }
+      localStorage.setItem('profiles_my_uid_v1', String(uid));
+      window.myUID = String(uid);
+      try{ await bindUserProfile(uid); }catch(e){}
+      if(statusEl) statusEl.textContent = 'Saved — redirecting…';
+      setTimeout(()=>{ closeCompleteAccountModal(); showPage && typeof showPage === 'function' && showPage('home'); showAuthStatus(''); }, 400);
+    }catch(err){
+      console.warn('saveCompleteAccount err', err);
+      if(statusEl) statusEl.textContent = String(err && err.message ? err.message : err);
+    }
+  };
+
+  window.skipCompleteAccount = function(){
+    if(window.pendingNewUserUid){
+      localStorage.setItem('profiles_my_uid_v1', String(window.pendingNewUserUid));
+      window.myUID = String(window.pendingNewUserUid);
+      bindUserProfile(window.pendingNewUserUid).catch(()=>{});
+    }
+    closeCompleteAccountModal();
+    showPage && typeof showPage === 'function' && showPage('home');
+  };
+
+  // Merge local profile into account
+  window.mergeLocalProfileIntoAccount = async function(uid){
+    try{
+      if(!uid) return;
+      if(typeof window.myProfile !== 'undefined' && window.myProfile && window.myProfile.uid){
+        const profileUid = String(window.myProfile.uid);
+        const dbInst = _getDb();
+        if(dbInst){
+          await dbInst.collection('profiles').doc(String(profileUid)).set({ ownerUid: String(uid) }, { merge: true });
+          await dbInst.collection('users').doc(String(uid)).set({ profileUid: String(profileUid) }, { merge: true });
+        }
+        localStorage.setItem('profiles_my_uid_v1', String(uid));
+        window.myUID = String(uid);
+        try{ if(typeof loadUserData === 'function') await loadUserData(uid); } catch(e){ console.warn('loadUserData after merge failed', e); }
+        alert('Local profile merged into your Firebase account.');
+      }
+    }catch(e){ console.warn('mergeLocalProfileIntoAccount', e); }
+  };
+
+  // Bind user profile: read users/{uid} and profiles/{profileUid} then call loadUserData
+  window.bindUserProfile = async function(uid){
+    try{
+      if(!uid) return;
+      const dbInst = _getDb();
+      const authInst = _getAuth();
+      // If no Firestore, fall back to loadUserData only
+      if(!dbInst){
+        try{ if(typeof loadUserData === 'function') await loadUserData(uid); }catch(e){ console.warn('loadUserData fallback failed', e); }
+        return;
+      }
+      const userRef = dbInst.collection('users').doc(String(uid));
+      const userDocSnap = await userRef.get();
+      let profileUid = null;
+      let userDocData = null;
+      if(userDocSnap.exists){
+        userDocData = userDocSnap.data();
+        if(userDocData && userDocData.profileUid){
+          profileUid = String(userDocData.profileUid);
+        }
+      }
+
+      // If no profileUid on user doc, try to find a profile owned by uid
+      if(!profileUid){
+        try{
+          const q = await dbInst.collection('profiles').where('ownerUid','==',String(uid)).limit(1).get();
+          if(!q.empty){
+            profileUid = q.docs[0].id;
+          }
+        }catch(e1){
+          console.warn('profile ownerUid query failed', e1);
+        }
+      }
+
+      // If still no profileUid, try to match by contact/email/phone on profiles
+      if(!profileUid && authInst && authInst.currentUser){
+        try{
+          const cu = authInst.currentUser;
+          const email = cu.email || (userDocData && userDocData.email) || null;
+          const phone = cu.phoneNumber || null;
+          if(email){
+            const q2 = await dbInst.collection('profiles').where('contact','==',email).limit(1).get();
+            if(!q2.empty) profileUid = q2.docs[0].id;
+          }
+          if(!profileUid && phone){
+            const q3 = await dbInst.collection('profiles').where('contact','==',phone).limit(1).get();
+            if(!q3.empty) profileUid = q3.docs[0].id;
+          }
+        }catch(e2){
+          console.warn('profile contact search failed', e2);
+        }
+      }
+
+      // If still not found, create a minimal profile using uid as profile id
+      if(!profileUid){
+        try{
+          const displayName = (userDocData && userDocData.displayName) ? userDocData.displayName : (authInst && authInst.currentUser && authInst.currentUser.displayName ? authInst.currentUser.displayName : '');
+          const email = (userDocData && userDocData.email) ? userDocData.email : (authInst && authInst.currentUser && authInst.currentUser.email ? authInst.currentUser.email : '');
+          const phone = (authInst && authInst.currentUser && authInst.currentUser.phoneNumber) ? authInst.currentUser.phoneNumber : '';
+          const newProfile = {
+            uid: String(uid),
+            name: displayName || ('user-'+String(uid).slice(0,6)),
+            age: (userDocData && userDocData.age) ? userDocData.age : null,
+            skill: '',
+            address: '',
+            contact: phone || email || '',
+            language: '',
+            description: '',
+            status: 'Free',
+            ownerUid: String(uid),
+            createdAt: new Date().toISOString()
+          };
+          await dbInst.collection('profiles').doc(String(uid)).set(newProfile, { merge: true });
+          await userRef.set({ profileUid: String(uid) }, { merge: true });
+          profileUid = String(uid);
+          window.myProfile = newProfile;
+          localStorage.setItem('profiles_my_uid_v1', String(profileUid));
+        }catch(e3){
+          console.warn('creating fallback profile failed', e3);
+        }
+      } else {
+        // If found, fetch and set to window.myProfile
+        try{
+          const profSnap = await dbInst.collection('profiles').doc(String(profileUid)).get();
+          if(profSnap.exists){
+            const pdata = profSnap.data();
+            window.myProfile = pdata || {};
+            window.myProfile.uid = String(profileUid);
+            localStorage.setItem('profiles_my_uid_v1', String(profileUid));
+          }
+        }catch(e4){
+          console.warn('fetching profile doc failed', e4);
+        }
+      }
+
+      // Ensure user doc has profileUid set (write-back if we discovered profile)
+      try{
+        if(profileUid){
+          await userRef.set({ profileUid: String(profileUid) }, { merge: true });
+        }
+      }catch(e5){
+        console.warn('writing profileUid to user doc failed', e5);
+      }
+
+      // Finally call loadUserData to populate savedProfiles/notifications/chats
+      try{ if(typeof loadUserData === 'function') await loadUserData(uid); }catch(e){ console.warn('loadUserData failed', e); }
+
+    }catch(e){
+      console.warn('bindUserProfile failed', e);
+      try{ if(typeof loadUserData === 'function') await loadUserData(uid); }catch(_){}
+    }
+  };
+
+  // DOM ready: wire up toggle buttons and UI behaviors
+  document.addEventListener('DOMContentLoaded', function(){
+    const useContactToggle = document.getElementById('useContactToggle');
+    const useContactSwitch = document.getElementById('useContactSwitch');
+    const emailArea = document.getElementById('emailFormArea');
+    const phoneArea = document.getElementById('phoneFormArea');
+    const primaryBtn = document.getElementById('primaryAuthBtn');
+    const secondaryBtn = document.getElementById('secondaryAuthBtn');
+    const googleBtn = document.getElementById('googleBtn');
+    const sendOtpBtn = document.getElementById('sendOtpBtn');
+    const verifyOtpBtn = document.getElementById('verifyOtpBtn');
+    const authToggleLink = document.getElementById('authToggleLink');
+    const completeSaveBtn = document.getElementById('completeSaveBtn');
+    const completeSkipBtn = document.getElementById('completeSkipBtn');
+
+    if(useContactToggle){
+      useContactToggle.addEventListener('click', function(){
+        useContactSwitch.checked = !useContactSwitch.checked;
+        useContactToggle.classList.toggle('on', useContactSwitch.checked);
+        if(useContactSwitch.checked){
+          emailArea.style.display = 'none';
+          phoneArea.style.display = 'block';
+        } else {
+          emailArea.style.display = 'block';
+          phoneArea.style.display = 'none';
+        }
+      });
+    }
+
+    // Buttons: primary -> register, secondary -> login
+    if(primaryBtn) primaryBtn.addEventListener('click', function(){ window.emailRegister && window.emailRegister(); });
+    if(secondaryBtn) secondaryBtn.addEventListener('click', function(){ window.emailLogin && window.emailLogin(); });
+
+    if(googleBtn) googleBtn.addEventListener('click', function(){ window.googleLogin && window.googleLogin(); });
+    if(sendOtpBtn) sendOtpBtn.addEventListener('click', function(){ window.phoneLogin && window.phoneLogin(); });
+    if(verifyOtpBtn) verifyOtpBtn.addEventListener('click', function(){ window.verifyOTP && window.verifyOTP(); });
+    if(authToggleLink){
+      authToggleLink.addEventListener('click', function(){
+        // toggle between login / register
+        if(window.authMode === 'register'){
+          window.authMode = 'login';
+          if(primaryBtn) primaryBtn.style.display = 'none';
+          if(secondaryBtn) secondaryBtn.style.display = 'inline-block';
+          authToggleLink.textContent = 'Create account';
+        } else {
+          window.authMode = 'register';
+          if(primaryBtn) primaryBtn.style.display = 'inline-block';
+          if(secondaryBtn) secondaryBtn.style.display = 'none';
+          authToggleLink.textContent = 'Already have an account? Login';
+        }
+        showAuthStatus('');
+      });
+    }
+    if(completeSaveBtn) completeSaveBtn.addEventListener('click', function(){ window.saveCompleteAccount && window.saveCompleteAccount(); });
+    if(completeSkipBtn) completeSkipBtn.addEventListener('click', function(){ window.skipCompleteAccount && window.skipCompleteAccount(); });
+
+    // initialize UI
+    window.authMode = 'register';
+    if(primaryBtn) primaryBtn.style.display = 'inline-block';
+    if(secondaryBtn) secondaryBtn.style.display = 'none';
+    if(useContactToggle) useContactToggle.classList.remove('on');
+  });
+
+})();
+</script>
+<!-- ===== end upgraded auth patch ===== -->
 <!-- Main menu -->
-<div id="home" class="page">
-  <div class="menu-container">
-    <button class="menu-btn view-btn" onclick="showPage('categoriesPage')">View Profiles</button>
-    <button id="profileBtn" class="menu-btn profile-btn" onclick="openProfileForm()">Create a Profile</button>
-  </div>
+<div class="page" id="home">
+<div class="menu-container">
+<button class="menu-btn view-btn" onclick="showPage('categoriesPage')">View Profiles</button>
+<button class="menu-btn profile-btn" id="profileBtn" onclick="openProfileForm()">Create a Profile</button>
 </div>
-
+</div>
 <!-- Create Profile -->
-<div id="createProfilePage" class="page">
-  <h2 id="formTitle">Create Your Profile</h2>
-  <form id="profileForm">
-    <input type="text" id="name" placeholder="Your Name" required>
-    <input type="number" id="age" placeholder="Your Age" required>
-    <select id="skill" required>
-      <option value="">-- Select Skill --</option>
-      <option value="Plumber">Plumber</option>
-      <option value="Mechanic">Mechanic</option>
-      <option value="Electrician">Electrician</option>
-      <option value="Painter">Painter</option>
-      <option value="Tutor">Tutor</option>
-    </select>
-    <input type="text" id="address" placeholder="Your Address" required>
-    <input type="text" id="contact" placeholder="Contact No." required>
-    
-    <input type="text" id="language" placeholder="Languages Spoken">
-    <textarea id="description" placeholder="Short description about you (will show under your name)" rows="3"></textarea>
-    <div id="statusSection" style="display:none;">
-      <label for="status">Profile Status:</label>
-      <select id="status">
-        <option value="Free" selected>Free</option>
-        <option value="Busy">Busy</option>
-      </select>
-      <p class="note">Free means your profile is visible in the app. Busy will hide it, letting you rest.</p>
-    </div>
-    <button type="submit" id="submitBtn">₹250</button>
-  </form>
-  <button class="back-btn" onclick="showPage('home')">Back</button>
+<div class="page" id="createProfilePage">
+<h2 id="formTitle">Create Your Profile</h2>
+<form id="profileForm">
+<input id="name" placeholder="Your Name" required="" type="text"/>
+<input id="age" placeholder="Your Age" required="" type="number"/>
+<select id="skill" required="">
+<option value="">-- Select Skill --</option>
+<option value="Plumber">Plumber</option>
+<option value="Mechanic">Mechanic</option>
+<option value="Electrician">Electrician</option>
+<option value="Painter">Painter</option>
+<option value="Tutor">Tutor</option>
+</select>
+<input id="address" placeholder="Your Address" required="" type="text"/>
+<input id="contact" placeholder="Contact No." required="" type="text"/>
+<input id="language" placeholder="Languages Spoken" type="text"/>
+<textarea id="description" placeholder="Short description about you (will show under your name)" rows="3"></textarea>
+<div id="statusSection" style="display:none;">
+<label for="status">Profile Status:</label>
+<select id="status">
+<option selected="" value="Free">Free</option>
+<option value="Busy">Busy</option>
+</select>
+<p class="note">Free means your profile is visible in the app. Busy will hide it, letting you rest.</p>
 </div>
-
+<button id="submitBtn" type="submit">₹250</button>
+</form>
+<button class="back-btn" onclick="showPage('home')">Back</button>
+</div>
 <!-- View Profiles -->
-<div id="categoriesPage" class="page">
-  <h2>View Profiles</h2>
-  <div class="categories" id="categoryFilter">
-    <div class="category" onclick="filterSkill('All')">All</div>
-    <div class="category" onclick="filterSkill('Plumber')">Plumber</div>
-    <div class="category" onclick="filterSkill('Mechanic')">Mechanic</div>
-    <div class="category" onclick="filterSkill('Electrician')">Electrician</div>
-    <div class="category" onclick="filterSkill('Painter')">Painter</div>
-    <div class="category" onclick="filterSkill('Tutor')">Tutor</div>
-  </div>
-  <div class="search-bar">
-    <input type="text" id="searchInput" placeholder="Search by Name or UID" oninput="displayProfiles()">
-  </div>
-  <div id="profileList" class="profile-list"></div>
-  <button class="back-btn" onclick="showPage('home')">Back</button>
+<div class="page" id="categoriesPage">
+<h2>View Profiles</h2>
+<div class="categories" id="categoryFilter">
+<div class="category" onclick="filterSkill('All')">All</div>
+<div class="category" onclick="filterSkill('Plumber')">Plumber</div>
+<div class="category" onclick="filterSkill('Mechanic')">Mechanic</div>
+<div class="category" onclick="filterSkill('Electrician')">Electrician</div>
+<div class="category" onclick="filterSkill('Painter')">Painter</div>
+<div class="category" onclick="filterSkill('Tutor')">Tutor</div>
 </div>
-
+<div class="search-bar">
+<input id="searchInput" oninput="displayProfiles()" placeholder="Search by Name or UID" type="text"/>
+</div>
+<div class="profile-list" id="profileList"></div>
+<button class="back-btn" onclick="showPage('home')">Back</button>
+</div>
 <!-- Open Profile (redesigned) -->
-<div id="openProfilePage" class="page">
-  <div class="open-profile">
-    <button class="close-btn" onclick="closeProfile()">✕</button>
-
-    <div class="profile-header">
-      <div class="avatar" id="profileAvatar">P</div>
-      <div class="profile-head-info">
-        <h3 id="profileName">Name</h3>
-        <div id="profileDescription" style="margin-top:6px; color:#d6e9ff;"></div>
-        <div class="profile-meta">
-          <div id="profileSkill" class="skill-badge">Skill</div>
-          <div id="profileStatus" class="status-badge">Status</div>
-        </div>
-      </div>
-    </div>
-
-    <div class="profile-body">
-      <div>
-        <strong>UID</strong>
-        <div id="profileUID">—</div>
-      </div>
-      <div>
-        <strong>Age</strong>
-        <div id="profileAge">—</div>
-      </div>
-      <div>
-        <strong>Address</strong>
-        <div id="profileAddress">—</div>
-      </div>
-      <div>
-        <strong>Languages Spoken</strong>
-        <div id="profileLanguage">—</div>
-      </div>
-    </div>
-
-    <div class="profile-actions">
-      <button id="hireBtn" class="hire-btn" onclick="openHireModal()">Hire</button>
-      <button id="saveBtn" class="save-small" onclick="toggleSaveFromOpen()">⭐ Save</button>
-    </div>
-
-    <p class="privacy-note">Contact is hidden by default. Click <strong>Hire → Contact</strong> to view the number. </p>
-  </div>
+<div class="page" id="openProfilePage">
+<div class="open-profile">
+<button class="close-btn" onclick="closeProfile()">✕</button>
+<div class="profile-header">
+<div class="avatar" id="profileAvatar">P</div>
+<div class="profile-head-info">
+<h3 id="profileName">Name</h3>
+<div id="profileDescription" style="margin-top:6px; color:#d6e9ff;"></div>
+<div class="profile-meta">
+<div class="skill-badge" id="profileSkill">Skill</div>
+<div class="status-badge" id="profileStatus">Status</div>
 </div>
-
+</div>
+</div>
+<div class="profile-body">
+<div>
+<strong>UID</strong>
+<div id="profileUID">—</div>
+</div>
+<div>
+<strong>Age</strong>
+<div id="profileAge">—</div>
+</div>
+<div>
+<strong>Address</strong>
+<div id="profileAddress">—</div>
+</div>
+<div>
+<strong>Languages Spoken</strong>
+<div id="profileLanguage">—</div>
+</div>
+</div>
+<div class="profile-actions">
+<button class="hire-btn" id="hireBtn" onclick="openHireModal()">Hire</button>
+<button class="save-small" id="saveBtn" onclick="toggleSaveFromOpen()">⭐ Save</button>
+</div>
+<p class="privacy-note">Contact is hidden by default. Click <strong>Hire → Contact</strong> to view the number. </p>
+</div>
+</div>
 <!-- Hire modal -->
-<div id="hireModal" class="modal" onclick="modalBackgroundClick(event)">
-  <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="hireTitle">
-    <button class="modal-close" onclick="closeHireModal()">✕</button>
-    <h4 id="hireTitle">Hire Options</h4>
-    <p class="note">Choose how you'd like to proceed with this profile.</p>
-    <div class="modal-buttons">
-      <button id="modalContactBtn" onclick="showContact()">Contact</button>
-      <button id="modalMessageBtn" onclick="showMessage()">Message</button>
-    </div>
-    <div id="modalResult" class="modal-result" aria-live="polite"></div>
-  </div>
+<div class="modal" id="hireModal" onclick="modalBackgroundClick(event)">
+<div aria-labelledby="hireTitle" aria-modal="true" class="modal-content" role="dialog">
+<button class="modal-close" onclick="closeHireModal()">✕</button>
+<h4 id="hireTitle">Hire Options</h4>
+<p class="note">Choose how you'd like to proceed with this profile.</p>
+<div class="modal-buttons">
+<button id="modalContactBtn" onclick="showContact()">Contact</button>
 </div>
-
+<div aria-live="polite" class="modal-result" id="modalResult"></div>
+</div>
+</div>
 <!-- Notifications -->
-<div id="notificationsPage" class="page">
-  <h2>Notifications</h2>
-  <div class="tabs">
-    <button onclick="switchTab('unread')" id="tab-unread" class="active">Unread</button>
-    <button onclick="switchTab('read')" id="tab-read">Read</button>
-    <button onclick="switchTab('hire')" id="tab-hire">Hire Requests</button>
-  </div>
-  <div id="notificationContent"></div>
-  <button class="back-btn" onclick="showPage('home')">Back</button>
+<div class="page" id="notificationsPage">
+<h2>Notifications</h2>
+<div class="tabs">
+<button class="active" id="tab-unread" onclick="switchTab('unread')">Unread</button>
+<button id="tab-read" onclick="switchTab('read')">Read</button>
+<button id="tab-hire" onclick="switchTab('hire')">Hire Requests</button>
 </div>
-
-
-<!-- Chat Page -->
-<div id="chatPage" class="page">
-  <div style="display:flex; align-items:center; padding:12px; background:#0077ff; color:#fff; position:sticky; top:0; border-radius:0 0 12px 12px;">
-    <button onclick="backFromChat()" style="background:none; border:none; color:#fff; font-size:18px; margin-right:12px; cursor:pointer;">←</button>
-    <strong id="chatWithName">Chat</strong>
-  </div>
-  <div id="chatMessages" style="flex:1; overflow-y:auto; padding:16px; height:70vh; background:#f0f4ff; border-radius:12px; margin:12px 0;"></div>
-  <div style="display:flex; gap:8px; padding:12px; background:#fff; border-radius:12px; box-shadow:0 -4px 10px rgba(0,0,0,0.08);">
-    <input type="text" id="chatInput" placeholder="Type a message..." style="flex:1; padding:12px; border-radius:8px; border:1px solid #ddd; font-size:16px;">
-    <button onclick="sendMessage()" style="background:linear-gradient(90deg,#0077ff,#2aa0ff); border:none; border-radius:8px; color:#fff; padding:0 18px; font-size:16px; cursor:pointer;">Send</button>
-  </div>
+<div id="notificationContent"></div>
+<button class="back-btn" onclick="showPage('home')">Back</button>
 </div>
-
 <!-- Saved Profiles -->
-<div id="savedProfilesPage" class="page">
-  <h2>Saved Profiles</h2>
-  <div class="categories" id="savedCategoryFilter">
-    <div class="category" onclick="savedSkill='All';displaySaved()">All</div>
-    <div class="category" onclick="savedSkill='Plumber';displaySaved()">Plumber</div>
-    <div class="category" onclick="savedSkill='Mechanic';displaySaved()">Mechanic</div>
-    <div class="category" onclick="savedSkill='Electrician';displaySaved()">Electrician</div>
-    <div class="category" onclick="savedSkill='Painter';displaySaved()">Painter</div>
-    <div class="category" onclick="savedSkill='Tutor';displaySaved()">Tutor</div>
-  </div>
-  <div class="search-bar">
-    <input type="text" id="savedSearchInput" placeholder="Search in Saved" oninput="displaySaved()">
-  </div>
-  <div id="savedList" class="profile-list"></div>
-  <button class="back-btn" onclick="showPage('home')">Back</button>
+<div class="page" id="savedProfilesPage">
+<h2>Saved Profiles</h2>
+<div class="categories" id="savedCategoryFilter">
+<div class="category" onclick="savedSkill='All';displaySaved()">All</div>
+<div class="category" onclick="savedSkill='Plumber';displaySaved()">Plumber</div>
+<div class="category" onclick="savedSkill='Mechanic';displaySaved()">Mechanic</div>
+<div class="category" onclick="savedSkill='Electrician';displaySaved()">Electrician</div>
+<div class="category" onclick="savedSkill='Painter';displaySaved()">Painter</div>
+<div class="category" onclick="savedSkill='Tutor';displaySaved()">Tutor</div>
 </div>
-
+<div class="search-bar">
+<input id="savedSearchInput" oninput="displaySaved()" placeholder="Search in Saved" type="text"/>
+</div>
+<div class="profile-list" id="savedList"></div>
+<button class="back-btn" onclick="showPage('home')">Back</button>
+</div>
 <script>
 let profiles=[];
 let savedProfiles=[];
@@ -904,10 +1419,11 @@ function showContact(){
 }
 
 function showMessage(){
-  const modalResult = document.getElementById('modalResult');
-  modalResult.innerHTML = `<div><strong>Message</strong><div class="note">Coming soon — in-app messaging will be available in a future update.</div></div>`;
+  // Open the chat page for the profile selected in the Hire modal
+  if(!currentOpenProfile) return;
+  try{ closeHireModal(); }catch(e){}
+  try{ openChat(currentOpenProfile); }catch(e){}
 }
-
 /* Copy helper (uses Clipboard API when available) */
 function copyToClipboard(text){
   if(navigator.clipboard && navigator.clipboard.writeText){
@@ -1269,11 +1785,11 @@ function switchTab(tab){
 
 // Overwrite showMessage to open chat from Hire modal
 function showMessage(){
+  // Open the chat page for the profile selected in the Hire modal
   if(!currentOpenProfile) return;
-  closeHireModal();
-  openChat(currentOpenProfile);
+  try{ closeHireModal(); }catch(e){}
+  try{ openChat(currentOpenProfile); }catch(e){}
 }
-
 // Initialize on load
 loadMessagingState();
 /* ===== End Chat System ===== */
@@ -1281,7 +1797,6 @@ loadMessagingState();
 showPage('home');
 
 </script>
-
 <!-- BEGIN: Added script — Simulate Profile-Owner Replies & Improved Notification Routing -->
 <script>
 /* Enhancements: profile-owner reply simulation and improved notification routing */
@@ -1388,8 +1903,6 @@ function showSimulatedOtherUnread(){
 /* end added script */
 </script>
 <!-- END: Added script -->
-
-
 <!-- BEGIN: Assistant-added: Hire Complete + OTP verification + Hire count -->
 <script>
 (function(){
@@ -1672,22 +2185,19 @@ try{ updateChatHireButton(); }catch(e){}
 })(); // end wrapper
 </script>
 <!-- END: Assistant-added: Hire Complete + OTP verification + Hire count -->
-
-
 <!-- BEGIN: Leaderboard, Ratings & UID Integration -->
-<div id="leaderboardPage" class="page" style="display:none; padding-top:28px;">
-  <h2 style="text-align:center; margin-top:0;">Leaderboards</h2>
-  <div class="leaderboard-tabs" role="tablist" aria-label="Leaderboards">
-    <button id="lb-tab-hired" class="active" onclick="displayLeaderboard('hired')">Top 10 Most Hired</button>
-    <button id="lb-tab-alltime" onclick="displayLeaderboard('alltime')">Top 10 All Time</button>
-    <button id="lb-tab-rated" onclick="displayLeaderboard('rated')">Top 10 Most Rated</button>
-  </div>
-  <div id="leaderboardList" class="leaderboard-list" aria-live="polite"></div>
-  <button class="back-btn" onclick="showPage('home')">Back</button>
+<div class="page" id="leaderboardPage" style="display:none; padding-top:28px;">
+<h2 style="text-align:center; margin-top:0;">Leaderboards</h2>
+<div aria-label="Leaderboards" class="leaderboard-tabs" role="tablist">
+<button class="active" id="lb-tab-hired" onclick="displayLeaderboard('hired')">Top 10 Most Hired</button>
+<button id="lb-tab-alltime" onclick="displayLeaderboard('alltime')">Top 10 All Time</button>
+<button id="lb-tab-rated" onclick="displayLeaderboard('rated')">Top 10 Most Rated</button>
 </div>
-
+<div aria-live="polite" class="leaderboard-list" id="leaderboardList"></div>
+<button class="back-btn" onclick="showPage('home')">Back</button>
+</div>
 <script>
-/* Leaderboard + Ratings + UID integration script (appended) */
+
 (function(){
   // safety: ensure global profiles exists
   if(typeof profiles === 'undefined') window.profiles = window.profiles || [];
@@ -1706,18 +2216,18 @@ try{ updateChatHireButton(); }catch(e){}
   // create menu item in 3-dots dropdown
   try{
     const dd = document.getElementById('menuDropdown');
-    if(dd && !document.getElementById('menuDropdownLeaderboard')){
+
       const el = document.createElement('div');
-      el.id = 'menuDropdownLeaderboard';
-      el.textContent = 'Leaderboard';
+
+
       el.style.cursor = 'pointer';
-      el.onclick = function(){ showPage('leaderboardPage'); displayLeaderboard('hired'); };
+
       dd.appendChild(el);
     }
   }catch(e){ console.warn('menuDropdown append failed',e); }
 
   // display leaderboard
-  window.displayLeaderboard = function(type){
+
     ensureFields();
     // tab active classes
     document.querySelectorAll('.leaderboard-tabs button').forEach(b=>b.classList.remove('active'));
@@ -1745,42 +2255,38 @@ try{ updateChatHireButton(); }catch(e){}
     // compute rank numbers but keep same rank for ties (primary + secondary equal)
     let lastPrimary = null, lastSecondary = null, lastRank = 0;
     top.forEach((p, i)=>{
-      const primary = (type==='alltime') ? (p.allTimeHires||0) : (type==='rated' ? p.ratingPct : (p.hireCount||0));
-      const secondary = p.ratingPct || 0;
-      let rank = i+1;
-      if(i>0 && primary===lastPrimary && secondary===lastSecondary) rank = lastRank;
-      lastPrimary = primary; lastSecondary = secondary; lastRank = rank;
-      const card = document.createElement('div'); card.className = 'leader-card';
-      // rank box
-      const rankBox = document.createElement('div'); rankBox.className = 'leader-rank';
-      if(rank===1) rankBox.classList.add('leader-gold');
-      else if(rank===2) rankBox.classList.add('leader-silver');
-      else if(rank===3) rankBox.classList.add('leader-bronze');
-      rankBox.textContent = rank;
-      // info block
-      const info = document.createElement('div'); info.className = 'leader-info';
-      const nameHtml = document.createElement('div');
-      const strong = document.createElement('strong'); strong.textContent = p.name || ('UID ' + (p.uid || '—'));
-      nameHtml.appendChild(strong);
-      const uid = document.createElement('div'); uid.className='uid'; uid.textContent = 'UID: ' + (p.uid || '—');
-      nameHtml.appendChild(uid);
-      const meta = document.createElement('div'); meta.className='meta';
-      // choose fields shown per leaderboard type
-      if(type==='hired'){
-        meta.textContent = 'Hires: ' + (p.hireCount||0);
-      } else if(type==='alltime'){
-        meta.textContent = 'All-Time Hires: ' + (p.allTimeHires||0) + ' · Rating: ' + (p.ratingPct||0) + '%';
-      } else {
-        meta.textContent = 'Rating: ' + (p.ratingPct||0) + '%';
-      }
-      info.appendChild(nameHtml);
-      info.appendChild(meta);
+  const rank = i + 1;
+  const card = document.createElement('div'); card.className = 'leader-card';
 
-      // append without open button (leaderboard should not show Open)
-      card.appendChild(rankBox);
-      card.appendChild(info);
-      list.appendChild(card);
-    });
+  const rankBox = document.createElement('div'); rankBox.className = 'leader-rank';
+  if(rank===1) rankBox.classList.add('leader-gold');
+  else if(rank===2) rankBox.classList.add('leader-silver');
+  else if(rank===3) rankBox.classList.add('leader-bronze');
+
+  const medal = rank===1 ? ' 🥇' : rank===2 ? ' 🥈' : rank===3 ? ' 🥉' : '';
+  rankBox.innerHTML = `<span style="font-weight:900; font-size:22px;">${rank}</span>${medal}`;
+
+  const info = document.createElement('div'); info.className = 'leader-info';
+  const nameHtml = document.createElement('div');
+  const strong = document.createElement('strong'); strong.textContent = p.name || ('UID ' + (p.uid || '—'));
+  nameHtml.appendChild(strong);
+  const uid = document.createElement('div'); uid.className='uid'; uid.textContent = 'UID: ' + (p.uid || '—');
+  nameHtml.appendChild(uid);
+  const meta = document.createElement('div'); meta.className='meta';
+  if(type==='hired'){
+    meta.textContent = 'Hires: ' + (p.hireCount||0);
+  } else if(type==='alltime'){
+    meta.textContent = 'All-Time Hires: ' + (p.allTimeHires||0) + ' · Rating: ' + (p.ratingPct||0) + '%';
+  } else {
+    meta.textContent = 'Rating: ' + (p.ratingPct||0) + '%';
+  }
+  info.appendChild(nameHtml);
+  info.appendChild(meta);
+
+  card.appendChild(rankBox);
+  card.appendChild(info);
+  list.appendChild(card);
+});
     // ensure we are on leaderboard page
     showPage('leaderboardPage');
   };
@@ -1904,7 +2410,7 @@ try{ updateChatHireButton(); }catch(e){}
           // show result bar
           renderRatingResult(p, true);
           // refresh leaderboards if visible
-          try{ if(document.getElementById('leaderboardPage') && document.getElementById('leaderboardPage').style.display!=='none') displayLeaderboard(document.querySelector('.leaderboard-tabs button.active')?.id?.includes('hired') ? 'hired' : (document.querySelector('.leaderboard-tabs button.active')?.id?.includes('alltime') ? 'alltime' : 'rated')); }catch(e){}
+
         };
 
         // If already voted -> show bar immediately
@@ -1944,20 +2450,17 @@ try{ updateChatHireButton(); }catch(e){}
   }
 
   // Expose a helper to force refresh leaderboards externally
-  window.refreshLeaderboards = function(){ if(document.getElementById('leaderboardPage') && document.getElementById('leaderboardPage').style.display!=='none'){ const active = document.querySelector('.leaderboard-tabs button.active'); if(active) { if(active.id.includes('hired')) displayLeaderboard('hired'); else if(active.id.includes('alltime')) displayLeaderboard('alltime'); else displayLeaderboard('rated'); } } };
+
 
   // run an initial ensure
   ensureFields();
 })();
 </script>
 <!-- END: Leaderboard, Ratings & UID Integration -->
-
-
 <!-- Firebase SDKs -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-
 <script>
 // Firebase config (from user)
 const firebaseConfig = {
@@ -2156,8 +2659,6 @@ document.addEventListener("DOMContentLoaded", ()=>{
   loadProfilesFromFirebase();
 });
 </script>
-
-
 <script>
 (function(){
   const db = firebase.firestore();
@@ -2408,8 +2909,8 @@ document.addEventListener("DOMContentLoaded", ()=>{
     }catch(e){ console.warn('verifyHireOTP failed', e); alert('OTP verification failed'); }
   };
 
-  // Leaderboard computed client-side and displayed in .leaderboard-list
-  window.refreshLeaderboard = function(){
+
+
     try{
       const arr = profiles.map(p=>{
         const avg = p.ratingsCount && p.ratingsCount>0 ? (p.ratingsSum / p.ratingsCount) : 0;
@@ -2432,7 +2933,7 @@ document.addEventListener("DOMContentLoaded", ()=>{
           lbArea.appendChild(card);
         });
       }
-    }catch(e){ console.warn('refreshLeaderboard failed', e); }
+
   };
 
   // Hook into existing loadProfilesFromFirebase to refresh leaderboard afterwards
@@ -2440,7 +2941,7 @@ document.addEventListener("DOMContentLoaded", ()=>{
     const origLoad = window.loadProfilesFromFirebase;
     window.loadProfilesFromFirebase = async function(){
       try{ await origLoad(); }catch(e){ console.warn('origLoadProfiles failed', e); }
-      try{ window.refreshLeaderboard(); }catch(e){}
+
     };
   }
 
@@ -2465,8 +2966,6 @@ document.addEventListener("DOMContentLoaded", ()=>{
 
 })(); // closure
 </script>
-
-
 <script>
 // --- BEGIN: Delete profile button + status sync ---
 (function(){
@@ -2573,8 +3072,6 @@ document.addEventListener("DOMContentLoaded", ()=>{
 })(); 
 // --- END: Delete profile button + status sync ---
 </script>
-
-
 <script>
 // === Improved Delete button handler and Wipe All Profiles (safe dev tool) ===
 (function(){
@@ -2731,8 +3228,6 @@ document.addEventListener("DOMContentLoaded", ()=>{
   window.wipeAllProfiles = wipeAllProfiles;
 })(); 
 </script>
-
-
 <!-- Assistant-inserted: Override chat hire button + Owner OTP entry modal (adds sender alert, owner OTP verify, firestore update) -->
 <script>
 (function(){
@@ -2865,7 +3360,7 @@ document.addEventListener("DOMContentLoaded", ()=>{
       // add a small read notification for record keeping
       try { readNotifications.unshift({ uid: ownerUid, name: getProfileNameByUID(ownerUid) || 'Profile', lastMessage: 'Hire completed (owner verified)', time: new Date().toLocaleString() }); saveMessagingState(); switchTab('read'); } catch(e){}
       // refresh leaderboards if any
-      try{ if(typeof refreshLeaderboards === 'function') refreshLeaderboards(); }catch(e){}
+
     } catch(e){ console.warn('verifyOwnerOTP failed', e); alert('Verification failed.'); }
   };
 
@@ -2875,8 +3370,6 @@ document.addEventListener("DOMContentLoaded", ()=>{
 })();
 </script>
 <!-- End Assistant-inserted -->
-
-
 <script>
 const auth = firebase.auth();
 
@@ -2930,7 +3423,6 @@ function verifyOTP(){
   }
 }
 </script>
-
 <script>
 
 (function(){
@@ -3344,67 +3836,120 @@ function verifyOTP(){
 })();
 
 </script>
-
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-  import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-  import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-
-  // Your Firebase config (already in your file)
- // For Firebase JS SDK v7.20.0 and later, measurementId is optional
-const firebaseConfig = {
-  apiKey: "AIzaSyAByLACmttf6BY6r0hEmZKYontfVqnDNpM",
-  authDomain: "mndpschoolrspura.firebaseapp.com",
-  projectId: "mndpschoolrspura",
-  storageBucket: "mndpschoolrspura.firebasestorage.app",
-  messagingSenderId: "810534224714",
-  appId: "1:810534224714:web:a3055b4a6b3bca507337b3",
-  measurementId: "G-2610K130EN"
-};
-
-  const app = initializeApp(firebaseConfig);
-  const auth = getAuth(app);
-  const db = getFirestore(app);
-
-  const messageList = document.getElementById("messages");
-  const messageInput = document.getElementById("messageInput");
-  const sendBtn = document.getElementById("sendBtn");
-
-  // Send message
-  sendBtn.addEventListener("click", async () => {
-    const user = auth.currentUser;
-    if (user && messageInput.value.trim() !== "") {
-      await addDoc(collection(db, "messages"), {
-        text: messageInput.value,
-        uid: user.uid,
-        email: user.email,
-        createdAt: serverTimestamp()
-      });
-      messageInput.value = "";
-    }
+  const dbInst = (typeof db!=='undefined') ? db : (firebase && firebase.firestore ? firebase.firestore() : null);
+  if(!dbInst) return;
+  let snap = await dbInst.collection('profiles').get();
+  let arr = [];
+  snap.forEach(doc => { arr.push(doc.data()); });
+  // compute score
+  arr.forEach(p => {
+    p.hireCount = p.hireCount || 0;
+    p.rating = p.rating || 0;
+    p.alltimeScore = p.hireCount*10 + p.rating*2;
   });
-
-  // Listen for new messages in real time
-  const q = query(collection(db, "messages"), orderBy("createdAt"));
-  onSnapshot(q, (snapshot) => {
-    messageList.innerHTML = "";
-    snapshot.forEach((doc) => {
-      const msg = doc.data();
-      const li = document.createElement("li");
-      li.textContent = msg.email + ": " + msg.text;
-      messageList.appendChild(li);
-    });
-    messageList.scrollTop = messageList.scrollHeight;
+  if(cat==='hired'){ arr.sort((a,b)=>b.hireCount-a.hireCount); }
+  else if(cat==='rated'){ arr.sort((a,b)=>b.rating-a.rating); }
+  else { arr.sort((a,b)=>b.alltimeScore-a.alltimeScore); }
+  let html='';
+  arr.forEach((p,i)=>{
+    let rank=i+1;
+    let cls='lb-card';
+    if(rank===1) cls+=' lb-top1';
+    else if(rank===2) cls+=' lb-top2';
+    else if(rank===3) cls+=' lb-top3';
+    html+=`<div class="${cls}"><span class="lb-rank">#${rank}</span><span class="lb-name">${p.name||'Unnamed'}</span><span>👥 ${p.hireCount} ⭐ ${p.rating}</span></div>`;
   });
+  document.getElementById('leaderboardContent').innerHTML=html;
+}
+// default
+
 </script>
 
-<!-- Chat UI -->
-<div style="max-width:400px;margin:auto;padding:10px;">
-  <h3>Chat Room</h3>
-  <ul id="messages" style="border:1px solid #ccc;height:200px;overflow-y:auto;padding:5px;list-style:none;"></ul>
-  <input type="text" id="messageInput" placeholder="Type a message..." style="width:75%;padding:5px;" />
-  <button id="sendBtn" style="width:20%;padding:5px;">Send</button>
-</div>
+<!-- BEGIN: Profile-completion watcher (added by assistant) -->
+<script>
+(function(){
+  function _getAuthAndDb(){
+    return {
+      auth: (typeof auth !== 'undefined' && auth) ? auth : ((typeof firebase !== 'undefined' && firebase.auth) ? firebase.auth() : null),
+      db: (typeof db !== 'undefined' && db) ? db : ((typeof firebase !== 'undefined' && firebase.firestore) ? firebase.firestore() : null)
+    };
+  }
+
+  async function checkAndPromptProfileCompletion(user){
+    if(!user || !user.uid) return;
+    const uid = String(user.uid);
+    // if we've already recorded that the prompt was shown & handled, don't show again
+    if(localStorage.getItem('profiles_complete_prompt_shown_' + uid) === '1') return;
+    const {db, auth} = _getAuthAndDb();
+    let needsPrompt = false;
+    try{
+      if(db){
+        const snap = await db.collection('users').doc(uid).get();
+        if(!snap.exists){
+          needsPrompt = true;
+        } else {
+          const data = snap.data() || {};
+          if(!data.displayName || !data.age) needsPrompt = true;
+        }
+      } else {
+        // no Firestore available — fall back to auth profile check
+        if(!user.displayName) needsPrompt = true;
+      }
+    }catch(e){
+      console.warn('checkAndPromptProfileCompletion failed', e);
+      needsPrompt = true;
+    }
+
+    if(needsPrompt){
+      try{
+        window.pendingNewUserUid = uid;
+        showCompleteAccountModal && showCompleteAccountModal(uid, user);
+        // focus input for faster completion (small delay for modal animation)
+        setTimeout(()=>{ const el = document.getElementById('complete_username'); if(el){ el.focus(); } }, 220);
+      }catch(e){ console.warn(e); }
+    }
+  }
+
+  function initAuthWatcher(){
+    const { auth } = _getAuthAndDb();
+    if(!auth || !auth.onAuthStateChanged) return;
+    auth.onAuthStateChanged(function(user){
+      if(user) checkAndPromptProfileCompletion(user).catch(()=>{});
+    });
+    // attempt immediate check if already signed-in
+    if(auth && auth.currentUser) checkAndPromptProfileCompletion(auth.currentUser).catch(()=>{});
+  }
+
+  // Mark the prompt as shown/handled after successful save/skip.
+  // We monkeypatch the existing functions (if present) so we don't change their internals.
+  if(window.saveCompleteAccount){
+    const orig = window.saveCompleteAccount;
+    window.saveCompleteAccount = async function(){
+      try{
+        await orig.apply(this, arguments);
+      } finally {
+        try{
+          const uid = window.pendingNewUserUid || (window.myUID ? window.myUID : null);
+          if(uid) localStorage.setItem('profiles_complete_prompt_shown_' + String(uid), '1');
+        }catch(e){ console.warn('mark prompt shown after save failed', e); }
+      }
+    };
+  }
+  if(window.skipCompleteAccount){
+    const origSkip = window.skipCompleteAccount;
+    window.skipCompleteAccount = function(){
+      try{
+        const uid = window.pendingNewUserUid || window.myUID;
+        if(uid) localStorage.setItem('profiles_complete_prompt_shown_' + String(uid), '1');
+      }catch(e){}
+      return origSkip.apply(this, arguments);
+    };
+  }
+
+  document.addEventListener('DOMContentLoaded', initAuthWatcher);
+})();
+</script>
+<!-- END: Profile-completion watcher -->
 
 </body>
 </html>

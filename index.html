@@ -484,6 +484,164 @@
   .rating-stars span{cursor:pointer;font-size:20px;color:#e5e7eb}
   .rating-stars span.active{color:#fbbf24}
   .rating-result{margin-top:6px;font-weight:800;color:#0077ff}
+  
+/* Improved styling for leaderboard ranks */
+.leader-rank{
+  font-size:28px;
+  font-weight:900;
+  width:80px;
+  text-align:center;
+  border-radius:12px;
+  padding:10px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+.leader-gold{
+  background:linear-gradient(145deg,#fde047,#facc15);
+  color:#7c2d12;
+  box-shadow:0 0 16px rgba(250,204,21,0.6);
+}
+.leader-silver{
+  background:linear-gradient(145deg,#e5e7eb,#9ca3af);
+  color:#111827;
+  box-shadow:0 0 16px rgba(156,163,175,0.5);
+}
+.leader-bronze{
+  background:linear-gradient(145deg,#fcd34d,#b45309);
+  color:#78350f;
+  box-shadow:0 0 16px rgba(180,83,9,0.5);
+}
+
+  
+/* Enhanced styling for top 3 full cards */
+.leader-card.top1{
+  background:linear-gradient(180deg,#fff7d6,#fde047);
+  border:2px solid #facc15;
+  position:relative;
+}
+.leader-card.top1::before{
+  content:"👑";
+  position:absolute;
+  top:-18px;
+  left:16px;
+  font-size:32px;
+}
+.leader-card.top2{
+  background:linear-gradient(180deg,#f3f4f6,#d1d5db);
+  border:2px solid #9ca3af;
+}
+.leader-card.top3{
+  background:linear-gradient(180deg,#fef3c7,#fcd34d);
+  border:2px solid #b45309;
+}
+
+  
+/* Animated crown + glowing for top 1 */
+.leader-card.top1{
+  background:linear-gradient(180deg,#fff7d6,#fde047);
+  border:2px solid #facc15;
+  position:relative;
+  animation:pulseGlow 2s infinite;
+}
+.leader-card.top1::before{
+  content:"👑";
+  position:absolute;
+  top:-22px;
+  left:20px;
+  font-size:34px;
+  animation:bounce 1.5s infinite;
+}
+.leader-card.top2{
+  background:linear-gradient(180deg,#f3f4f6,#d1d5db);
+  border:2px solid #9ca3af;
+}
+.leader-card.top3{
+  background:linear-gradient(180deg,#fef3c7,#fcd34d);
+  border:2px solid #b45309;
+}
+
+@keyframes pulseGlow{
+  0%,100%{box-shadow:0 0 20px rgba(250,204,21,0.6);}
+  50%{box-shadow:0 0 40px rgba(250,204,21,0.9);}
+}
+@keyframes bounce{
+  0%,100%{transform:translateY(0);}
+  50%{transform:translateY(-6px);}
+}
+
+  
+/* Leaderboard crowns, glow, and tab fade animations */
+.leaderboard-list{
+  opacity:1;
+  transition:opacity 0.4s ease;
+}
+.leaderboard-list.fade-out{
+  opacity:0;
+}
+
+.leader-card{
+  opacity:0;
+  transform:translateY(10px);
+  animation:fadeInUp 0.6s ease forwards;
+}
+.leader-card.top1{
+  background:linear-gradient(180deg,#fff7d6,#fde047);
+  border:2px solid #facc15;
+  position:relative;
+  animation:pulseGlow 2s infinite, fadeInUp 0.6s ease forwards;
+}
+.leader-card.top1::before{
+  content:"👑";
+  position:absolute;
+  top:-22px;
+  left:20px;
+  font-size:34px;
+  animation:bounce 1.5s infinite;
+  color:gold;
+}
+.leader-card.top2{
+  background:linear-gradient(180deg,#f3f4f6,#d1d5db);
+  border:2px solid #9ca3af;
+  position:relative;
+}
+.leader-card.top2::before{
+  content:"👑";
+  position:absolute;
+  top:-22px;
+  left:20px;
+  font-size:30px;
+  color:silver;
+  opacity:0.9;
+}
+.leader-card.top3{
+  background:linear-gradient(180deg,#fef3c7,#fcd34d);
+  border:2px solid #b45309;
+  position:relative;
+}
+.leader-card.top3::before{
+  content:"👑";
+  position:absolute;
+  top:-22px;
+  left:20px;
+  font-size:28px;
+  color:#cd7f32; /* bronze */
+  opacity:0.85;
+}
+
+@keyframes pulseGlow{
+  0%,100%{box-shadow:0 0 20px rgba(250,204,21,0.6);}
+  50%{box-shadow:0 0 40px rgba(250,204,21,0.9);}
+}
+@keyframes bounce{
+  0%,100%{transform:translateY(0);}
+  50%{transform:translateY(-6px);}
+}
+@keyframes fadeInUp{
+  from{opacity:0; transform:translateY(20px);}
+  to{opacity:1; transform:translateY(0);}
+}
+
   /* OTP box style */
   .otp-card{background:#ecfdf5;border:1px solid #bbf7d0;color:#065f46;padding:12px;border-radius:10px;font-weight:800;box-shadow:0 8px 30px rgba(2,6,23,0.04);margin-top:10px}
 </style>
@@ -496,6 +654,7 @@
 <div id="menuDropdown" style="display:none; position:absolute; top:28px; left:0; background:white; border:1px solid #ccc; border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.15); min-width:160px; overflow:hidden;">
 
 <div onclick="showPage('savedProfilesPage'); closeMenu()" style="padding:10px; cursor:pointer; font-weight:600;">⭐ Saved Profiles</div>
+  <div onclick="showPage('leaderboardPage'); closeMenu()" style="padding:10px; cursor:pointer; font-weight:600;">🏆 Leaderboards</div>
 </div>
 </div>
 <script>
@@ -1185,6 +1344,18 @@ document.addEventListener('DOMContentLoaded', function(){
 <div id="notificationContent"></div>
 <button class="back-btn" onclick="showPage('home')">Back</button>
 </div>
+<!-- Leaderboards Page -->
+<div class="page" id="leaderboardPage">
+  <h2 style="text-align:center;">Leaderboards</h2>
+  <div class="leaderboard-tabs">
+    <button class="active" onclick="switchLeaderboard('hired')">Top 10 Most Hired</button>
+    <button onclick="switchLeaderboard('alltime')">Top 10 Workers of All Time</button>
+    <button onclick="switchLeaderboard('rated')">Top 10 Most Rated</button>
+  </div>
+  <div class="leaderboard-list" id="leaderboardList"></div>
+  <button class="back-btn" onclick="showPage('home')">Back</button>
+</div>
+
 <!-- Saved Profiles -->
 <div class="page" id="savedProfilesPage">
 <h2>Saved Profiles</h2>
@@ -1464,6 +1635,135 @@ function updateSaveButtonState(){
     btn.style.color='#fff';
   }
 }
+
+
+
+
+
+/* ===== Leaderboards Logic (final clean with animations) ===== */
+function switchLeaderboard(type){
+  const tabs=document.querySelectorAll('.leaderboard-tabs button');
+  tabs.forEach(btn=>btn.classList.remove('active'));
+  if(type==='hired') tabs[0].classList.add('active');
+  if(type==='alltime') tabs[1].classList.add('active');
+  if(type==='rated') tabs[2].classList.add('active');
+
+  const container=document.getElementById('leaderboardList');
+  if(container){
+    container.classList.add('fade-out');
+    setTimeout(()=>{
+      renderLeaderboard(type);
+      container.classList.remove('fade-out');
+    },300);
+  } else {
+    renderLeaderboard(type);
+  }
+}
+
+
+/* --- normalize ratings across different possible field names and compute averages/percent --- */
+function normalizeRatingsForProfiles(){
+  try{
+    (window.profiles || []).forEach(function(p){
+      p.ratingsSum = Number(p.ratingsSum || p.ratings || p.rating || 0);
+      p.ratingsCount = Number(p.ratingsCount || p.ratings_count || p.votes || 0);
+      p.ratingsAvg = p.ratingsCount ? (p.ratingsSum / p.ratingsCount) : 0;
+      p.ratingPct = p.ratingsCount ? Math.round((p.ratingsAvg / 5) * 100) : 0;
+      // keep legacy `ratings` field as a readable average (1 decimal)
+      p.ratings = Math.round(p.ratingsAvg * 10) / 10;
+    });
+  }catch(e){
+    console.warn('normalizeRatingsForProfiles failed', e);
+  }
+}
+
+
+
+function renderLeaderboard(type){
+  try{ normalizeRatingsForProfiles(); }catch(e){ console.warn('normalizeRatingsForProfiles failed', e); }
+
+  const container=document.getElementById('leaderboardList');
+  if(!container) return;
+  container.innerHTML='';
+
+  if(!profiles || profiles.length===0){
+    container.innerHTML='<div style="text-align:center;color:#6b7280;font-weight:600;">No profiles to show yet</div>';
+    return;
+  }
+
+  // make a shallow copy and ensure numeric fields
+  const list = (profiles || []).map(function(p){
+    p = Object.assign({}, p);
+    p.hireCount = Number(p.hireCount || p.hires || 0);
+    p.allTimeHires = Number(p.allTimeHires || p.allTime || p.hireCount || 0);
+    p.ratingsSum = Number(p.ratingsSum || p.ratings || p.rating || 0);
+    p.ratingsCount = Number(p.ratingsCount || p.ratings_count || p.votes || 0);
+    p.ratingsAvg = p.ratingsCount ? (p.ratingsSum / p.ratingsCount) : 0;
+    p.ratingPct = p.ratingsCount ? Math.round((p.ratingsAvg / 5) * 100) : 0;
+    return p;
+  });
+
+  // sort depending on type
+  if(type==='hired'){ list.sort((a,b)=> (b.hireCount - a.hireCount) || (b.ratingPct - a.ratingPct)); }
+  else if(type==='alltime'){ list.sort((a,b)=> (b.allTimeHires - a.allTimeHires) || (b.ratingPct - a.ratingPct)); }
+  else { // rated
+    list.sort((a,b)=> (b.ratingPct - a.ratingPct) || (b.hireCount - a.hireCount));
+  }
+
+  list.slice(0,10).forEach(function(p,i){
+    const rank = i+1;
+    const card = document.createElement('div'); card.className = 'leader-card';
+    if(i===0) card.classList.add('top1');
+    if(i===1) card.classList.add('top2');
+    if(i===2) card.classList.add('top3');
+    card.style.animationDelay = (i*0.08) + 's';
+
+    const rankBox = document.createElement('div'); rankBox.className = 'leader-rank';
+    if(rank===1) rankBox.classList.add('leader-gold');
+    else if(rank===2) rankBox.classList.add('leader-silver');
+    else if(rank===3) rankBox.classList.add('leader-bronze');
+    rankBox.innerHTML = '<span style=\"font-weight:900; font-size:22px;\">' + rank + '</span>';
+
+    const info = document.createElement('div'); info.className = 'leader-info';
+    const nameEl = document.createElement('strong'); nameEl.textContent = p.name || ('UID ' + (p.uid || '—'));
+    info.appendChild(nameEl);
+    const uidEl = document.createElement('div'); uidEl.className = 'uid'; uidEl.textContent = 'UID: ' + (p.uid || '—');
+    info.appendChild(uidEl);
+
+    // compute display values safely
+    const totalVotes = Number(p.ratingsCount || 0);
+    const avgNum = totalVotes > 0 ? Number(p.ratingsAvg || (p.ratingsSum / totalVotes) || 0) : 0;
+    const avg = totalVotes > 0 ? (Math.round(avgNum*10)/10).toFixed(1) : '0';
+    const pct = totalVotes > 0 ? Math.round((avgNum/5) * 100) : 0;
+
+    const meta = document.createElement('div'); meta.className = 'meta';
+    let metaText = '';
+    if(type==='hired'){
+      metaText = 'Hires: ' + (p.hireCount||0) + ' · Avg: ' + avg + ' /5 (' + pct + '%) · ' + totalVotes + ' votes';
+    } else if(type==='alltime'){
+      metaText = 'All-Time Hires: ' + (p.allTimeHires||0) + ' · Avg: ' + avg + ' /5 · ' + totalVotes + ' votes (' + pct + '%)';
+    } else {
+      metaText = 'Avg: ' + avg + ' /5 · ' + totalVotes + ' votes (' + pct + '%)';
+    }
+    meta.textContent = metaText;
+    info.appendChild(meta);
+
+    card.appendChild(rankBox);
+    card.appendChild(info);
+    container.appendChild(card);
+  });
+
+  // ensure leaderboard page is visible
+  try{ /* leaderboard showPage removed on purpose */ }catch(e){}
+}
+
+
+// Auto-load Most Hired when opening leaderboard page
+document.addEventListener('DOMContentLoaded', ()=>{
+  const lbPage=document.getElementById('leaderboardPage');
+  if(lbPage){ switchLeaderboard('hired'); }
+});
+
 
 /* small helper to escape content inserted into HTML */
 function escapeHtml(str){
@@ -2288,7 +2588,7 @@ try{ updateChatHireButton(); }catch(e){}
   list.appendChild(card);
 });
     // ensure we are on leaderboard page
-    showPage('leaderboardPage');
+    
   };
 
   // Override openProfile to inject rating UI (preserve original behavior)
@@ -3834,35 +4134,37 @@ function verifyOTP(){
   }
 
 })();
-
-</script>
+<script>
   const dbInst = (typeof db!=='undefined') ? db : (firebase && firebase.firestore ? firebase.firestore() : null);
   if(!dbInst) return;
-  let snap = await dbInst.collection('profiles').get();
-  let arr = [];
-  snap.forEach(doc => { arr.push(doc.data()); });
-  // compute score
-  arr.forEach(p => {
-    p.hireCount = p.hireCount || 0;
-    p.rating = p.rating || 0;
-    p.alltimeScore = p.hireCount*10 + p.rating*2;
-  });
-  if(cat==='hired'){ arr.sort((a,b)=>b.hireCount-a.hireCount); }
-  else if(cat==='rated'){ arr.sort((a,b)=>b.rating-a.rating); }
-  else { arr.sort((a,b)=>b.alltimeScore-a.alltimeScore); }
-  let html='';
-  arr.forEach((p,i)=>{
-    let rank=i+1;
-    let cls='lb-card';
-    if(rank===1) cls+=' lb-top1';
-    else if(rank===2) cls+=' lb-top2';
-    else if(rank===3) cls+=' lb-top3';
-    html+=`<div class="${cls}"><span class="lb-rank">#${rank}</span><span class="lb-name">${p.name||'Unnamed'}</span><span>👥 ${p.hireCount} ⭐ ${p.rating}</span></div>`;
-  });
-  document.getElementById('leaderboardContent').innerHTML=html;
-}
-// default
+  (async () => {
+    let snap = await dbInst.collection('profiles').get();
+    let arr = [];
+    snap.forEach(doc => { arr.push(doc.data()); });
 
+    // compute score
+    arr.forEach(p => {
+      p.hireCount = p.hireCount || 0;
+      p.rating = p.rating || 0;
+      p.alltimeScore = p.hireCount*10 + p.rating*2;
+    });
+
+    if(cat==='hired'){ arr.sort((a,b)=>b.hireCount-a.hireCount); }
+    else if(cat==='rated'){ arr.sort((a,b)=>b.rating-a.rating); }
+    else { arr.sort((a,b)=>b.alltimeScore-a.alltimeScore); }
+
+    let html='';
+    arr.forEach((p,i)=>{
+      let rank=i+1;
+      let cls='lb-card';
+      if(rank===1) cls+=' lb-top1';
+      else if(rank===2) cls+=' lb-top2';
+      else if(rank===3) cls+=' lb-top3';
+      html+=`<div class="${cls}"><span class="lb-rank">#${rank}</span><span class="lb-name">${p.name||'Unnamed'}</span><span>👥 ${p.hireCount} ⭐ ${p.rating}</span></div>`;
+    });
+
+    document.getElementById('leaderboardContent').innerHTML=html;
+  })();
 </script>
 
 <!-- BEGIN: Profile-completion watcher (added by assistant) -->
@@ -3950,6 +4252,666 @@ function verifyOTP(){
 })();
 </script>
 <!-- END: Profile-completion watcher -->
+
+
+
+
+<!-- BEGIN: Ratings - Robust Firestore-backed implementation (single patch) -->
+<script>
+(function(){
+  if(window._ratingsPatched) return;
+  window._ratingsPatched = true;
+
+  // Helper: sleep
+  function sleep(ms){ return new Promise(res=>setTimeout(res,ms)); }
+
+  // Get Firestore DB instance (works with window.db or firebase.firestore())
+  function getDB(){
+    if(window.db) return window.db;
+    if(typeof firebase !== 'undefined' && firebase.firestore) return firebase.firestore();
+    return null;
+  }
+
+  async function hasUserVoted(profileUid, voterUid){
+    try{
+      const db = getDB();
+      if(!db || !voterUid) return false;
+      const snap = await db.collection('profiles').doc(String(profileUid)).collection('votes').doc(String(voterUid)).get();
+      return snap.exists;
+    }catch(e){ console.warn('hasUserVoted err', e); return false; }
+  }
+
+  async function fetchProfileRatings(profileUid){
+    try{
+      const db = getDB();
+      if(!db) return null;
+      const doc = await db.collection('profiles').doc(String(profileUid)).get();
+      return doc.exists ? doc.data() : null;
+    }catch(e){ console.warn('fetchProfileRatings err', e); return null; }
+  }
+
+  async function submitRatingToFirestore(profileUid, score){
+    const db = getDB();
+    if(!db) throw new Error('Firestore not available');
+    const voterUid = (window.myUID || localStorage.getItem('profiles_my_uid_v1'));
+    if(!voterUid) { alert('Please sign in or create a profile to rate.'); throw new Error('No voter UID'); }
+
+    const profRef = db.collection('profiles').doc(String(profileUid));
+    const voteRef = profRef.collection('votes').doc(String(voterUid));
+    // Prevent duplicate vote: if vote doc exists, bail out
+    const existing = await voteRef.get();
+    if(existing.exists){
+      alert('You have already rated this profile.');
+      return false;
+    }
+
+    // Use transaction to update ratings atomically
+    await db.runTransaction(async tx => {
+      const profSnap = await tx.get(profRef);
+      const prev = profSnap.exists ? profSnap.data() : {};
+      const ratingsSum = (prev.ratingsSum||0) + score;
+      const ratingsCount = (prev.ratingsCount||0) + 1;
+      const ratingsByStar = Object.assign({}, prev.ratingsByStar || {});
+      ratingsByStar[String(score)] = (ratingsByStar[String(score)]||0) + 1;
+      tx.set(profRef, { ratingsSum: ratingsSum, ratingsCount: ratingsCount, ratingsByStar: ratingsByStar }, { merge: true });
+      tx.set(voteRef, { score: score, time: new Date().toISOString(), voterUid: String(voterUid) });
+    });
+
+    return true;
+  }
+
+  // Render rating bar + text (NO per-star breakdown)
+  function renderRatingBarElements(container, ratingData){
+    const sum = ratingData && ratingData.ratingsSum ? Number(ratingData.ratingsSum) : 0;
+    const count = ratingData && ratingData.ratingsCount ? Number(ratingData.ratingsCount) : 0;
+    const avg = count ? (sum / count) : 0;
+    const pct = Math.round((avg / 5) * 100);
+
+    let barWrap = container.querySelector('.rating-bar-wrap');
+    if(!barWrap){
+      barWrap = document.createElement('div'); barWrap.className='rating-bar-wrap';
+      barWrap.style.marginTop='10px';
+      container.appendChild(barWrap);
+    }
+    barWrap.innerHTML = '';
+
+    const outer = document.createElement('div');
+    outer.style.display='flex'; outer.style.gap='12px'; outer.style.alignItems='center';
+
+    const barOuter = document.createElement('div');
+    barOuter.style.width='220px';
+    barOuter.style.height='14px';
+    barOuter.style.background='#e6eefc';
+    barOuter.style.borderRadius='10px';
+    barOuter.style.overflow='hidden';
+    const barInner = document.createElement('div');
+    barInner.style.height='100%';
+    barInner.style.width = pct + '%';
+    barInner.style.transition='width 450ms ease';
+    barInner.style.background='linear-gradient(90deg,#fbbf24,#f97316)';
+    barOuter.appendChild(barInner);
+    outer.appendChild(barOuter);
+
+    const meta = document.createElement('div');
+    meta.style.fontWeight='800';
+    meta.style.color='#0077ff';
+    meta.textContent = count ? ('Avg: ' + (Math.round(avg*10)/10) + ' / 5 (' + pct + '%) — ' + count + ' rater' + (count>1?'s':'') ) : 'No ratings yet';
+    outer.appendChild(meta);
+    barWrap.appendChild(outer);
+    return { avg, pct, count };
+  }
+
+  // Export helpers to window._ratingsHelpers (safe)
+  window._ratingsHelpers = Object.assign(window._ratingsHelpers || {}, {
+    getDB: getDB,
+    fetchProfileRatings: fetchProfileRatings,
+    submitRatingToFirestore: submitRatingToFirestore,
+    hasUserVoted: hasUserVoted,
+    renderRatingBarElements: renderRatingBarElements
+  });
+
+  // Override openProfile to attach Firestore-backed rating UI
+  function overrideOpenProfile(){
+    const orig = window.openProfile;
+    window.openProfile = async function(p){
+      try{ if(typeof orig === 'function') orig(p); }catch(e){ console.warn('orig openProfile failed', e); }
+
+      try{
+        const container = document.querySelector('.profile-header .profile-head-info');
+        if(!container) return;
+        const prev = document.getElementById('profileRatingContainer');
+        if(prev) prev.remove();
+
+        const rc = document.createElement('div'); rc.id = 'profileRatingContainer'; rc.className = 'profile-rating';
+        rc.style.marginTop = '10px';
+
+        // star row (select)
+        const starRow = document.createElement('div'); starRow.className='rating-stars'; starRow.style.marginTop='6px';
+        let selected = 0;
+        for(let i=1;i<=5;i++){
+          const s = document.createElement('span');
+          s.innerHTML = '★';
+          s.dataset.value = i;
+          s.style.userSelect = 'none';
+          s.style.fontSize = '20px';
+          s.style.cursor = 'pointer';
+          s.onclick = function(){
+            selected = Number(this.dataset.value);
+            const stars = starRow.querySelectorAll('span');
+            stars.forEach(st => {
+              if(Number(st.dataset.value) <= selected) st.classList.add('active');
+              else st.classList.remove('active');
+            });
+            submitBtn.disabled = false;
+          };
+          starRow.appendChild(s);
+        }
+        rc.appendChild(starRow);
+
+        // submit button
+        const submitBtn = document.createElement('button');
+        submitBtn.textContent = 'Submit Rating';
+        submitBtn.style.marginTop = '8px';
+        submitBtn.style.padding = '8px 12px';
+        submitBtn.style.borderRadius = '8px';
+        submitBtn.style.border = 'none';
+        submitBtn.style.cursor = 'pointer';
+        submitBtn.style.fontWeight = '800';
+        submitBtn.style.background = 'linear-gradient(90deg,#06b6d4,#0ea5a6)';
+        submitBtn.style.color = '#fff';
+        submitBtn.disabled = true;
+        rc.appendChild(submitBtn);
+
+        // attach to profile header
+        container.appendChild(rc);
+
+        // load rating data and whether current user has voted
+        const profileUid = p && p.uid ? p.uid : (document.getElementById('profileUID') ? document.getElementById('profileUID').textContent : null);
+        const db = getDB();
+        const voterUid = (window.myUID || localStorage.getItem('profiles_my_uid_v1')) || null;
+        const ratingData = profileUid && db ? await fetchProfileRatings(profileUid) : null;
+        const alreadyVoted = profileUid && voterUid && db ? await hasUserVoted(profileUid, voterUid) : false;
+
+        // render current results
+        renderRatingBarElements(rc, ratingData || {});
+
+        if(alreadyVoted){
+          // hide controls
+          starRow.style.display = 'none';
+          submitBtn.style.display = 'none';
+        }
+
+        // submit handler (Firestore)
+        submitBtn.onclick = async function(){
+          if(!selected){ alert('Select a star rating first'); return; }
+          if(!profileUid){ alert('Profile id missing'); return; }
+          submitBtn.disabled = true;
+          submitBtn.textContent = 'Saving…';
+          try{
+            const ok = await submitRatingToFirestore(profileUid, selected);
+            if(ok){
+              const latest = await fetchProfileRatings(profileUid);
+              renderRatingBarElements(rc, latest || {});
+              // hide controls after successful vote
+              starRow.style.display = 'none';
+              submitBtn.style.display = 'none';
+              // merge into local profiles array (if present)
+              try{
+                const idx = (window.profiles||[]).findIndex(x => String(x.uid) === String(profileUid));
+                if(idx !== -1){
+                  window.profiles[idx].ratingsSum = (latest && latest.ratingsSum) || window.profiles[idx].ratingsSum || 0;
+                  window.profiles[idx].ratingsCount = (latest && latest.ratingsCount) || window.profiles[idx].ratingsCount || 0;
+                  window.profiles[idx].ratingsByStar = (latest && latest.ratingsByStar) || window.profiles[idx].ratingsByStar || {};
+                } else {
+                  (window.profiles = window.profiles || []).push({ uid: profileUid, name: (p && p.name) || ('UID '+profileUid), ratingsSum: (latest&&latest.ratingsSum)||0, ratingsCount: (latest&&latest.ratingsCount)||0, ratingsByStar: (latest&&latest.ratingsByStar)||{} });
+                }
+              }catch(e){ console.warn('merge local ratings failed', e); }
+              try{ normalizeRatingsForProfiles(); }catch(_){}
+
+
+              // refresh leaderboards (if function available)
+              try{
+                if(typeof loadProfilesFromFirebase === 'function') {
+                  await loadProfilesFromFirebase();
+                }
+              }catch(e){ console.warn('refresh profiles after rating failed', e); }
+              try{
+                if(typeof displayLeaderboard === 'function') displayLeaderboard();
+                // try common leaderboard keys
+                if(typeof displayLeaderboard === 'function') { displayLeaderboard('mostRated'); displayLeaderboard('alltime'); displayLeaderboard('rated'); }
+              }catch(e){ console.warn('displayLeaderboard calls failed', e); }
+              alert('Rating submitted — thanks!');
+            }
+          }catch(err){
+            console.error('submitRating failure', err);
+            alert('Failed to submit rating: ' + (err && err.message ? err.message : err));
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Submit Rating';
+          }
+        };
+      }catch(e){ console.warn('openProfile rating injection error', e); }
+    };
+  }
+
+  // Patch displayLeaderboard by polling until it's defined, then wrap it
+  function patchDisplayLeaderboard(){
+    let tries = 0;
+    const maxTries = 40;
+    const iv = setInterval(()=>{
+      tries++;
+      if(typeof displayLeaderboard === 'function'){
+        clearInterval(iv);
+        const orig = displayLeaderboard;
+        window.displayLeaderboard = function(type){
+          try{ orig(type); }catch(e){ console.warn('orig displayLeaderboard err', e); }
+          // After original renders, attach rating info to items
+          try{
+            const profilesArr = window.profiles || []; try{ normalizeRatingsForProfiles(); }catch(e){}
+
+            // find leaderboard container(s)
+            const lists = document.querySelectorAll('.leaderboard-list, .leaderboard, #leaderboardList');
+            lists.forEach(list => {
+              const items = list.querySelectorAll('.leaderboard-item, li, .item');
+              items.forEach(item => {
+                // attempt to identify which profile this item represents
+                let matched = null;
+                // Prefer dataset uid if present
+                if(item.dataset && item.dataset.uid){
+                  matched = profilesArr.find(p => String(p.uid) === String(item.dataset.uid));
+                }
+                // fallback: match by name substring
+                if(!matched){
+                  const txt = (item.textContent||'').trim();
+                  matched = profilesArr.find(p => p.name && txt.includes(p.name));
+                }
+                if(matched && matched.ratingsCount){
+                  const avg = (matched.ratingsSum || 0) / (matched.ratingsCount || 1);
+                  const pct = Math.round((avg/5)*100);
+                  let el = item.querySelector('.rating-percent');
+                  if(!el){
+                    el = document.createElement('div');
+                    el.className = 'rating-percent';
+                    el.style.fontSize = '13px';
+                    el.style.fontWeight = '600';
+                    el.style.color = '#f97316';
+                    el.style.marginTop = '6px';
+                    item.appendChild(el);
+                  }
+                  el.textContent = 'Rating: ' + (Math.round(avg*10)/10) + '/5 ('+pct+'%)';
+                }
+              });
+            });
+          }catch(e){ console.warn('leaderboard patch err', e); }
+        };
+        return;
+      }
+      if(tries>maxTries) clearInterval(iv);
+    }, 350);
+  }
+
+  // Initialize: override openProfile and patch leaderboard
+  try{ overrideOpenProfile(); }catch(e){ console.warn('overrideOpenProfile failed', e); }
+  try{ patchDisplayLeaderboard(); }catch(e){ console.warn('patchDisplayLeaderboard failed', e); }
+
+  // Expose helpers for debugging
+  window._ratingsHelpers = Object.assign(window._ratingsHelpers || {}, { getDB:getDB, fetchProfileRatings:fetchProfileRatings, submitRatingToFirestore:submitRatingToFirestore, hasUserVoted:hasUserVoted, renderRatingBarElements:renderRatingBarElements });
+
+})();
+</script>
+<!-- END: Ratings - Robust Firestore-backed implementation -->
+
+
+
+
+<script>
+// --- Assistant: non-invasive safety & rating-percent enhancer ---
+(function(){
+  // Ensure globals exist so earlier scripts won't throw
+  if (typeof window.profiles === 'undefined') window.profiles = window.profiles || [];
+  if (typeof window.showPage === 'undefined') window.showPage = function(p){ console.warn('showPage missing. attempted to show',p); };
+  if (typeof window.currentSkill === 'undefined') window.currentSkill = '';
+  if (typeof window.myUID === 'undefined') window.myUID = null;
+
+  function computeRatingPct(p){
+    const sum = Number(p.ratingsSum ?? p.ratings ?? 0);
+    const cnt = Number(p.ratingsCount ?? p.ratings_count ?? p.votes ?? 0);
+    return (cnt && cnt>0) ? Math.round((sum / (cnt * 5)) * 100) : 0;
+  }
+
+  function addBadgeToProfileCard(cardElem, p){
+    if(!cardElem) return;
+    if(cardElem.querySelector('.rating-badge')) return; // already added
+    const pct = computeRatingPct(p || {});
+    const el = document.createElement('div');
+    el.className = 'rating-badge';
+    el.style.fontSize = '13px';
+    el.style.color = '#f97316';
+    el.style.fontWeight = '800';
+    el.style.marginTop = '6px';
+    el.textContent = 'Rating: ' + pct + '%';
+    // append to info/meta area if available
+    const info = cardElem.querySelector('.info') || cardElem;
+    info.appendChild(el);
+  }
+
+  // When DOM ready, try to enhance existing DOM nodes non-invasively.
+  function enhanceOnce(){
+    // compute ratingPct for in-memory profiles
+    try{
+      window.profiles.forEach(p => { p.ratingPct = computeRatingPct(p); });
+    }catch(e){ /* ignore */ }
+
+    // enhance leaderboard entries (.leader-card, .meta)
+    try{
+      const lb = document.getElementById('leaderboardList');
+      if(lb){
+        lb.querySelectorAll('.leader-card').forEach(card => {
+          try{
+            const name = card.querySelector('.name')?.textContent?.trim() || '';
+            const meta = card.querySelector('.meta');
+            // if meta already mentions Rating, skip
+            if(meta && /Rating:/.test(meta.textContent)) return;
+            // try to find uid from data-uid attribute or in text
+            let uid = card.getAttribute('data-uid') || card.getAttribute('data-id') || '';
+            let p = null;
+            if(uid && window.profiles && window.profiles.length){
+              p = window.profiles.find(x => String(x.uid) === String(uid));
+            }
+            // fallback: try match by name (best-effort)
+            if(!p && name && window.profiles && window.profiles.length){
+              p = window.profiles.find(x => (x.name||x.title||'').trim() === name);
+            }
+            if(p){
+              const pct = p.ratingPct ?? computeRatingPct(p);
+              const votes = Number(p.ratingsCount || p.votes || 0);
+              const newMeta = (meta ? meta.textContent + ' · ' : '') + 'Rating: ' + pct + '% (' + votes + ' votes)';
+              if(meta) meta.textContent = newMeta;
+              else {
+                const md = document.createElement('div'); md.className='meta'; md.textContent=newMeta; card.querySelector('.info')?.appendChild(md);
+              }
+            }
+          }catch(e){}
+        });
+      }
+    }catch(e){}
+
+    // enhance profile cards in profiles view: look for elements with class 'profile-card' or similar
+    try{
+      const cardSelectors = ['.profile-card', '.card.profile', '.pro-card', '.lead-card', '.leader-card', '.profile-item'];
+      cardSelectors.forEach(sel => {
+        document.querySelectorAll(sel).forEach(card => {
+          // attempt to find uid or name from card, then lookup
+          let uid = card.getAttribute('data-uid') || card.getAttribute('data-id') || '';
+          let name = card.querySelector('.name')?.textContent?.trim() || card.querySelector('.profile-name')?.textContent?.trim() || '';
+          let p = null;
+          if(uid && window.profiles.length) p = window.profiles.find(x => String(x.uid) === String(uid));
+          if(!p && name && window.profiles.length) p = window.profiles.find(x => (x.name||x.title||'').trim() === name);
+          addBadgeToProfileCard(card, p);
+        });
+      });
+    }catch(e){}
+
+    // observe leaderboardList for further updates and enhance newly added nodes
+    try{
+      const lb = document.getElementById('leaderboardList');
+      if(lb && typeof MutationObserver !== 'undefined'){
+        const mo = new MutationObserver(muts => {
+          muts.forEach(m => {
+            m.addedNodes && m.addedNodes.forEach(node => {
+              if(node.nodeType===1 && node.classList.contains('leader-card')){
+                // enhance this card
+                try{
+                  const name = node.querySelector('.name')?.textContent?.trim() || '';
+                  let p = null;
+                  const uid = node.getAttribute('data-uid') || node.getAttribute('data-id') || '';
+                  if(uid && window.profiles.length) p = window.profiles.find(x => String(x.uid) === String(uid));
+                  if(!p && name && window.profiles.length) p = window.profiles.find(x => (x.name||x.title||'').trim() === name);
+                  if(p){
+                    const pct = p.ratingPct ?? computeRatingPct(p);
+                    const votes = Number(p.ratingsCount || p.votes || 0);
+                    const meta = node.querySelector('.meta');
+                    const newMeta = (meta ? meta.textContent + ' · ' : '') + 'Rating: ' + pct + '% (' + votes + ' votes)';
+                    if(meta) meta.textContent = newMeta;
+                    else node.querySelector('.info')?.appendChild(Object.assign(document.createElement('div'), { className:'meta', textContent:newMeta }));
+                    addBadgeToProfileCard(node, p);
+                  }
+                }catch(e){}
+              }
+            });
+          });
+        });
+        mo.observe(lb, { childList: true, subtree: true });
+      }
+    }catch(e){}
+
+  } // enhanceOnce
+
+  if(document.readyState === 'complete' || document.readyState === 'interactive'){
+    setTimeout(enhanceOnce, 200);
+  } else {
+    document.addEventListener('DOMContentLoaded', () => setTimeout(enhanceOnce, 200));
+  }
+
+  // expose a helper to recompute later if needed
+  window.__assistantEnhanceProfiles = enhanceOnce;
+
+})(); 
+</script>
+
+<script>
+// --- Assistant: enforce MIN_VOTES=1 and clean rating display ---
+(function(){
+  const MIN_VOTES = 1;
+  function computeRatingPct(p){
+    const sum = Number(p.ratingsSum ?? p.ratings ?? 0);
+    const cnt = Number(p.ratingsCount ?? p.ratings_count ?? p.votes ?? 0);
+    return (cnt && cnt>0) ? Math.round((sum / (cnt * 5)) * 100) : 0;
+  }
+  function enhanceLeaderboards(){
+    try{
+      const lb = document.getElementById('leaderboardList');
+      if(!lb) return;
+      lb.querySelectorAll('.leader-card').forEach(card => {
+        const name = card.querySelector('.name')?.textContent?.trim() || '';
+        let uid = card.getAttribute('data-uid') || card.getAttribute('data-id') || '';
+        let p = null;
+        if(uid && window.profiles && window.profiles.length){
+          p = window.profiles.find(x => String(x.uid) === String(uid));
+        }
+        if(!p && name && window.profiles && window.profiles.length){
+          p = window.profiles.find(x => (x.name||x.title||'').trim() === name);
+        }
+        if(p){
+          const cnt = Number(p.ratingsCount || p.votes || 0);
+          if(cnt < MIN_VOTES){
+            card.style.display = 'none'; // hide entries with too few votes
+            return;
+          }
+          p.ratingPct = computeRatingPct(p);
+          const pct = p.ratingPct;
+          const votes = cnt;
+          const meta = card.querySelector('.meta');
+          if(meta){
+            meta.textContent = 'Rating: ' + pct + '% (' + votes + ' votes)';
+          } else {
+            const md = document.createElement('div');
+            md.className='meta';
+            md.textContent = 'Rating: ' + pct + '% (' + votes + ' votes)';
+            card.querySelector('.info')?.appendChild(md);
+          }
+        }
+      });
+    }catch(e){ console.error(e); }
+  }
+  if(document.readyState==='complete' || document.readyState==='interactive'){
+    setTimeout(enhanceLeaderboards, 300);
+  } else {
+    document.addEventListener('DOMContentLoaded', ()=> setTimeout(enhanceLeaderboards, 300));
+  }
+  window.__assistantEnhanceLeaderboards = enhanceLeaderboards;
+})();
+</script>
+
+<script>
+function refreshLeaderboards(type){
+  try{ if(typeof normalizeRatingsForProfiles==='function') normalizeRatingsForProfiles(); }catch(e){}
+  try{
+    if(typeof renderLeaderboard==='function') renderLeaderboard(type||window._lastLeaderboardType||'hired');
+    if(typeof displayLeaderboard==='function') displayLeaderboard(type||window._lastLeaderboardType||'hired');
+    if(typeof switchLeaderboard==='function'){ window._lastLeaderboardType=type||window._lastLeaderboardType||'hired'; }
+  }catch(e){}
+}
+
+(function patchRatingSubmission(){
+  try{
+    window.refreshLeaderboards=refreshLeaderboards;
+    if(!window._ratingSubmitPatched){
+      window._ratingSubmitPatched=true;
+      if(typeof displayLeaderboard==='function'){
+        const orig=displayLeaderboard;
+        window.displayLeaderboard=function(t){
+          try{ if(typeof normalizeRatingsForProfiles==='function') normalizeRatingsForProfiles(); }catch(e){}
+          window._lastLeaderboardType=t||window._lastLeaderboardType||'hired';
+          try{ orig(t); }catch(e){}
+          try{ refreshLeaderboards(t); }catch(_){}
+        };
+      }
+      if(typeof renderLeaderboard==='function'){
+        const orig2=renderLeaderboard;
+        window.renderLeaderboard=function(t){
+          window._lastLeaderboardType=t||window._lastLeaderboardType||'hired';
+          try{ orig2(t); }catch(e){}
+        };
+      }
+    }
+  }catch(e){}
+})();
+
+function downloadLeaderboard(){
+  try{
+    const data=(window.profiles&&window.profiles.length)?window.profiles:[];
+    try{ if(typeof normalizeRatingsForProfiles==='function') normalizeRatingsForProfiles(); }catch(_){}
+    const exportObj={
+      exportedAt:(new Date()).toISOString(),
+      count:data.length,
+      profiles:data.map(p=>({
+        uid:p.uid,name:p.name,
+        hires:p.hires||p.hireCount||0,
+        ratingsSum:p.ratingsSum||0,
+        ratingsCount:p.ratingsCount||0,
+        ratingsAvg:p.ratings||p.ratingsAvg||0,
+        ratingPct:p.ratingPct||0,
+        meta:p
+      }))
+    };
+    const blob=new Blob([JSON.stringify(exportObj,null,2)],{type:'application/json'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=url;
+    a.download='leaderboard-'+(new Date().toISOString().slice(0,19)).replace(/[:T]/g,'-')+'.json';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }catch(e){ alert('Download failed: '+(e&&e.message?e.message:e)); }
+}
+
+
+
+<!-- RUNTIME PATCH: normalize ratings and fix leaderboard meta display (non-invasive) -->
+<script>
+(function(){
+  function normalizeProfiles(){
+    try{
+      window.profiles = window.profiles || [];
+      window.profiles.forEach(p => {
+        p.ratingsSum = Number(p.ratingsSum ?? p.ratings ?? p.rating ?? 0) || 0;
+        p.ratingsCount = Number(p.ratingsCount ?? p.ratings_count ?? p.votes ?? 0) || 0;
+        p.ratingsAvg = p.ratingsCount ? (p.ratingsSum / p.ratingsCount) : 0;
+        p.ratingPct = p.ratingsCount ? Math.round((p.ratingsAvg / 5) * 100) : 0;
+        p.ratings = Math.round(p.ratingsAvg * 10) / 10;
+        p.hireCount = Number(p.hireCount ?? p.hires ?? p.allTimeHires ?? 0) || 0;
+        p.allTimeHires = Number(p.allTimeHires ?? p.hireCount ?? 0) || 0;
+      });
+    }catch(e){ console.warn('normalizeProfiles failed', e); }
+  }
+
+  function patchLeaderboards(){
+    try{
+      normalizeProfiles();
+      // update any rendered leaderboard cards (.leader-card)
+      document.querySelectorAll('.leader-card').forEach(card => {
+        try{
+          const info = card.querySelector('.leader-info, .info') || card;
+          const strong = info.querySelector('strong');
+          const uidNode = info.querySelector('.uid');
+          let uid = '';
+          if(uidNode) uid = uidNode.textContent.replace('UID:','').trim();
+          if(!uid){
+            // try data attribute
+            uid = card.dataset && (card.dataset.uid || card.dataset.id) ? (card.dataset.uid || card.dataset.id) : '';
+          }
+          let p = null;
+          if(uid && window.profiles && window.profiles.length){
+            p = window.profiles.find(x => String(x.uid) === String(uid));
+          }
+          if(!p && strong){
+            const name = strong.textContent.trim();
+            p = window.profiles.find(x => (x.name || '').trim() === name);
+          }
+          if(!p) return;
+          // detect active leaderboard type
+          let activeBtn = document.querySelector('.leaderboard-tabs button.active') || document.querySelector('.leaderboard-tabs button[aria-pressed="true"]') || null;
+          let type = 'hired';
+          if(activeBtn){
+            const t = (activeBtn.textContent || '').toLowerCase();
+            if(t.includes('all')) type = 'alltime';
+            else if(t.includes('rated')) type = 'rated';
+            else if(t.includes('hired')) type = 'hired';
+          } else {
+            // fallback: infer by presence of keywords inside .meta
+            const meta = info.querySelector('.meta');
+            if(meta && /rating/i.test(meta.textContent)) type = 'hired';
+          }
+          const metaEl = info.querySelector('.meta') || info;
+          if(!metaEl) return;
+          let newMeta = '';
+          if(type === 'hired'){
+            newMeta = 'Hires: ' + (p.hireCount || 0) + ' · Rating: ' + (p.ratingPct || 0) + '%';
+          } else if(type === 'alltime'){
+            newMeta = 'All-Time Hires: ' + (p.allTimeHires || 0) + ' · Avg: ' + (p.ratingsCount ? p.ratingsAvg.toFixed(1) : '0') + ' /5 (' + (p.ratingPct || 0) + '%)';
+          } else {
+            newMeta = 'Avg: ' + (p.ratingsCount ? p.ratingsAvg.toFixed(1) : '0') + ' /5 · ' + (p.ratingsCount || 0) + ' votes · ' + (p.ratingPct || 0) + '%';
+          }
+          metaEl.textContent = newMeta;
+        }catch(e){ /* per-card failure shouldn't stop others */ }
+      });
+    }catch(e){ console.warn('patchLeaderboards failed', e); }
+  }
+
+  // run after small delay on load and whenever leaderboard buttons are clicked
+  document.addEventListener('DOMContentLoaded', function(){
+    setTimeout(patchLeaderboards, 350);
+  });
+  // re-run when leaderboard controls are clicked
+  document.addEventListener('click', function(ev){
+    if(ev.target && ev.target.closest && ev.target.closest('.leaderboard-tabs')){
+      setTimeout(patchLeaderboards, 250);
+    }
+  });
+  // also expose for manual run
+  window._patchLeaderboards = patchLeaderboards;
+})();
+</script>
+<!-- END RUNTIME PATCH -->
+
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  // Always land on Home when app opens
+  showPage("home");
+});
+</script>
 
 </body>
 </html>

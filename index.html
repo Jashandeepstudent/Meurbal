@@ -353,6 +353,10 @@
   box-shadow: 0 6px 16px rgba(0,0,0,0.2);
 }
 
+
+/* Hide back buttons during auth/login/registration/account completion */
+#authPage .back-btn, #completeAccountModal .back-btn { display:none !important; }
+
 </style>
 <style>
   .icon-btn {
@@ -724,59 +728,221 @@ document.addEventListener('DOMContentLoaded', function(){
 }
 </style>
 <!-- Auth Page -->
-<div class="page" id="authPage" style="display:flex; align-items:center; justify-content:center; height:100vh;">
-<div aria-label="Authentication" class="auth-card" role="region">
-<div style="display:flex;justify-content:space-between;align-items:center;">
-<h3 style="margin:0">Welcome</h3>
-<label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
-<span class="fake-toggle" id="useContactToggle" title="Use phone/contact instead of email"></span>
-<input id="useContactSwitch" style="display:none" type="checkbox"/>
-<span style="font-size:13px; font-weight:800; color:#374151;">Use Contact</span>
-</label>
+<div class="page" id="authPage" style="display:flex; align-items:center; justify-content:center; height:100vh; background:#f9fafb;">
+  <div aria-label="Authentication" class="auth-card" role="region" 
+       style="padding:20px; border-radius:12px; background:white; box-shadow:0 4px 15px rgba(0,0,0,0.1); width:320px;">
+    
+    <!-- Header + Toggle -->
+    <div style="display:flex;justify-content:space-between;align-items:center;">
+      <h3 style="margin:0">Welcome</h3>
+      <div style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+        <label class="switch">
+          <input type="checkbox" id="useContactSwitch"/>
+          <span class="slider"></span>
+        </label>
+        <span style="font-size:13px; font-weight:800; color:#374151;">Use Contact</span>
+      </div>
+    </div>
+
+    <!-- Email / password area -->
+    <div id="emailFormArea" style="margin-top:12px;">
+      <input autocomplete="email" class="auth-input" id="emailInput" placeholder="Email" type="email"/>
+      <div style="height:8px"></div>
+      <input autocomplete="current-password" class="auth-input" id="passwordInput" placeholder="Password" type="password"/>
+      
+      <div class="auth-row" style="margin-top:12px; display:flex; gap:8px;">
+        <button class="auth-primary" id="primaryAuthBtn">Create account</button>
+        <button class="auth-secondary" id="secondaryAuthBtn" style="display:none">Login</button>
+      </div>
+      
+      <div style="margin-top:12px; text-align:center;">
+        <button class="google-btn" id="googleBtn">Continue with Google</button>
+      </div>
+      
+      <div class="auth-small-note" style="text-align:center;">
+        <span class="linkish" id="authToggleLink">Already have an account? Login</span>
+      </div>
+    </div>
+
+    <!-- Phone/OTP area (hidden by default) -->
+    <div id="phoneFormArea" style="margin-top:12px; display:none;">
+      <input class="auth-input" id="phoneInput" placeholder="+91 98765 43210" type="text"/>
+      <div id="recaptcha-container" style="margin-top:8px;"></div>
+      
+      <div style="display:flex; gap:8px; margin-top:8px;">
+        <button class="auth-primary" id="sendOtpBtn">Send OTP</button>
+        <input class="auth-input" id="otpInput" placeholder="Enter OTP" style="flex:1;" type="text"/>
+      </div>
+      
+      <div style="display:flex; gap:8px; margin-top:8px;">
+        <button class="auth-secondary" id="verifyOtpBtn">Verify OTP</button>
+      </div>
+      
+      <div class="auth-small-note">Use phone if you prefer contact-based sign in.</div>
+    </div>
+
+    <!-- Status/Error messages -->
+    <p id="authStatus" style="color:#d73a49; font-weight:800; margin-top:12px;"></p>
+  </div>
 </div>
-<!-- Email / password area -->
-<div id="emailFormArea" style="margin-top:12px;">
-<input autocomplete="email" class="auth-input" id="emailInput" placeholder="Email" type="email"/>
-<div style="height:8px"></div>
-<input autocomplete="current-password" class="auth-input" id="passwordInput" placeholder="Password" type="password"/>
-<div class="auth-row" style="margin-top:12px;">
-<button class="auth-primary" id="primaryAuthBtn">Create account</button>
-<button class="auth-secondary" id="secondaryAuthBtn" style="display:none">Login</button>
-</div>
-<div style="margin-top:12px; text-align:center;">
-<button class="google-btn" id="googleBtn">Continue with Google</button>
-</div>
-<div class="auth-small-note" style="text-align:center;">
-<span class="linkish" id="authToggleLink">Already have an account? Login</span>
-</div>
-</div>
-<!-- Phone/OTP area (hidden by default) -->
-<div id="phoneFormArea" style="margin-top:12px; display:none;">
-<input class="auth-input" id="phoneInput" placeholder="+91 98765 43210" type="text"/>
-<div id="recaptcha-container" style="margin-top:8px;"></div>
-<div style="display:flex; gap:8px; margin-top:8px;">
-<button class="auth-primary" id="sendOtpBtn">Send OTP</button>
-<input class="auth-input" id="otpInput" placeholder="Enter OTP" style="flex:1;" type="text"/>
-</div>
-<div style="display:flex; gap:8px; margin-top:8px;">
-<button class="auth-secondary" id="verifyOtpBtn">Verify OTP</button>
-</div>
-<div class="auth-small-note">Use phone if you prefer contact-based sign in.</div>
-</div>
-<p id="authStatus" style="color:#d73a49; font-weight:800; margin-top:12px;"></p>
-</div>
-</div>
+
+<!-- Script -->
+<script>
+  const switchInput = document.getElementById("useContactSwitch");
+  const emailForm = document.getElementById("emailFormArea");
+  const phoneForm = document.getElementById("phoneFormArea");
+
+  switchInput.addEventListener("change", () => {
+    if (switchInput.checked) {
+      emailForm.style.display = "none";
+      phoneForm.style.display = "block";
+    } else {
+      emailForm.style.display = "block";
+      phoneForm.style.display = "none";
+    }
+  });
+</script>
+
+<!-- Styles -->
+<style>
+  .auth-input {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 14px;
+  }
+  .auth-primary {
+    flex:1;
+    padding:10px;
+    background:#2563eb;
+    color:white;
+    border:none;
+    border-radius:6px;
+    cursor:pointer;
+    font-weight:600;
+  }
+  .auth-secondary {
+    flex:1;
+    padding:10px;
+    background:#e5e7eb;
+    color:#374151;
+    border:none;
+    border-radius:6px;
+    cursor:pointer;
+    font-weight:600;
+  }
+  .google-btn {
+    padding:10px;
+    background:#fff;
+    border:1px solid #d1d5db;
+    border-radius:6px;
+    cursor:pointer;
+    font-weight:600;
+    width:100%;
+  }
+  .auth-small-note {
+    font-size:12px;
+    color:#6b7280;
+    margin-top:8px;
+  }
+  .linkish {
+    color:#2563eb;
+    cursor:pointer;
+    font-weight:600;
+  }
+
+  /* Modern toggle switch */
+  .switch {
+    position: relative;
+    display: inline-block;
+    width: 40px;
+    height: 22px;
+  }
+  .switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+  }
+  .slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-color: #d1d5db;
+    transition: .4s;
+    border-radius: 34px;
+  }
+  .slider:before {
+    position: absolute;
+    content: "";
+    height: 16px; width: 16px;
+    left: 3px; bottom: 3px;
+    background-color: white;
+    transition: .4s;
+    border-radius: 50%;
+  }
+  .switch input:checked + .slider {
+    background-color: #34d399; /* green */
+  }
+  .switch input:checked + .slider:before {
+    transform: translateX(18px);
+  }
+</style>
+
 <!-- Post-register "Complete account" modal (inserts when needed) -->
 <div aria-labelledby="completeTitle" aria-modal="true" class="modal" id="completeAccountModal" role="dialog">
   <div class="modal-content">
-    <button class="modal-close" onclick="closeCompleteAccountModal()">✕</button>
+    
     <h4 id="completeTitle">Complete your account</h4>
     <p class="auth-small-note">Pick a username and enter your age so we can link your profile.</p>
     <input class="auth-input" id="complete_username" placeholder="Username (public)">
     <div style="height:8px"></div>
     <input class="auth-input" id="complete_age" placeholder="Age" type="number">
-    <div style="display:flex; gap:8px; margin-top:12px;">
-      <button class="auth-primary" id="completeSaveBtn">Save &amp; Continue</button>
+    <div style="display:flex; flex-direction:column; gap:12px; margin-top:12px;">
+      <div style="height:8px"></div>
+      <label for="stateInput" style="font-weight:600; margin-top:6px;">State</label>
+      <select id="stateInput" class="auth-input" name="state" required>
+        <option value="">Select state</option>
+        <option>Andhra Pradesh</option>
+        <option>Arunachal Pradesh</option>
+        <option>Assam</option>
+        <option>Bihar</option>
+        <option>Chhattisgarh</option>
+        <option>Goa</option>
+        <option>Gujarat</option>
+        <option>Haryana</option>
+        <option>Himachal Pradesh</option>
+        <option>Jammu and Kashmir</option>
+        <option>Jharkhand</option>
+        <option>Karnataka</option>
+        <option>Kerala</option>
+        <option>Madhya Pradesh</option>
+        <option>Maharashtra</option>
+        <option>Manipur</option>
+        <option>Meghalaya</option>
+        <option>Mizoram</option>
+        <option>Nagaland</option>
+        <option>Odisha</option>
+        <option>Punjab</option>
+        <option>Rajasthan</option>
+        <option>Sikkim</option>
+        <option>Tamil Nadu</option>
+        <option>Telangana</option>
+        <option>Tripura</option>
+        <option>Uttar Pradesh</option>
+        <option>Uttarakhand</option>
+        <option>West Bengal</option>
+        <option>Other</option>
+      </select>
+      <div style="height:8px"></div>
+      <label for="districtInput" style="font-weight:600; margin-top:6px;">District</label>
+      <input id="districtInput" class="auth-input" name="district" type="text" placeholder=\"Enter district\" required />
+
+      <div style="height:8px"></div>
+<label for="cityInput" style="font-weight:600; margin-top:6px;">City</label>
+<input id="cityInput" class="auth-input" name="city" type="text" placeholder="Enter city" required />
+
+<button class="auth-primary" id="completeSaveBtn">Save &amp; Continue</button>
     </div>
     <div class="auth-small-note" id="completeAccountStatus"></div>
   </div>
@@ -974,10 +1140,16 @@ document.addEventListener('DOMContentLoaded', function(){
     const dbInst = _getDb();
     try{
       if(dbInst){
+        // read state/district fields from modal
+        const stateVal = (document.getElementById('stateInput') ? (document.getElementById('stateInput').value||'') : '');
+        const districtVal = (document.getElementById('districtInput') ? (document.getElementById('districtInput').value||'') : '');
         await dbInst.collection('users').doc(String(uid)).set({
           displayName: username,
           age: (age > 0 ? Number(age) : null),
           email: (_getAuth() && _getAuth().currentUser && _getAuth().currentUser.email) ? _getAuth().currentUser.email : null,
+          state: stateVal,
+          district: districtVal,
+          city: (document.getElementById('cityInput')?.value || ''),
           updatedAt: new Date().toISOString()
         }, { merge: true });
       }
@@ -990,22 +1162,10 @@ document.addEventListener('DOMContentLoaded', function(){
             await dbInst.collection('users').doc(String(uid)).set({ profileUid: String(profileUid) }, { merge: true });
           }
         } else {
-          const profileUid = String(uid);
-          const p = {
-            uid: profileUid,
-            name: username,
-            age: (age > 0 ? Number(age) : null),
-            skill: '',
-            address: '',
-            contact: (_getAuth() && _getAuth().currentUser && _getAuth().currentUser.phoneNumber) ? _getAuth().currentUser.phoneNumber : '',
-            language: '',
-            description: '',
-            status: 'Free',
-            ownerUid: String(uid),
-            createdAt: new Date().toISOString()
-          };
-          if(dbInst) await dbInst.collection('profiles').doc(String(profileUid)).set(p, { merge: true });
-          if(dbInst) await dbInst.collection('users').doc(String(uid)).set({ profileUid: String(profileUid) }, { merge: true });
+          // IMPORTANT: Do NOT auto-create a profile here.
+          // The user explicitly asked that profile creation be manual — so skip creating profiles/{uid}.
+          // The user can create a profile later via the "Create Your Profile" form.
+          console.log('No existing profile linked for uid', uid, '- skipping automatic profile creation.');
         }
       }catch(e){ console.warn('profile linking failed', e); }
       localStorage.setItem('profiles_my_uid_v1', String(uid));
@@ -1101,33 +1261,11 @@ document.addEventListener('DOMContentLoaded', function(){
         }
       }
 
-      // If still not found, create a minimal profile using uid as profile id
+      // If still not found, DO NOT auto-create a profile — allow the user to create it manually later.
       if(!profileUid){
-        try{
-          const displayName = (userDocData && userDocData.displayName) ? userDocData.displayName : (authInst && authInst.currentUser && authInst.currentUser.displayName ? authInst.currentUser.displayName : '');
-          const email = (userDocData && userDocData.email) ? userDocData.email : (authInst && authInst.currentUser && authInst.currentUser.email ? authInst.currentUser.email : '');
-          const phone = (authInst && authInst.currentUser && authInst.currentUser.phoneNumber) ? authInst.currentUser.phoneNumber : '';
-          const newProfile = {
-            uid: String(uid),
-            name: displayName || ('user-'+String(uid).slice(0,6)),
-            age: (userDocData && userDocData.age) ? userDocData.age : null,
-            skill: '',
-            address: '',
-            contact: phone || email || '',
-            language: '',
-            description: '',
-            status: 'Free',
-            ownerUid: String(uid),
-            createdAt: new Date().toISOString()
-          };
-          await dbInst.collection('profiles').doc(String(uid)).set(newProfile, { merge: true });
-          await userRef.set({ profileUid: String(uid) }, { merge: true });
-          profileUid = String(uid);
-          window.myProfile = newProfile;
-          localStorage.setItem('profiles_my_uid_v1', String(profileUid));
-        }catch(e3){
-          console.warn('creating fallback profile failed', e3);
-        }
+        // Do not create a fallback profile automatically. Leave profileUid null and myProfile unset.
+        window.myProfile = null;
+        // (When the user creates a profile via the Create Profile form, saveProfileToFirebase will link it.)
       } else {
         // If found, fetch and set to window.myProfile
         try{
@@ -1247,8 +1385,12 @@ document.addEventListener('DOMContentLoaded', function(){
 <option value="Electrician">Electrician</option>
 <option value="Painter">Painter</option>
 <option value="Tutor">Tutor</option>
+<option value="Mistri">Mistri</option>
+<option value="Carpenter">Carpenter</option>
+<option value="Welder">Welder</option>
 </select>
 <input id="address" placeholder="Your Address" required="" type="text"/>
+<input id="city" placeholder="Your City" required type="text"/>
 <input id="contact" placeholder="Contact No." required="" type="text"/>
 <input id="language" placeholder="Languages Spoken" type="text"/>
 <textarea id="description" placeholder="Short description about you (will show under your name)" rows="3"></textarea>
@@ -1274,6 +1416,9 @@ document.addEventListener('DOMContentLoaded', function(){
 <div class="category" onclick="filterSkill('Electrician')">Electrician</div>
 <div class="category" onclick="filterSkill('Painter')">Painter</div>
 <div class="category" onclick="filterSkill('Tutor')">Tutor</div>
+<div class="category" onclick="filterSkill('Mistri')">Mistri</div>
+<div class="category" onclick="filterSkill('Carpenter')">Carpenter</div>
+<div class="category" onclick="filterSkill('Welder')">Welder</div>
 </div>
 <div class="search-bar">
 <input id="searchInput" oninput="displayProfiles()" placeholder="Search by Name or UID" type="text"/>
@@ -1366,6 +1511,9 @@ document.addEventListener('DOMContentLoaded', function(){
 <div class="category" onclick="savedSkill='Electrician';displaySaved()">Electrician</div>
 <div class="category" onclick="savedSkill='Painter';displaySaved()">Painter</div>
 <div class="category" onclick="savedSkill='Tutor';displaySaved()">Tutor</div>
+<div class="category" onclick="savedSkill='Mistri';displaySaved()">Mistri</div>
+<div class="category" onclick="savedSkill='Carpenter';displaySaved()">Carpenter</div>
+<div class="category" onclick="savedSkill='Welder';displaySaved()">Welder</div>
 </div>
 <div class="search-bar">
 <input id="savedSearchInput" oninput="displaySaved()" placeholder="Search in Saved" type="text"/>
@@ -1418,6 +1566,7 @@ function openProfileForm(){
     document.getElementById('age').value=myProfile.age;
     document.getElementById('skill').value=myProfile.skill;
     document.getElementById('address').value=myProfile.address;
+    document.getElementById('city').value=myProfile.city || '';
     document.getElementById('contact').value=myProfile.contact;
     document.getElementById('language').value=myProfile.language;
     document.getElementById('description').value = myProfile.description || '';
@@ -1438,6 +1587,7 @@ document.getElementById("profileForm").addEventListener("submit",function(e){
     age:document.getElementById("age").value,
     skill:document.getElementById("skill").value,
     address:document.getElementById("address").value,
+    city:document.getElementById("city").value,
     contact:document.getElementById("contact").value.trim(),
     language:document.getElementById("language").value,
     description: document.getElementById("description").value.trim(),
@@ -1470,16 +1620,37 @@ function saveProfile(p){
   }
 }
 
+
 function displayProfiles(){
   const container=document.getElementById("profileList");
   container.innerHTML='';
   const search=document.getElementById("searchInput")?document.getElementById("searchInput").value.toLowerCase():"";
-  profiles.filter(p=>{
+  const cityVal=document.getElementById("change_city")?document.getElementById("change_city").value.trim().toLowerCase():"";
+  const districtVal=document.getElementById("change_district")?document.getElementById("change_district").value.trim().toLowerCase():"";
+  const stateVal=document.getElementById("change_state")?document.getElementById("change_state").value.trim().toLowerCase():"";
+
+  let filtered = profiles.filter(p=>{
     const statusMatch=p.status==="Free";
     const skillMatch=currentSkill==='All'||p.skill===currentSkill;
     const searchMatch=p.name.toLowerCase().includes(search)||p.uid.toString().includes(search);
     return statusMatch&&skillMatch&&searchMatch;
-  }).forEach(p=>{
+  });
+
+  // Priority: city > district > state > others
+  let cityMatches = [], districtMatches = [], stateMatches = [], others = [];
+  filtered.forEach(p=>{
+    const city = (p.city||"").toLowerCase();
+    const district = (p.district||"").toLowerCase();
+    const state = (p.state||"").toLowerCase();
+    if(cityVal && city === cityVal){ cityMatches.push(p); }
+    else if(districtVal && district === districtVal){ districtMatches.push(p); }
+    else if(stateVal && state === stateVal){ stateMatches.push(p); }
+    else { others.push(p); }
+  });
+
+  let ordered = [...cityMatches, ...districtMatches, ...stateMatches, ...others];
+
+  ordered.forEach(p=>{
     const box=document.createElement('div'); box.className='profile-box';
     const left=document.createElement('div'); left.style.display='flex'; left.style.gap='12px'; left.style.alignItems='center';
     const tag=document.createElement('div'); tag.style.width='44px'; tag.style.height='44px'; tag.style.borderRadius='10px'; tag.style.background='linear-gradient(135deg,#1e3a8a,#0ea5a6)'; tag.style.display='flex'; tag.style.alignItems='center'; tag.style.justifyContent='center'; tag.style.color='#fff'; tag.style.fontWeight='800'; tag.textContent = p.name.split(' ').map(s=>s[0]||'').slice(0,2).join('').toUpperCase();
@@ -1487,6 +1658,7 @@ function displayProfiles(){
     const nameSpan=document.createElement('span'); nameSpan.textContent=p.name; nameSpan.style.fontWeight='700';
     const descSpan=document.createElement('div'); descSpan.style.fontSize='13px'; descSpan.style.color='#6b7280'; descSpan.textContent = p.description ? previewText(p.description,50) : '';
     nameContainer.appendChild(nameSpan); nameContainer.appendChild(descSpan);
+    const locSpan=document.createElement('div'); locSpan.style.fontSize='12px'; locSpan.style.color='#374151'; locSpan.textContent = buildLocationString(p); nameContainer.appendChild(locSpan);
     left.appendChild(tag); left.appendChild(nameContainer);
 
     const actions=document.createElement('div'); actions.className='profile-actions';
@@ -1506,10 +1678,35 @@ function openProfile(p){
   currentOpenProfile = p;
   document.getElementById('profileName').textContent=p.name;
   document.getElementById('profileDescription').textContent = p.description || '';
-  document.getElementById('profileUID').textContent=p.uid;
+  (function(){
+  let displayUid = p.uid;
+  if(typeof displayUid === 'string' && /[a-zA-Z]/.test(displayUid)){
+    const digits = displayUid.replace(/\D/g,'');
+    displayUid = digits || displayUid.slice(0,12); // show digits if present, else a short preview
+  }
+  document.getElementById('profileUID').textContent = displayUid;
+})();
   document.getElementById('profileAge').textContent=p.age;
   document.getElementById('profileSkill').textContent=p.skill;
-  document.getElementById('profileAddress').textContent=p.address;
+  {
+  let parts = [];
+  if (p.address) parts.push(p.address);
+  if (p.city && (!p.address || !p.address.toLowerCase().includes(p.city.toLowerCase()))) {
+    parts.push(p.city);
+  }
+  if (p.district) parts.push(p.district);
+  if (p.state) parts.push(p.state);
+  {
+  let parts = [];
+  if (p.address) parts.push(p.address);
+  if (p.city && (!p.address || !p.address.toLowerCase().includes(p.city.toLowerCase()))) {
+    parts.push(p.city);
+  }
+  if (p.district) parts.push(p.district);
+  if (p.state) parts.push(p.state);
+  document.getElementById('profileAddress').textContent = parts.join(', ');
+}
+}
   document.getElementById('profileLanguage').textContent=p.language;
   document.getElementById('profileStatus').textContent = p.status ? p.status : 'Free';
 
@@ -1545,6 +1742,7 @@ function displaySaved(){
     const nameSpan=document.createElement('span'); nameSpan.textContent=p.name; nameSpan.style.fontWeight='700';
     const descSpan=document.createElement('div'); descSpan.style.fontSize='13px'; descSpan.style.color='#6b7280'; descSpan.textContent = p.description ? previewText(p.description,50) : '';
     nameContainer.appendChild(nameSpan); nameContainer.appendChild(descSpan);
+    const locSpan=document.createElement('div'); locSpan.style.fontSize='12px'; locSpan.style.color='#374151'; locSpan.textContent = buildLocationString(p); nameContainer.appendChild(locSpan);
     left.appendChild(tag); left.appendChild(nameContainer);
 
     const actions=document.createElement('div'); actions.className='profile-actions';
@@ -1722,7 +1920,7 @@ function renderLeaderboard(type){
     if(rank===1) rankBox.classList.add('leader-gold');
     else if(rank===2) rankBox.classList.add('leader-silver');
     else if(rank===3) rankBox.classList.add('leader-bronze');
-    rankBox.innerHTML = '<span style=\"font-weight:900; font-size:22px;\">' + rank + '</span>';
+    rankBox.innerHTML = '<span style="font-weight:900; font-size:22px;">' + rank + '</span>';
 
     const info = document.createElement('div'); info.className = 'leader-info';
     const nameEl = document.createElement('strong'); nameEl.textContent = p.name || ('UID ' + (p.uid || '—'));
@@ -1773,7 +1971,7 @@ function escapeHtml(str){
 /* escape for JS single-quoted string insertion */
 function escapeJs(str){
   if(!str) return '';
-  return String(str).replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+  return String(str).replace(/\\/g,'\\\').replace(/'/g,"\'");
 }
 
 
@@ -2101,6 +2299,51 @@ showPage('home');
 <script>
 /* Enhancements: profile-owner reply simulation and improved notification routing */
 
+
+/* ===== UID migration & safety patch (ensures profile UID stays numeric-only; separates account UID) ===== */
+(function(){
+  // helpers to store account vs profile ids separately
+  window.setAccountUID = function(uid){
+    try{ localStorage.setItem('profiles_account_uid_v1', String(uid)); window.myAccountUID = String(uid); }catch(e){}
+  };
+  window.setProfileUID = function(uid){
+    try{ localStorage.setItem('profiles_my_uid_v1', String(uid)); window.myUID = isNaN(uid) ? String(uid) : Number(uid); }catch(e){}
+  };
+
+  try{
+    // If older versions accidentally stored a Firebase (alphanumeric) auth UID in the profile key,
+    // migrate it to the dedicated account key so the profile key remains numeric-only.
+    const raw = localStorage.getItem('profiles_my_uid_v1');
+    if(raw && /[a-zA-Z]/.test(raw)){
+      localStorage.setItem('profiles_account_uid_v1', raw);
+      localStorage.removeItem('profiles_my_uid_v1');
+      window.myAccountUID = raw;
+      console.info('UID patch: migrated auth id from profiles_my_uid_v1 to profiles_account_uid_v1');
+    }
+    // expose both values at runtime
+    window.myAccountUID = window.myAccountUID || localStorage.getItem('profiles_account_uid_v1') || null;
+    const storedProfile = localStorage.getItem('profiles_my_uid_v1');
+    window.myUID = (typeof window.myUID !== 'undefined' && window.myUID) ? window.myUID : (storedProfile ? (isNaN(storedProfile) ? storedProfile : Number(storedProfile)) : null);
+  }catch(e){ console.warn('UID migration patch failed', e); }
+
+  // Monkeypatch setItem to avoid accidental future writes of alphanumeric auth UIDs into the profile key.
+  try{
+    const _orig = localStorage.setItem.bind(localStorage);
+    localStorage.setItem = function(k,v){
+      try{
+        if(k==='profiles_my_uid_v1' && /[a-zA-Z]/.test(String(v))){
+          // redirect to account key instead
+          _orig('profiles_account_uid_v1', String(v));
+          window.myAccountUID = String(v);
+          console.warn('UID patch: redirected write to profiles_account_uid_v1 because value contained letters.');
+          return;
+        }
+      }catch(e){/* ignore and fall through */}
+      return _orig(k, v);
+    };
+  }catch(e){ /* if monkeypatching fails, don't break the app */ }
+})();
+/* ===== end UID migration & safety patch ===== */
 /* persist/remember a "myUID" for the current browser user (set when profile is saved) */
 let myUID = null;
 try {
@@ -2117,8 +2360,7 @@ try {
     setTimeout(()=>{
       try {
         if (typeof myProfile !== 'undefined' && myProfile && myProfile.uid) {
-          myUID = myProfile.uid;
-          localStorage.setItem('profiles_my_uid_v1', String(myUID));
+          setProfileUID(myProfile.uid);
         }
       } catch(e){}
     }, 60);
@@ -2923,11 +3165,30 @@ async function loadMyProfileIfExists() {
 // Basic profile save/load (will be augmented later)
 async function saveProfileToFirebase(profile) {
   try {
-    await db.collection("profiles").doc(String(profile.uid)).set(profile);
+    // If the user is authenticated (window.myUID), prefer using that UID for the profile doc id so it's linked.
+    const authUid = (typeof window.myUID !== 'undefined' && window.myUID) ? String(window.myUID) : null;
+    const profileId = authUid ? authUid : (profile.uid ? String(profile.uid) : String(Date.now()));
+    profile.uid = String(profileId);
+    // ensure ownerUid is set for traceability
+    if(!profile.ownerUid) profile.ownerUid = authUid ? authUid : profile.uid;
+    // write profile (merge to avoid overwriting unexpected fields)
+    await db.collection("profiles").doc(String(profile.uid)).set(profile, { merge: true });
     setFBStatus("Profile saved ("+profile.uid+")");
+    // If we have an authenticated user, link the users/{authUid}.profileUid to this profile
+    try {
+      if(authUid){
+        await db.collection('users').doc(String(authUid)).set({ profileUid: String(profile.uid) }, { merge: true });
+        localStorage.setItem('profiles_my_uid_v1', String(profile.uid));
+      } else {
+        // For anonymous/local users, keep the profile id in localStorage so the UI can find it later
+        localStorage.setItem('profiles_my_uid_v1', String(profile.uid));
+      }
+    }catch(e){ console.warn('linking profile to user failed', e); }
+    return profile;
   } catch(e) {
     console.error("Firebase save error", e);
-    setFBStatus("Save error: "+e.message, "red");
+    setFBStatus("Save error: "+(e.message||e), "red");
+    throw e;
   }
 }
 
@@ -3092,17 +3353,27 @@ document.addEventListener("DOMContentLoaded", ()=>{
     window.saveProfileToFirebase = async function(profile){
       try{ await origSaveFB(profile); }catch(e){ console.warn('origSaveFB failed', e); }
       try{
-        // set myUID to profile.uid if not set
-        if(typeof myUID === 'undefined' || myUID === null) myUID = String(profile.uid);
-        localStorage.setItem('profiles_my_uid_v1', String(myUID));
-        const userRef = db.collection('users').doc(String(myUID));
-        await userRef.set({ profileUid: String(profile.uid) }, { merge: true });
-        // ensure profile doc has hireCount & rating fields set
-        const profRef = db.collection('profiles').doc(String(profile.uid));
-        await profRef.set({ hireCount: Number(profile.hireCount || 0), ratingsSum: Number(profile.ratingsSum || 0), ratingsCount: Number(profile.ratingsCount || 0) }, { merge: true });
-        const btn = document.getElementById('profileBtn'); if(btn) btn.textContent = 'Manage Profile';
-        await loadUserData(myUID);
-        setFBStatus('Profile & user linked');
+        const authUid = (typeof window.myUID !== 'undefined' && window.myUID) ? String(window.myUID) : null;
+        // If authenticated, link users/{authUid}.profileUid to this profile.
+        if(authUid){
+          localStorage.setItem('profiles_my_uid_v1', String(profile.uid));
+          const userRef = db.collection('users').doc(String(authUid));
+          await userRef.set({ profileUid: String(profile.uid) }, { merge: true });
+          // ensure profile doc has hireCount & rating fields set
+          const profRef = db.collection('profiles').doc(String(profile.uid));
+          await profRef.set({ hireCount: Number(profile.hireCount || 0), ratingsCount: Number(profile.ratingsCount || 0) }, { merge: true });
+          const btn = document.getElementById('profileBtn'); if(btn) btn.textContent = 'Manage Profile';
+          await loadUserData(authUid);
+          setFBStatus('Profile & user linked');
+        } else {
+          // Anonymous/local flows: keep profile id locally and set counts on profile doc.
+          localStorage.setItem('profiles_my_uid_v1', String(profile.uid));
+          const profRef = db.collection('profiles').doc(String(profile.uid));
+          await profRef.set({ hireCount: Number(profile.hireCount || 0), ratingsCount: Number(profile.ratingsCount || 0) }, { merge: true });
+          const btn = document.getElementById('profileBtn'); if(btn) btn.textContent = 'Manage Profile';
+          try{ await loadUserData(String(profile.uid)); }catch(e){ /* best-effort */ }
+          setFBStatus('Profile saved (local) & linked to UI');
+        }
       }catch(e){ console.warn('post-saveProfileToFirebase failed', e); setFBStatus('Post-save err','red'); }
     };
   }
@@ -3726,9 +3997,9 @@ function verifyOTP(){
 <script>
 
 (function(){
-  const STATES = ['Bihar','Uttar Pradesh','Maharashtra','Karnataka','Tamil Nadu','West Bengal','Delhi','Haryana','Rajasthan','Gujarat','Assam','Odisha','Punjab','Kerala','Jharkhand','Chhattisgarh','Telangana','Andhra Pradesh','Manipur','Meghalaya','Mizoram','Tripura','Nagaland','Goa','Sikkim','Arunachal Pradesh','Uttarakhand','Ladakh','Puducherry','Andaman and Nicobar'];
+  const STATES = ['Andhra Pradesh','Arunachal Pradesh','Assam','Bihar','Chhattisgarh','Goa','Gujarat','Haryana','Himachal Pradesh','Jammu and Kashmir','Jharkhand','Karnataka','Kerala','Madhya Pradesh','Maharashtra','Manipur','Meghalaya','Mizoram','Nagaland','Odisha','Punjab','Rajasthan','Sikkim','Tamil Nadu','Telangana','Tripura','Uttar Pradesh','Uttarakhand','West Bengal','Delhi','Puducherry','Ladakh','Andaman and Nicobar','Other'];
 
- function createOnboardingModal(){
+function createChangeModal(){
   if(document.getElementById('onboardModal')) return;
   const modal = document.createElement('div');
   modal.id = 'onboardModal';
@@ -3743,6 +4014,7 @@ function verifyOTP(){
           <option value="">-- Select State --</option>
         </select>
         <input id="onboard_district" placeholder=" Your District " style="padding:10px;border-radius:8px;border:1px solid #e8eefb;">
+        <input id="onboard_city" placeholder=" Your City " style="padding:10px;border-radius:8px;border:1px solid #e8eefb;">
         <div style="display:flex;gap:8px;margin-top:8px;">
           <button id="onboardSave" style="flex:1;padding:10px;border-radius:8px;border:none;background:linear-gradient(90deg,#06b6d4,#0ea5a6);color:#fff;font-weight:800;">Save</button>
           <button id="onboardSkip" style="flex:1;padding:10px;border-radius:8px;border:none;background:#eef2ff;color:#111;font-weight:700;">Skip</button>
@@ -3751,6 +4023,7 @@ function verifyOTP(){
     </div>`;
   document.body.appendChild(modal);
 
+  // Fill states
   const sel = modal.querySelector('#onboard_state');
   STATES.forEach(s => { 
     const o = document.createElement('option'); 
@@ -3759,21 +4032,25 @@ function verifyOTP(){
     sel.appendChild(o); 
   });
 
+  // Save button
   modal.querySelector('#onboardSave').onclick = function(){
     const state = modal.querySelector('#onboard_state').value;
     const district = modal.querySelector('#onboard_district').value.trim();
-    const info = { state, district };
+    const city = modal.querySelector('#onboard_city').value.trim();
+    const info = { state, district, city };
     if(state) localStorage.setItem('profiles_user_state_v1', state);
     localStorage.setItem('profiles_user_info_v1', JSON.stringify(info));
     try{
       if(document.getElementById('state')) document.getElementById('state').value = state;
       if(document.getElementById('district')) document.getElementById('district').value = district;
+      if(document.getElementById('city')) document.getElementById('city').value = city;
     }catch(e){}
     document.getElementById('onboardModal')?.remove();
     renderStateFilterBadge();
     if(typeof displayProfiles === 'function') displayProfiles();
   };
 
+  // Skip button
   modal.querySelector('#onboardSkip').onclick = function(){ 
     document.getElementById('onboardModal')?.remove(); 
   };
@@ -3787,7 +4064,7 @@ function verifyOTP(){
           if(user){
             const has = localStorage.getItem('profiles_user_state_v1') || localStorage.getItem('profiles_user_info_v1');
             if(!has){
-              createOnboardingModal();
+              createChangeModal();
             } else {
               renderStateFilterBadge();
               injectStateDistrictFieldsIntoProfileForm();
@@ -3798,7 +4075,7 @@ function verifyOTP(){
       } else {
         // fallback behaviour for non-Firebase preview/testing
         if(!localStorage.getItem('profiles_user_state_v1') && !sessionStorage.getItem('onboard_shown_once')){
-          createOnboardingModal();
+          createChangeModal();
           sessionStorage.setItem('onboard_shown_once','1');
         } else {
           renderStateFilterBadge();
@@ -3876,7 +4153,25 @@ function verifyOTP(){
     showOnboardingIfNeeded();
   });
 
-  window.displayProfiles = function(){
+  
+function buildLocationString(p) {
+  // if full address is given, just return that
+  if (p.address && p.address.trim() !== "") {
+    return p.address;
+  }
+
+  // else build from parts
+  let parts = [];
+  if (p.city) parts.push(p.city);
+  if (p.district) parts.push(p.district);
+  if (p.state) parts.push(p.state);
+  if (p.country) parts.push(p.country);
+
+  return parts.join(', ');
+}
+
+
+window.displayProfiles = function(){
     const container=document.getElementById("profileList");
     if(!container) return;
     container.innerHTML='';
@@ -3895,8 +4190,9 @@ function verifyOTP(){
       const nameContainer=document.createElement('div'); nameContainer.style.display='flex'; nameContainer.style.flexDirection='column';
       const nameSpan=document.createElement('span'); nameSpan.textContent=p.name; nameSpan.style.fontWeight='700';
       const descSpan=document.createElement('div'); descSpan.style.fontSize='13px'; descSpan.style.color='#6b7280'; descSpan.textContent = p.description ? (p.description.length>50 ? p.description.slice(0,49)+'…' : p.description) : '';
-      const metaSmall = document.createElement('div'); metaSmall.style.fontSize='12px'; metaSmall.style.color='#6b7280'; metaSmall.textContent = p.state ? (p.state + (p.district ? ' · '+p.district : '')) : '';
-      nameContainer.appendChild(nameSpan); nameContainer.appendChild(descSpan); if(metaSmall.textContent) nameContainer.appendChild(metaSmall);
+      const metaSmall = document.createElement('div'); metaSmall.style.fontSize='12px'; metaSmall.style.color='#6b7280'; metaSmall.textContent = p.state ? ((p.city||'') + (p.district ? ', '+p.district : '') + (p.state ? ', '+p.state : '')) : '';
+      nameContainer.appendChild(nameSpan); nameContainer.appendChild(descSpan);
+    const locSpan=document.createElement('div'); locSpan.style.fontSize='12px'; locSpan.style.color='#374151'; locSpan.textContent = buildLocationString(p); nameContainer.appendChild(locSpan); if(metaSmall.textContent) nameContainer.appendChild(metaSmall);
       left.appendChild(tag); left.appendChild(nameContainer);
       const actions=document.createElement('div'); actions.className='profile-actions';
       const openBtn=document.createElement('button'); openBtn.textContent='Open'; openBtn.onclick=()=>openProfile(p);
@@ -3925,8 +4221,8 @@ function verifyOTP(){
     }
     const userState = localStorage.getItem('profiles_user_state_v1') || '';
     badge.innerHTML = userState ? `Showing profiles from: <strong>${userState}</strong> · <a href="#" id="changeStateLink">Change</a>` : `No state filter set · <a href="#" id="setStateLink">Set preferred state</a>`;
-    document.getElementById('changeStateLink')?.addEventListener('click', function(e){ e.preventDefault(); createOnboardingModal(); });
-    document.getElementById('setStateLink')?.addEventListener('click', function(e){ e.preventDefault(); createOnboardingModal(); });
+    document.getElementById('changeStateLink')?.addEventListener('click', function(e){ e.preventDefault(); createChangeModal(); });
+    document.getElementById('setStateLink')?.addEventListener('click', function(e){ e.preventDefault(); createChangeModal(); });
   }
 
   window.clearStateFilter = function(){ localStorage.removeItem('profiles_user_state_v1'); localStorage.removeItem('profiles_user_info_v1'); renderStateFilterBadge(); if(typeof displayProfiles==='function') displayProfiles(); };
@@ -3938,91 +4234,142 @@ function verifyOTP(){
 <script>
 
 (function(){
-  const STATES = ['Bihar','Uttar Pradesh','Maharashtra','Karnataka','Tamil Nadu','West Bengal','Delhi','Haryana','Rajasthan','Gujarat','Assam','Odisha','Punjab','Kerala','Jharkhand','Chhattisgarh','Telangana','Andhra Pradesh','Manipur','Meghalaya','Mizoram','Tripura','Nagaland','Goa','Sikkim','Arunachal Pradesh','Uttarakhand','Ladakh','Puducherry','Andaman and Nicobar'];
+  const STATES = ['Andhra Pradesh','Arunachal Pradesh','Assam','Bihar','Chhattisgarh','Goa','Gujarat','Haryana','Himachal Pradesh','Jammu and Kashmir','Jharkhand','Karnataka','Kerala','Madhya Pradesh','Maharashtra','Manipur','Meghalaya','Mizoram','Nagaland','Odisha','Punjab','Rajasthan','Sikkim','Tamil Nadu','Telangana','Tripura','Uttar Pradesh','Uttarakhand','West Bengal','Delhi','Puducherry','Ladakh','Andaman and Nicobar','Other'];
 
-  function createChangeModal(){
-    if(document.getElementById('changeStateModal')) return;
-    const modal = document.createElement('div');
-    modal.id = 'changeStateModal';
-    modal.className = 'modal open';
-    modal.style.zIndex='99999';
-    modal.innerHTML = `
-      <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="changeTitle">
-        <button class="modal-close" id="changeClose">✕</button>
-        <h4 id="changeTitle">Filter by State & District</h4>
-        <div style="display:flex;flex-direction:column;gap:8px;margin-top:8px;">
-          <select id="change_state" style="padding:10px;border-radius:8px;border:1px solid #e8eefb;"><option value="">-- Select State --</option></select>
-          <input id="change_district" placeholder="District (type exactly to match)" style="padding:10px;border-radius:8px;border:1px solid #e8eefb;">
-          <input id="change_age" placeholder="Your age (optional - will be saved to your profile)" type="number" style="padding:10px;border-radius:8px;border:1px solid #e8eefb;">
-          <div style="display:flex;gap:8px;margin-top:8px;">
-            <button id="changeSave" style="flex:1;padding:10px;border-radius:8px;border:none;background:linear-gradient(90deg,#06b6d4,#0ea5a6);color:#fff;font-weight:800;">Apply</button>
-            <button id="changeClear" style="flex:1;padding:10px;border-radius:8px;border:none;background:#eef2ff;color:#111;font-weight:700;">Clear</button>
-          </div>
+function createChangeModal(){
+  if(document.getElementById('changeStateModal')) return;
+
+  const modal = document.createElement('div');
+  modal.id = 'changeStateModal';
+  modal.className = 'modal open';
+  modal.style.zIndex='99999';
+  modal.innerHTML = `
+    <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="changeTitle">
+      <button class="modal-close" id="changeClose">✕</button>
+      <h4 id="changeTitle">Filter by State, District & City</h4>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-top:8px;">
+        <select id="change_state" style="padding:10px;border-radius:8px;border:1px solid #e8eefb;">
+          <option value="">-- Select State --</option>
+        </select>
+        <input id="change_city" placeholder="City (type exactly to match)" 
+          style="padding:10px;border-radius:8px;border:1px solid #e8eefb;">
+        <input id="change_district" placeholder="District (type exactly to match)" 
+          style="padding:10px;border-radius:8px;border:1px solid #e8eefb;">
+        <input id="change_age" placeholder="Your age (optional - will be saved to your profile)" 
+          type="number" style="padding:10px;border-radius:8px;border:1px solid #e8eefb;">
+        <div style="display:flex;gap:8px;margin-top:8px;">
+          <button id="changeSave" 
+            style="flex:1;padding:10px;border-radius:8px;border:none;background:linear-gradient(90deg,#06b6d4,#0ea5a6);color:#fff;font-weight:800;">
+            Apply
+          </button>
+          <button id="changeClear" 
+            style="flex:1;padding:10px;border-radius:8px;border:none;background:#eef2ff;color:#111;font-weight:700;">
+            Clear
+          </button>
         </div>
-      </div>`;
-    document.body.appendChild(modal);
-    const sel = modal.querySelector('#change_state');
-    STATES.forEach(s=>{ const o = document.createElement('option'); o.value = s; o.textContent = s; sel.appendChild(o); });
-    modal.querySelector('#changeClose').onclick = function(){ modal.remove(); };
-    modal.querySelector('#changeClear').onclick = function(){
-      localStorage.removeItem('profiles_user_state_v1');
-      localStorage.removeItem('profiles_user_district_v1');
-      localStorage.removeItem('profiles_user_age_v1');
-      // Also clear from Firebase user doc if present
-      try{
-        if(window.firebase && firebase.auth && firebase.auth().currentUser){
-          const uid = firebase.auth().currentUser.uid;
-          if(firebase.firestore){
-            firebase.firestore().collection('users').doc(uid).update({ state: firebase.firestore.FieldValue.delete(), district: firebase.firestore.FieldValue.delete(), age: firebase.firestore.FieldValue.delete() }).catch(()=>{});
-          }
-          if(firebase.database){
-            firebase.database().ref('users/'+uid).update({ state: null, district: null, age: null }).catch(()=>{});
-          }
+      </div>
+    </div>`;
+
+  document.body.appendChild(modal);
+
+  // Populate states dropdown
+  const sel = modal.querySelector('#change_state');
+  STATES.forEach(s => {
+    const o = document.createElement('option');
+    o.value = s;
+    o.textContent = s;
+    sel.appendChild(o);
+  });
+
+  // Close button
+  modal.querySelector('#changeClose').onclick = function(){ modal.remove(); };
+
+  // Clear button
+  modal.querySelector('#changeClear').onclick = function(){
+    localStorage.removeItem('profiles_user_state_v1');
+    localStorage.removeItem('profiles_user_district_v1');
+    localStorage.removeItem('profiles_user_city_v1');
+    localStorage.removeItem('profiles_user_age_v1');
+
+    try{
+      if(window.firebase && firebase.auth && firebase.auth().currentUser){
+        const uid = firebase.auth().currentUser.uid;
+        if(firebase.firestore){
+          firebase.firestore().collection('users').doc(uid).update({
+            state: firebase.firestore.FieldValue.delete(),
+            district: firebase.firestore.FieldValue.delete(),
+            city: firebase.firestore.FieldValue.delete(),
+            age: firebase.firestore.FieldValue.delete()
+          }).catch(()=>{});
         }
-      }catch(e){}
-      renderStateFilterBadge();
-      if(typeof displayProfiles==='function') displayProfiles();
-      modal.remove();
-    };
-    modal.querySelector('#changeSave').onclick = function(){
-      const state = modal.querySelector('#change_state').value;
-      const district = modal.querySelector('#change_district').value.trim();
-      const age = modal.querySelector('#change_age').value.trim();
-      if(!state){
-        alert('Please select a state to apply the filter.');
-        return;
+        if(firebase.database){
+          firebase.database().ref('users/'+uid).update({
+            state: null,
+            district: null,
+            city: null,
+            age: null
+          }).catch(()=>{});
+        }
       }
-      localStorage.setItem('profiles_user_state_v1', state);
-      localStorage.setItem('profiles_user_district_v1', district);
-      if(age) localStorage.setItem('profiles_user_age_v1', age);
-      // Save to Firebase if possible
-      try{
-        if(window.firebase && firebase.auth && firebase.auth().currentUser){
-          const uid = firebase.auth().currentUser.uid;
-          const payload = {};
-          payload.state = state;
-          payload.district = district || null;
-          if(age) payload.age = Number(age);
-          if(firebase.firestore){
-            firebase.firestore().collection('users').doc(uid).set(payload, { merge: true }).catch(e=>console.warn('firestore save failed',e));
-          }
-          if(firebase.database){
-            firebase.database().ref('users/'+uid).update(payload).catch(e=>console.warn('realtime save failed',e));
-          }
+    }catch(e){}
+
+    renderStateFilterBadge();
+    if(typeof displayProfiles==='function') displayProfiles();
+    modal.remove();
+  };
+
+  // Save button
+  modal.querySelector('#changeSave').onclick = function(){
+    const state = modal.querySelector('#change_state').value;
+    const city = modal.querySelector('#change_city').value.trim();
+    const district = modal.querySelector('#change_district').value.trim();
+    const age = modal.querySelector('#change_age').value.trim();
+
+    if(!state){
+      alert('Please select a state to apply the filter.');
+      return;
+    }
+
+    localStorage.setItem('profiles_user_state_v1', state);
+    localStorage.setItem('profiles_user_district_v1', district);
+    localStorage.setItem('profiles_user_city_v1', city);
+    if(age) localStorage.setItem('profiles_user_age_v1', age);
+
+    try{
+      if(window.firebase && firebase.auth && firebase.auth().currentUser){
+        const uid = firebase.auth().currentUser.uid;
+        const payload = { state };
+        if(city) payload.city = city;
+        if(district) payload.district = district;
+        if(age) payload.age = Number(age);
+
+        if(firebase.firestore){
+          firebase.firestore().collection('users').doc(uid).set(payload, { merge: true })
+            .catch(e=>console.warn('firestore save failed', e));
         }
-      }catch(e){ console.warn('firebase save attempt failed', e); }
-      renderStateFilterBadge();
-      if(typeof displayProfiles==='function') displayProfiles();
-      modal.remove();
-    };
-    // Prefill with existing values if present
-    const existingState = localStorage.getItem('profiles_user_state_v1') || '';
-    const existingDistrict = localStorage.getItem('profiles_user_district_v1') || '';
-    const existingAge = localStorage.getItem('profiles_user_age_v1') || '';
-    if(existingState) modal.querySelector('#change_state').value = existingState;
-    if(existingDistrict) modal.querySelector('#change_district').value = existingDistrict;
-    if(existingAge) modal.querySelector('#change_age').value = existingAge;
-  }
+        if(firebase.database){
+          firebase.database().ref('users/'+uid).update(payload)
+            .catch(e=>console.warn('realtime save failed', e));
+        }
+      }
+    }catch(e){ console.warn('firebase save attempt failed', e); }
+
+    renderStateFilterBadge();
+    if(typeof displayProfiles==='function') displayProfiles();
+    modal.remove();
+  };
+
+  // Prefill with existing values if present
+  const existingState = localStorage.getItem('profiles_user_state_v1') || '';
+  const existingCity = localStorage.getItem('profiles_user_city_v1') || '';
+  const existingDistrict = localStorage.getItem('profiles_user_district_v1') || '';
+  const existingAge = localStorage.getItem('profiles_user_age_v1') || '';
+
+  if(existingState) modal.querySelector('#change_state').value = existingState;
+  if(existingCity) modal.querySelector('#change_city').value = existingCity;
+  if(existingDistrict) modal.querySelector('#change_district').value = existingDistrict;
+  if(existingAge) modal.querySelector('#change_age').value = existingAge;
+}
 
   function injectStateDistrictFieldsIntoProfileForm(){
     const form = document.getElementById('profileForm');
@@ -4094,8 +4441,9 @@ function verifyOTP(){
       const nameContainer=document.createElement('div'); nameContainer.style.display='flex'; nameContainer.style.flexDirection='column';
       const nameSpan=document.createElement('span'); nameSpan.textContent=p.name; nameSpan.style.fontWeight='700';
       const descSpan=document.createElement('div'); descSpan.style.fontSize='13px'; descSpan.style.color='#6b7280'; descSpan.textContent = p.description ? (p.description.length>50 ? p.description.slice(0,49)+'…' : p.description) : '';
-      const metaSmall = document.createElement('div'); metaSmall.style.fontSize='12px'; metaSmall.style.color='#6b7280'; metaSmall.textContent = p.state ? (p.state + (p.district ? ' · '+p.district : '')) : '';
-      nameContainer.appendChild(nameSpan); nameContainer.appendChild(descSpan); if(metaSmall.textContent) nameContainer.appendChild(metaSmall);
+      const metaSmall = document.createElement('div'); metaSmall.style.fontSize='12px'; metaSmall.style.color='#6b7280'; metaSmall.textContent = p.state ? ((p.city||'') + (p.district ? ', '+p.district : '') + (p.state ? ', '+p.state : '')) : '';
+      nameContainer.appendChild(nameSpan); nameContainer.appendChild(descSpan);
+    const locSpan=document.createElement('div'); locSpan.style.fontSize='12px'; locSpan.style.color='#374151'; locSpan.textContent = buildLocationString(p); nameContainer.appendChild(locSpan); if(metaSmall.textContent) nameContainer.appendChild(metaSmall);
       left.appendChild(tag); left.appendChild(nameContainer);
       const actions=document.createElement('div'); actions.className='profile-actions';
       const openBtn=document.createElement('button'); openBtn.textContent='Open'; openBtn.onclick=()=>openProfile(p);
@@ -4354,7 +4702,7 @@ function verifyOTP(){
 
     const meta = document.createElement('div');
     meta.style.fontWeight='800';
-    meta.style.color='#0077ff';
+    meta.style.color='#FFD700'; 
     meta.textContent = count ? ('Avg: ' + (Math.round(avg*10)/10) + ' / 5 (' + pct + '%) — ' + count + ' rater' + (count>1?'s':'') ) : 'No ratings yet';
     outer.appendChild(meta);
     barWrap.appendChild(outer);
@@ -4585,7 +4933,7 @@ function verifyOTP(){
     const el = document.createElement('div');
     el.className = 'rating-badge';
     el.style.fontSize = '13px';
-    el.style.color = '#f97316';
+    el.style.color = '#FFD700';
     el.style.fontWeight = '800';
     el.style.marginTop = '6px';
     el.textContent = 'Rating: ' + pct + '%';
@@ -4912,6 +5260,152 @@ document.addEventListener("DOMContentLoaded", () => {
   showPage("home");
 });
 </script>
+
+
+<!-- BEGIN: DevTools deterrent + detection (inserted by ChatGPT) -->
+<style id="devtools-overlay-style">
+#devtools-overlay {
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,0.94);
+  color:#fff;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  z-index:2147483647;
+  padding:24px;
+  text-align:center;
+  font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, Arial;
+  font-size:18px;
+  line-height:1.4;
+}
+#devtools-overlay .box{
+  max-width:760px;
+  border-radius:12px;
+  padding:22px;
+  background: rgba(0,0,0,0.6);
+  box-shadow: 0 12px 40px rgba(0,0,0,0.6);
+  border: 1px solid rgba(255,255,255,0.06);
+}
+#devtools-overlay.hidden { display:none !important; }
+</style>
+
+<script id="devtools-deterrent">
+(function(){
+  // ---- Config ----
+  const dimensionThreshold = 160; // heuristic threshold for DevTools size detection
+  const checkIntervalMs = 800;    // how often to check
+  let overlayAdded = false;
+  let overlayVisible = false;
+
+  // Block common shortcuts & context menu (casual deterrent only)
+  function blockShortcuts(e){
+    // Normalize key
+    const key = (e.key || "").toUpperCase();
+    // F12
+    if(e.key === "F12") { e.preventDefault(); e.stopPropagation(); return false; }
+    // Ctrl+Shift+I / J / C
+    if(e.ctrlKey && e.shiftKey && (key === "I" || key === "J" || key === "C")) { e.preventDefault(); e.stopPropagation(); return false; }
+    // Ctrl+U (view-source)
+    if(e.ctrlKey && key === "U") { e.preventDefault(); e.stopPropagation(); return false; }
+    // Ctrl+S (save) optional block
+    // if(e.ctrlKey && key === "S") { e.preventDefault(); e.stopPropagation(); return false; }
+    return true;
+  }
+
+  function addShortcutListeners(){
+    try {
+      document.addEventListener('contextmenu', function(ev){ ev.preventDefault(); }, { passive:false });
+      document.addEventListener('keydown', blockShortcuts, true);
+    } catch(e){}
+  }
+
+  // Build and show overlay (only the first time)
+  function ensureOverlay(){
+    if(overlayAdded) return;
+    overlayAdded = true;
+    try{
+      const div = document.createElement('div');
+      div.id = 'devtools-overlay';
+      div.className = 'hidden';
+      div.innerHTML = '<div class="box"><h2 style="margin:0 0 8px 0; font-size:20px;">Developer tools detected</h2><div style="opacity:0.9">We detected that developer tools (or a similar inspector) is open. For security and privacy reasons, please close them to continue using this app normally.</div><div style="height:12px"></div><div style="opacity:0.9; font-size:13px">If this is a mistake, resize your window to a normal size and the overlay will disappear automatically.</div></div>';
+      document.documentElement.appendChild(div);
+    }catch(e){}
+  }
+
+  function showOverlay(){
+    ensureOverlay();
+    try{
+      const el = document.getElementById('devtools-overlay');
+      if(el){ el.classList.remove('hidden'); overlayVisible = true; }
+    }catch(e){}
+  }
+  function hideOverlay(){
+    try{
+      const el = document.getElementById('devtools-overlay');
+      if(el){ el.classList.add('hidden'); overlayVisible = false; }
+    }catch(e){}
+  }
+
+  // Heuristic detection: compare outer vs inner dimensions
+  function detectBySize(){
+    try{
+      const widthDiff = Math.abs(window.outerWidth - window.innerWidth);
+      const heightDiff = Math.abs(window.outerHeight - window.innerHeight);
+      return (widthDiff > dimensionThreshold) || (heightDiff > dimensionThreshold);
+    }catch(e){ return false; }
+  }
+
+  // Secondary detection: timing side-effect (pauses when devtools open with debugger)
+  // Use a high-resolution timer and measure if setTimeout gets delayed significantly.
+  function detectByTimer(cb){
+    const start = performance.now();
+    setTimeout(function(){
+      const delta = performance.now() - start;
+      // If timeout delayed by a noticeable amount, devtools or heavy inspector may be open.
+      if(delta > 200) cb(true); else cb(false);
+    }, 50);
+  }
+
+  // Main periodic detection combining heuristics
+  function periodicDetect(){
+    try{
+      const sizeOpen = detectBySize();
+      detectByTimer(function(timerOpen){
+        const open = sizeOpen || timerOpen;
+        if(open && !overlayVisible){
+          showOverlay();
+          try{ console.clear(); }catch(e){}
+        } else if(!open && overlayVisible){
+          hideOverlay();
+        }
+      });
+    }catch(e){}
+  }
+
+  // Defensive: attempt to make shortcuts less effective by resetting focus to body
+  function defensiveFocus(){
+    try{ document.activeElement && document.activeElement.blur && document.activeElement.blur(); }catch(e){}
+  }
+
+  // initialize
+  addShortcutListeners();
+  ensureOverlay();
+  // Run a few fast checks first
+  periodicDetect();
+  // Schedule periodic checks
+  const timer = setInterval(periodicDetect, checkIntervalMs);
+
+  // Expose a noop-safe API for debugging/testing
+  window.__devtoolsDeterrent = {
+    showOverlay: showOverlay,
+    hideOverlay: hideOverlay,
+    destroy: function(){ clearInterval(timer); hideOverlay(); }
+  };
+
+})();
+</script>
+<!-- END: DevTools deterrent + detection -->
 
 </body>
 </html>

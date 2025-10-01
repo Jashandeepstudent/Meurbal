@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"/>
-<title>Maurbal - Your Local Hiring Platform</title>
+<title>Profiles App — Updated (Hire + description + better notifications)</title>
 <meta content="width=device-width,initial-scale=1" name="viewport"/>
 <style>
   :root{
@@ -1484,7 +1484,7 @@ document.addEventListener('DOMContentLoaded', function(){
 <div class="page" id="leaderboardPage">
   <h2 style="text-align:center;">Leaderboards</h2>
   <div class="leaderboard-tabs">
-    <button class="active" onclick="switchLeaderboard('hired')">Top 10 Most Hired</button>
+ 
     <button onclick="switchLeaderboard('alltime')">Top 10 Workers of All Time</button>
     <button onclick="switchLeaderboard('rated')">Top 10 Most Rated</button>
   </div>
@@ -2722,8 +2722,7 @@ try{ updateChatHireButton(); }catch(e){}
 <div class="page" id="leaderboardPage" style="display:none; padding-top:28px;">
 <h2 style="text-align:center; margin-top:0;">Leaderboards</h2>
 <div aria-label="Leaderboards" class="leaderboard-tabs" role="tablist">
-<button class="active" id="lb-tab-hired" onclick="displayLeaderboard('hired')">Top 10 Most Hired</button>
-<button id="lb-tab-alltime" onclick="displayLeaderboard('alltime')">Top 10 All Time</button>
+
 <button id="lb-tab-rated" onclick="displayLeaderboard('rated')">Top 10 Most Rated</button>
 </div>
 <div aria-live="polite" class="leaderboard-list" id="leaderboardList"></div>
@@ -3067,6 +3066,26 @@ function listenToChatMessages(myUid, otherUid){
   }catch(e){ console.warn('listenToChatMessages failed', e); }
 }
 // --- end injection ---
+
+// Status box (black box)
+const statusBox = document.createElement('div');
+statusBox.id = "firebaseStatusBox";
+statusBox.style.position = "fixed";
+statusBox.style.bottom = "10px";
+statusBox.style.left = "10px";
+statusBox.style.padding = "8px 12px";
+statusBox.style.background = "#000";
+statusBox.style.color = "#0f0";
+statusBox.style.fontSize = "12px";
+statusBox.style.fontFamily = "monospace";
+statusBox.style.borderRadius = "6px";
+statusBox.style.zIndex = 99999;
+statusBox.textContent = "Firebase: Initializing...";
+document.addEventListener("DOMContentLoaded", ()=>document.body.appendChild(statusBox));
+
+function setFBStatus(msg, color="#0f0") {
+  const box = document.getElementById("firebaseStatusBox");
+  if(box) { box.textContent = "Firebase: " + msg; box.style.color = color; }
 
 
 
@@ -3754,17 +3773,7 @@ document.addEventListener("DOMContentLoaded", ()=>{
       del.style.display = show ? 'inline-block' : 'none';
     }
 
-    // add "Wipe All Profiles" to dropdown menu for dev use
-    const menu = document.getElementById('menuDropdown');
-    if (menu && !menu.querySelector('.wipe-all-item')) {
-      const item = document.createElement('div');
-      item.className = 'wipe-all-item';
-      item.textContent = 'Wipe All Profiles (dev)';
-      item.style.color = '#ff3333';
-      item.onclick = function(){ wipeAllProfiles(); };
-      menu.appendChild(item);
-    }
-  });
+
 
   // Also expose wipe function globally for console testing
   window.wipeAllProfiles = wipeAllProfiles;
@@ -5875,6 +5884,7 @@ document.addEventListener("DOMContentLoaded", () => {
 </script>
 <!-- END: Profile & Account-completion validation + Privacy confirmation modal -->
 
+
 <script>
 // Delete profile helper — removes current myProfile, clears form and navigates home
 window.deleteProfile = function(){
@@ -5926,5 +5936,6 @@ window.deleteProfile = function(){
   };
 })();
 </script>
+
 </body>
 </html>

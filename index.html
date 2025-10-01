@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"/>
-<title>Profiles App — Updated (Hire + description + better notifications)</title>
+<title>Maurbal - Your Hiring Platform</title>
 <meta content="width=device-width,initial-scale=1" name="viewport"/>
 <style>
   :root{
@@ -650,6 +650,8 @@
   .otp-card{background:#ecfdf5;border:1px solid #bbf7d0;color:#065f46;padding:12px;border-radius:10px;font-weight:800;box-shadow:0 8px 30px rgba(2,6,23,0.04);margin-top:10px}
 </style>
 <!-- End injection -->
+
+<style id="authDelayStyle">#authPage{display:none !important;}</style>
 </head>
 <body>
 <!-- Top-left 3-dots menu -->
@@ -728,22 +730,11 @@ document.addEventListener('DOMContentLoaded', function(){
 }
 </style>
 <!-- Auth Page -->
-<div class="page" id="authPage" style="display:flex; align-items:center; justify-content:center; height:100vh; background:#f9fafb;">
+<div class="page" id="authPage" style="display:none; align-items:center; justify-content:center; height:100vh; background:#f9fafb;">
   <div aria-label="Authentication" class="auth-card" role="region" 
        style="padding:20px; border-radius:12px; background:white; box-shadow:0 4px 15px rgba(0,0,0,0.1); width:320px;">
     
-    <!-- Header + Toggle -->
-    <div style="display:flex;justify-content:space-between;align-items:center;">
-      <h3 style="margin:0">Welcome</h3>
-      <div style="display:flex;align-items:center;gap:8px;cursor:pointer;">
-        <label class="switch">
-          <input type="checkbox" id="useContactSwitch"/>
-          <span class="slider"></span>
-        </label>
-        <span style="font-size:13px; font-weight:800; color:#374151;">Use Contact</span>
-      </div>
-    </div>
-
+    
     <!-- Email / password area -->
     <div id="emailFormArea" style="margin-top:12px;">
       <input autocomplete="email" class="auth-input" id="emailInput" placeholder="Email" type="email"/>
@@ -3942,17 +3933,74 @@ document.addEventListener("DOMContentLoaded", ()=>{
 </script>
 <!-- End Assistant-inserted -->
 <script>
+
 const auth = firebase.auth();
 
-auth.onAuthStateChanged(user => {
-  if (user) {
-    document.getElementById('authPage').style.display = 'none';
-    showPage('home'); 
-  } else {
-    document.querySelectorAll('.page').forEach(p => p.style.display='none');
-    document.getElementById('authPage').style.display = 'flex';
+(function(){
+  // Delayed auth display: ensures auth screen is not forced immediately when no user.
+  // A single timer is used so the auth page only shows after 60s of the app being open.
+  if(!window.__authDelayTimer) window.__authDelayTimer = null;
+
+  function showHomeNow(){
+    try{
+      if(typeof showPage === 'function'){
+        showPage('home');
+      } else {
+        document.querySelectorAll('.page').forEach(p => p.style.display='none');
+        var homeEl = document.getElementById('home');
+        if(homeEl) homeEl.style.display = 'block';
+      }
+    }catch(e){}
   }
-});
+
+  auth.onAuthStateChanged(user => {
+    if (user) {
+      try{ if(window.__authDelayTimer){ clearTimeout(window.__authDelayTimer); window.__authDelayTimer = null; } }catch(e){}
+      try{ var a = document.getElementById('authPage'); if(a) a.style.display = 'none'; }catch(e){}
+      showHomeNow();
+    } else {
+      // Show home while waiting, do NOT immediately show auth.
+      try{
+        document.querySelectorAll('.page').forEach(p => p.style.display='none');
+      }catch(e){}
+      showHomeNow();
+
+      if(!window.__authDelayTimer){
+        window.__authDelayTimer = 
+    var ap = document.getElementById('authPage');
+    if(ap){
+      ap.style.display = 'flex';
+      ap.style.position = 'fixed';
+      ap.style.top = '0';
+      ap.style.left = '0';
+      ap.style.width = '100%';
+      ap.style.height = '100%';
+      ap.style.alignItems = 'center';
+      ap.style.justifyContent = 'center';
+      ap.style.background = '#f9fafb';
+    }
+
+            if(typeof showPage === 'function') showPage('authPage');
+          }catch(e){}
+          window.__authDelayTimer = null;
+        }, 10000);
+      }
+    }
+  });
+
+  // Helper: force show auth immediately
+  window.forceShowAuthNow = function(){
+    try{ if(window.__authDelayTimer){ clearTimeout(window.__authDelayTimer); window.__authDelayTimer = null; } }catch(e){}
+    try{
+      document.querySelectorAll('.page').forEach(p => p.style.display='none');
+      var styleEl = document.getElementById('authDelayStyle'); if(styleEl && styleEl.parentNode) styleEl.parentNode.removeChild(styleEl);
+      var ap = document.getElementById('authPage');
+      if(ap) ap.style.display = 'flex';
+      if(typeof showPage === 'function') showPage('authPage');
+    }catch(e){}
+  };
+})();
+
 
 function emailRegister(){
   const email = document.getElementById('emailInput').value;
@@ -5407,5 +5455,496 @@ document.addEventListener("DOMContentLoaded", () => {
 </script>
 <!-- END: DevTools deterrent + detection -->
 
+
+<!-- BEGIN: Improved robust delayed auth patch (10s; shows and centers auth reliably) -->
+<script>
+(function(){
+  const DELAY_MS = 10000; // 10 seconds
+  if(window.__improvedAuthPatchApplied) return;
+  window.__improvedAuthPatchApplied = true;
+
+  function ensureOverrideStyle(){
+    try{
+      var css = "#authPage{display:flex !important; position:fixed !important; inset:0 !important; align-items:center !important; justify-content:center !important; width:100% !important; height:100% !important; background:#f9fafb !important; z-index:2147483000 !important;}";
+      var id = 'authForceCenterStyle';
+      var existing = document.getElementById(id);
+      if(existing) return existing;
+      var s = document.createElement('style');
+      s.id = id;
+      s.appendChild(document.createTextNode(css));
+      document.head.appendChild(s);
+      return s;
+    }catch(e){ console.warn('ensureOverrideStyle failed', e); return null; }
+  }
+
+  function showAuthFullScreen(){
+    try{
+      // add override style (ensures earlier rule can't hide the auth page)
+      ensureOverrideStyle();
+      // hide other pages
+      try{ document.querySelectorAll('.page').forEach(p=>p.style.display='none'); }catch(e){}
+      // show auth page
+      var ap = document.getElementById('authPage');
+      if(ap){
+        ap.style.display = 'flex';
+        // ensure inner card is centered and not absolutely positioned
+        var card = ap.querySelector('.auth-card');
+        if(card){
+          card.style.margin = '0 auto';
+          card.style.position = card.style.position || 'relative';
+        }
+        // bring focus to first input for accessibility
+        setTimeout(()=>{ var inp = ap.querySelector('input,button,select,textarea'); if(inp) try{ inp.focus(); }catch(e){} }, 220);
+      }
+      if(typeof showPage === 'function') try{ showPage('authPage'); }catch(e){}
+    }catch(e){ console.warn('showAuthFullScreen failed', e); }
+  }
+
+  function hideAuth(){
+    try{
+      var ap = document.getElementById('authPage');
+      if(ap) ap.style.display='none';
+      var s = document.getElementById('authForceCenterStyle'); if(s && s.parentNode) s.parentNode.removeChild(s);
+    }catch(e){}
+  }
+
+  function scheduleForceTimer(){
+    if(window.__authForceTimer) return;
+    window.__authForceTimer = setTimeout(function(){
+      try{
+        // Only show if user is not signed in
+        var userSignedIn = false;
+        try{ if(window.firebase && firebase.auth && firebase.auth().currentUser) userSignedIn = !!firebase.auth().currentUser; }catch(e){}
+        if(!userSignedIn){
+          showAuthFullScreen();
+        } else {
+          hideAuth();
+        }
+      }catch(e){ console.warn(e); }
+      window.__authForceTimer = null;
+    }, DELAY_MS);
+  }
+
+  function init(){
+    // schedule fallback timer immediately (so auth shows even if firebase never loads)
+    scheduleForceTimer();
+
+    // If firebase exists, hook into auth state to cancel timer/show/hide appropriately
+    function hookFirebase(){
+      try{
+        if(window.firebase && firebase.auth){
+          var auth = firebase.auth();
+          if(auth && auth.onAuthStateChanged){
+            auth.onAuthStateChanged(function(user){
+              if(user){
+                // signed in: hide auth, clear timers
+                if(window.__authForceTimer){ clearTimeout(window.__authForceTimer); window.__authForceTimer = null; }
+                hideAuth();
+                if(window.__authDelayTimer){ clearTimeout(window.__authDelayTimer); window.__authDelayTimer = null; }
+              } else {
+                // not signed in: ensure timer scheduled
+                scheduleForceTimer();
+              }
+            });
+          }
+          return true;
+        }
+      }catch(e){ console.warn('hookFirebase failed', e); }
+      return false;
+    }
+
+    // try to hook immediately; if not available, retry a few times (~10s)
+    var attempts = 0;
+    function tryHook(){
+      attempts++;
+      if(hookFirebase()) return;
+      if(attempts < 40) setTimeout(tryHook, 250);
+    }
+    tryHook();
+  }
+
+  if(document.readyState === 'complete' || document.readyState === 'interactive'){
+    init();
+  } else {
+    document.addEventListener('DOMContentLoaded', init);
+  }
+})();
+</script>
+<!-- END: Improved robust delayed auth patch -->
+
+
+<!-- BEGIN: Profile & Account-completion validation + Privacy confirmation modal -->
+<!-- Privacy modal shown before creating a new profile -->
+<div class="modal" id="privacyModal" aria-modal="true" role="dialog" style="z-index:2147484000;">
+  <div class="modal-content" role="dialog" aria-modal="true">
+    <button class="modal-close" onclick="document.getElementById('privacyModal')?.classList.remove('open')">✕</button>
+    <h4>Confirm your profile</h4>
+    <p class="note">Before creating your profile, please confirm the following — this helps build trust on the platform:</p>
+    <ul class="note" style="text-align:left;">
+      <li>You are a legitimate worker offering real services.</li>
+      <li>Your contact number is valid and belongs to you.</li>
+      <li>All profile fields are filled honestly.</li>
+    </ul>
+    <div style="display:flex; align-items:center; gap:8px; margin-top:8px;">
+      <input type="checkbox" id="privacyConfirmCheckbox" />
+      <label for="privacyConfirmCheckbox" style="font-weight:700;">I confirm I am a real worker and my contact number is valid</label>
+    </div>
+    <div class="modal-buttons" style="margin-top:12px;">
+      <button class="auth-primary" id="privacyConfirmBtn" disabled>Confirm &amp; Create</button>
+      <button class="auth-secondary" id="privacyCancelBtn">Cancel</button>
+    </div>
+    <p class="auth-small-note" id="privacyNote" style="margin-top:10px;"></p>
+  </div>
+</div>
+
+<script>
+/* BEGIN: Enhancements: (1) Account-completion required fields enforcement
+             (2) Create Profile: contact validation, focus behavior, privacy confirmation modal
+             (3) Respect editing flow (existing profile edits still save directly)
+*/
+
+(function(){
+  // Helpers
+  function isValidContact(v){ return /^\d{10}$/.test((v||'').trim()); }
+  function isPositiveNumber(v){ return !isNaN(Number(v)) && Number(v) > 0; }
+
+  // --- Account completion modal: require fields and enable Save only when valid ---
+  document.addEventListener('DOMContentLoaded', function(){
+    var modal = document.getElementById('completeAccountModal');
+    if(!modal) return;
+    var username = document.getElementById('complete_username');
+    var age = document.getElementById('complete_age');
+    var stateInput = document.getElementById('stateInput');
+    var district = document.getElementById('districtInput');
+    var city = document.getElementById('cityInput');
+    var saveBtn = document.getElementById('completeSaveBtn');
+    var status = document.getElementById('completeAccountStatus');
+
+    if(!saveBtn) return;
+
+    function validateAccountComplete(){
+      try{
+        var ok = true;
+        if(!username || !username.value.trim()) ok = false;
+        if(!age || !isPositiveNumber(age.value) || Number(age.value) < 18) ok = false;
+        if(!stateInput || !stateInput.value.trim()) ok = false;
+        if(!district || !district.value.trim()) ok = false;
+        if(!city || !city.value.trim()) ok = false;
+        saveBtn.disabled = !ok;
+        return ok;
+      }catch(e){ return false; }
+    }
+
+    // Attach listeners
+    [username, age, stateInput, district, city].forEach(function(el){
+      if(!el) return;
+      el.addEventListener('input', validateAccountComplete);
+      el.addEventListener('change', validateAccountComplete);
+    });
+
+    // Observe when the modal opens so we can focus the first missing input
+    var obs = new MutationObserver(function(muts){
+      muts.forEach(function(m){
+        if(m.attributeName === 'class'){
+          if(modal.classList.contains('open')){
+            // focus first missing
+            setTimeout(function(){
+              if(!username.value.trim()){ username.focus(); }
+              else if(!isPositiveNumber(age.value)){ age.focus(); }
+              else if(!stateInput.value.trim()){ stateInput.focus(); }
+              else if(!district.value.trim()){ district.focus(); }
+              else if(!city.value.trim()){ city.focus(); }
+              validateAccountComplete();
+            }, 120);
+          }
+        }
+      });
+    });
+    obs.observe(modal, { attributes: true });
+
+    // Wrap existing saveCompleteAccount to enforce final validation and show message if invalid
+    if(window.saveCompleteAccount && typeof window.saveCompleteAccount === 'function'){
+      var origSave = window.saveCompleteAccount;
+      window.saveCompleteAccount = async function(){
+        try{
+          if(!validateAccountComplete()){
+            if(status) status.textContent = 'Please fill all required fields correctly.';
+            // focus first invalid
+            if(!username.value.trim()){ username.focus(); return; }
+            if(!isPositiveNumber(age.value) || Number(age.value) < 18){ age.focus(); alert('Age must be 18 or above.'); return; }
+            if(!stateInput.value.trim()){ stateInput.focus(); return; }
+            if(!district.value.trim()){ district.focus(); return; }
+            if(!city.value.trim()){ city.focus(); return; }
+          } else {
+            if(status) status.textContent = 'Saving…';
+            return await origSave.apply(this, arguments);
+          }
+        }catch(e){
+          // fallback to calling original (safer)
+          try{ return await origSave.apply(this, arguments); }catch(_){}
+        }
+      };
+    }
+  });
+
+  // --- Create Profile: contact validation, privacy modal, focus contact on open ---
+  document.addEventListener('DOMContentLoaded', function(){
+    var profileForm = document.getElementById('profileForm');
+    var contactInput = document.getElementById('contact');
+    var nameInput = document.getElementById('name');
+    var ageInput = document.getElementById('age');
+    var skillInput = document.getElementById('skill');
+    var addressInput = document.getElementById('address');
+    var cityInput = document.getElementById('city');
+    var submitBtn = document.getElementById('submitBtn');
+
+    var privacyModal = document.getElementById('privacyModal');
+    var privacyCheckbox = document.getElementById('privacyConfirmCheckbox');
+    var privacyBtn = document.getElementById('privacyConfirmBtn');
+    var privacyCancel = document.getElementById('privacyCancelBtn');
+    var privacyNote = document.getElementById('privacyNote');
+
+    // Ensure privacy modal exists
+    if(!profileForm || !contactInput) return;
+
+    // Helper to validate profile fields
+    
+    function validateProfileFields(){
+      // Stronger validation rules:
+      // - name: letters, spaces, dots, hyphens, apostrophes, at least 2 letters and not digits-only
+      // - age: number >=18 and <=100
+      // - skill: selected
+      // - address: at least 5 chars and contains at least 3 letters
+      // - city: at least 2 letters
+      // - contact: exactly 10 digits
+      // - description: at least 10 chars and contains letters
+      try{
+        var name = (nameInput && nameInput.value || '').trim();
+        var ageVal = (ageInput && ageInput.value || '').toString().trim();
+        var skill = (skillInput && skillInput.value || '');
+        var addr = (addressInput && addressInput.value || '').trim();
+        var city = (cityInput && cityInput.value || '').trim();
+        var contact = (contactInput && contactInput.value || '').trim();
+        var desc = (document.getElementById("description") && document.getElementById("description").value || '').trim();
+
+        var lettersCount = function(s){ return (s.match(/[A-Za-z]/g) || []).length; };
+
+        // name validation
+        if(!name || lettersCount(name) < 2 || /[^A-Za-z\s\.\-\'\u00C0-\u017F]/.test(name)){
+          return {ok:false, msg:'Enter a valid name (letters and basic punctuation only)', field:nameInput};
+        }
+        // age validation
+        var ageNum = Number(ageVal);
+        if(isNaN(ageNum) || ageNum < 18 || ageNum > 100){
+          return {ok:false, msg:'Age must be between 18 and 100', field:ageInput};
+        }
+        // skill
+        if(!skill || skill === ''){
+          return {ok:false, msg:'Select a skill', field:skillInput};
+        }
+        // address validation (not random): min length and at least 3 letters
+        if(!addr || addr.length < 5 || lettersCount(addr) < 3){
+          return {ok:false, msg:'Enter a valid address', field:addressInput};
+        }
+        // city validation
+        if(!city || lettersCount(city) < 2){
+          return {ok:false, msg:'Enter a valid city name', field:cityInput};
+        }
+        // contact validation
+        if(!/^\d{10}$/.test(contact)){
+          return {ok:false, msg:'Contact must be a valid 10-digit number', field:contactInput};
+        }
+        // description
+        if(desc.length < 10 || lettersCount(desc) < 3){
+          return {ok:false, msg:'Description too short or unclear (min 10 characters)', field:document.getElementById('description')};
+        }
+
+        return {ok:true};
+      }catch(e){
+        console.warn('validateProfileFields error', e);
+        return {ok:false, msg:'Validation failed', field:null};
+      }
+    }
+
+
+    // Wrap existing openProfileForm to focus contact input for creation
+    if(window.openProfileForm && typeof window.openProfileForm === 'function'){
+      var origOpenProfileForm = window.openProfileForm;
+      window.openProfileForm = function(){
+        origOpenProfileForm.apply(this, arguments);
+        // small delay to let page rendering happen
+        setTimeout(function(){
+          var createPage = document.getElementById('createProfilePage');
+          if(createPage && createPage.style.display === 'block'){
+            contactInput = document.getElementById('contact');
+            if(contactInput) try{ contactInput.focus(); }catch(e){}
+          }
+        }, 120);
+      };
+    }
+
+    // Extract existing save logic into a reusable function
+    function saveProfileFromForm(){
+      try{
+        var profile = {
+          uid: myProfile ? myProfile.uid : generateUID(),
+          name: (document.getElementById("name").value || '').trim(),
+          age: document.getElementById("age").value,
+          skill: document.getElementById("skill").value,
+          address: document.getElementById("address").value,
+          city: document.getElementById("city").value,
+          contact: (document.getElementById("contact").value || '').trim(),
+          language: document.getElementById("language").value,
+          description: (document.getElementById("description").value || '').trim(),
+          status: myProfile ? document.getElementById("status")?.value || "Free" : "Free"
+        };
+        // final validation (defensive)
+        var v = validateProfileFields();
+        if(!v.ok){
+          alert(v.msg);
+          if(v.field) try{ v.field.focus(); }catch(e){}
+          return;
+        }
+
+        if(myProfile){
+          var idx = profiles.findIndex(function(p){ return p.uid === myProfile.uid; });
+          if(idx !== -1) profiles[idx] = profile;
+        } else {
+          profiles.push(profile);
+        }
+        myProfile = profile;
+        var profileBtn = document.getElementById("profileBtn");
+        if(profileBtn) profileBtn.textContent = "Manage Profile";
+        alert("Profile saved successfully!");
+        try{ showPage('home'); }catch(e){}
+      }catch(e){
+        console.warn('saveProfileFromForm failed', e);
+        alert('Failed to save profile. See console for details.');
+      }
+    }
+
+    // Intercept form submit
+    profileForm.addEventListener('submit', function(e){
+      // prevent other handlers from running and stop default submit
+      try{ e.preventDefault(); e.stopImmediatePropagation(); }catch(_){}
+      // guard to avoid re-entrancy
+      if(window.__profileSubmitHandled) return;
+      window.__profileSubmitHandled = true;
+      try{
+        // run quick validation
+        var v = validateProfileFields();
+        if(!v.ok){
+          alert(v.msg);
+          if(v.field) try{ v.field.focus(); }catch(e){}
+          window.__profileSubmitHandled = false;
+          return;
+        }
+        // if editing existing profile (myProfile exists) -> save immediately (still validate age/contact)
+        if(window.myProfile){
+          saveProfileFromForm();
+          window.__profileSubmitHandled = false;
+          return;
+        }
+        // New profile: show privacy modal to confirm identity & contact BEFORE saving
+        if(privacyModal){
+          privacyModal.classList.add('open');
+          // reset checkbox and disable confirm
+          if(privacyCheckbox) { privacyCheckbox.checked = false; }
+          if(privacyBtn) { privacyBtn.disabled = true; }
+          if(privacyNote) { privacyNote.textContent = 'Please confirm you are a real worker and the contact number is accurate.'; }
+          window.__profileSubmitHandled = false;
+        } else {
+          // fallback: save directly
+          saveProfileFromForm();
+          window.__profileSubmitHandled = false;
+        }
+      }catch(err){
+        console.warn('submit handler failed', err);
+        window.__profileSubmitHandled = false;
+      }
+    }, true);
+
+    // Privacy modal interactions
+    if(privacyCheckbox){
+      privacyCheckbox.addEventListener('change', function(){ var ok = privacyCheckbox.checked && isValidContact(contactInput.value); if(privacyBtn) privacyBtn.disabled = !ok; if(!isValidContact(contactInput.value)){ if(privacyNote) privacyNote.textContent = 'Contact must be a valid 10-digit number.'; } else { if(privacyNote) privacyNote.textContent = ''; } });
+    }
+
+    if(privacyBtn){ privacyBtn.addEventListener('click', function(){
+        // final verification before saving
+        var v = validateProfileFields();
+        if(!v.ok){ alert(v.msg); if(v.field) try{ v.field.focus(); }catch(e){}; return; }
+        // close modal and save
+        if(privacyModal) privacyModal.classList.remove('open');
+        saveProfileFromForm();
+      }); }
+    if(privacyCancel){
+      privacyCancel.addEventListener('click', function(){ if(privacyModal) privacyModal.classList.remove('open'); });
+    }
+
+    // Live contact validation: if user edits contact while privacy modal open, update button state
+    contactInput.addEventListener('input', function(){
+      if(privacyCheckbox && privacyCheckbox.checked){
+        if(privacyBtn) privacyBtn.disabled = !isValidContact(contactInput.value);
+      }
+    });
+
+  });
+
+})(); 
+/* END enhancements */
+</script>
+<!-- END: Profile & Account-completion validation + Privacy confirmation modal -->
+
+<script>
+// Delete profile helper — removes current myProfile, clears form and navigates home
+window.deleteProfile = function(){
+  try{
+    if(!window.myProfile){
+      alert('No profile to delete.');
+      return;
+    }
+    if(!confirm('Delete your profile? This cannot be undone.')) return;
+    try{
+      var uid = String(window.myProfile.uid);
+      var idx = profiles.findIndex(function(p){ return String(p.uid) === uid; });
+      if(idx !== -1) profiles.splice(idx,1);
+    }catch(e){}
+    window.myProfile = null;
+    localStorage.removeItem('profiles_my_uid_v1');
+    try{
+      var f = document.getElementById('profileForm');
+      if(f) f.reset();
+      document.getElementById('profileBtn').textContent = 'Create a Profile';
+    }catch(e){}
+    try{ showPage('home'); }catch(e){
+      document.querySelectorAll('.page').forEach(function(p){ p.style.display='none'; });
+      var homeEl = document.getElementById('home');
+      if(homeEl) homeEl.style.display = 'block';
+    }
+  }catch(e){ console.warn('deleteProfile failed', e); alert('Failed to delete profile.'); }
+};
+
+// Ensure create profile form is blank when there is no myProfile
+(function(){
+  var origShowPage = window.showPage;
+  window.showPage = function(id){
+    try{
+      if(id === 'createProfilePage'){
+        // if no myProfile, reset form to avoid prefilled values from previous deleted profile
+        if(!window.myProfile){
+          try{ var f = document.getElementById('profileForm'); if(f) f.reset(); }catch(e){}
+          try{
+            document.getElementById('formTitle').textContent = 'Create Your Profile';
+            document.getElementById('submitBtn').textContent = '₹250';
+            document.getElementById('statusSection').style.display='none';
+          }catch(e){}
+        }
+      }
+    }catch(e){}
+    if(typeof origShowPage === 'function') return origShowPage.apply(this, arguments);
+    else return;
+  };
+})();
+</script>
 </body>
 </html>

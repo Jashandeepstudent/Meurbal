@@ -966,7 +966,7 @@ document.addEventListener('DOMContentLoaded', function(){
 <div style="height:8px"></div>
 <label for="cityInput" style="font-weight:600; margin-top:6px;">City</label>
 <input class="auth-input" id="cityInput" name="city" placeholder="Enter city" required="" type="text"/>
-<button class="auth-primary" id="completeSaveBtn">Save &amp; Continue</button>
+<button class="auth-primary" id="completeSaveBtn" onclick="window.saveCompleteAccount && window.saveCompleteAccount()">Save &amp; Continue</button>
 </div>
 <div class="auth-small-note" id="completeAccountStatus"></div>
 </div>
@@ -1148,55 +1148,48 @@ document.addEventListener('DOMContentLoaded', function(){
   };
 
   // Save after modal: persist to users/{uid} and link/create profile
-  window.saveCompleteAccount = async function(){
-    const username = (document.getElementById('complete_username').value || '').trim();
-    const age = Number(document.getElementById('complete_age').value || 0);
-    const statusEl = document.getElementById('completeAccountStatus');
-    if(!window.pendingNewUserUid){ if(statusEl) statusEl.textContent = 'No pending user'; return; }
-    if(!username){ if(statusEl) statusEl.textContent = 'Username required'; return; }
-    if(statusEl) statusEl.textContent = 'Saving…';
-    const uid = String(window.pendingNewUserUid);
-    const dbInst = _getDb();
-    try{
-      if(dbInst){
-        // read state/district fields from modal
-        const stateVal = (document.getElementById('stateInput') ? (document.getElementById('stateInput').value||'') : '');
-        const districtVal = (document.getElementById('districtInput') ? (document.getElementById('districtInput').value||'') : '');
-        await dbInst.collection('users').doc(String(uid)).set({
-          displayName: username,
-          age: (age > 0 ? Number(age) : null),
-          email: (_getAuth() && _getAuth().currentUser && _getAuth().currentUser.email) ? _getAuth().currentUser.email : null,
-          state: stateVal,
-          district: districtVal,
-          city: (document.getElementById('cityInput')?.value || ''),
-          updatedAt: new Date().toISOString()
-        }, { merge: true });
-      }
-      // Link or create profile
-      try{
-        if(typeof window.myProfile !== 'undefined' && window.myProfile && window.myProfile.uid){
-          const profileUid = String(window.myProfile.uid);
-          if(dbInst){
-            await dbInst.collection('profiles').doc(String(profileUid)).set({ ownerUid: String(uid) }, { merge: true });
-            await dbInst.collection('users').doc(String(uid)).set({ profileUid: String(profileUid) }, { merge: true });
-          }
-        } else {
-          // IMPORTANT: Do NOT auto-create a profile here.
-          // The user explicitly asked that profile creation be manual — so skip creating profiles/{uid}.
-          // The user can create a profile later via the "Create Your Profile" form.
-          console.log('No existing profile linked for uid', uid, '- skipping automatic profile creation.');
-        }
-      }catch(e){ console.warn('profile linking failed', e); }
-      localStorage.setItem('profiles_my_uid_v1', String(uid));
-      window.myUID = String(uid);
-      try{ await bindUserProfile(uid); }catch(e){}
-      if(statusEl) statusEl.textContent = 'Saved — redirecting…';
-      setTimeout(()=>{ closeCompleteAccountModal(); showPage && typeof showPage === 'function' && showPage('home'); showAuthStatus(''); }, 400);
-    }catch(err){
-      console.warn('saveCompleteAccount err', err);
-      if(statusEl) statusEl.textContent = String(err && err.message ? err.message : err);
+  
+window.saveCompleteAccount = async function(){
+  const username = (document.getElementById('complete_username').value || '').trim();
+  const age = Number(document.getElementById('complete_age').value || 0);
+  const stateVal = document.getElementById('stateInput')?.value || '';
+  const districtVal = document.getElementById('districtInput')?.value || '';
+  const cityVal = document.getElementById('cityInput')?.value || '';
+  const statusEl = document.getElementById('completeAccountStatus');
+
+  if(!window.pendingNewUserUid){ if(statusEl) statusEl.textContent = 'No pending user'; return; }
+  if(!username){ if(statusEl) statusEl.textContent = 'Username required'; document.getElementById('complete_username').focus(); return; }
+  if(!age || age < 18){ if(statusEl) statusEl.textContent = 'Valid age required (18+)'; document.getElementById('complete_age').focus(); return; }
+  if(!stateVal){ if(statusEl) statusEl.textContent = 'State required'; document.getElementById('stateInput').focus(); return; }
+  if(!districtVal){ if(statusEl) statusEl.textContent = 'District required'; document.getElementById('districtInput').focus(); return; }
+  if(!cityVal){ if(statusEl) statusEl.textContent = 'City required'; document.getElementById('cityInput').focus(); return; }
+
+  if(statusEl) statusEl.textContent = 'Saving…';
+  const uid = String(window.pendingNewUserUid);
+  const dbInst = _getDb();
+  try{
+    if(dbInst){
+      await dbInst.collection('users').doc(uid).set({
+        displayName: username,
+        age: age,
+        email: (_getAuth()?.currentUser?.email) || null,
+        state: stateVal,
+        district: districtVal,
+        city: cityVal,
+        updatedAt: new Date().toISOString()
+      }, { merge: true });
     }
-  };
+    localStorage.setItem('profiles_my_uid_v1', uid);
+    window.myUID = uid;
+    try{ await bindUserProfile(uid); }catch(e){ console.warn('bindUserProfile failed', e); }
+    if(statusEl) statusEl.textContent = 'Saved';
+    setTimeout(()=>{ closeCompleteAccountModal(); showPage && typeof showPage==='function' && showPage('home'); showAuthStatus(''); }, 500);
+  }catch(err){
+    console.warn('saveCompleteAccount err', err);
+    if(statusEl) statusEl.textContent = err?.message || String(err);
+  }
+};
+    
 
   window.skipCompleteAccount = function(){
     if(window.pendingNewUserUid){
@@ -4627,16 +4620,48 @@ function createChangeModal(){
   // We monkeypatch the existing functions (if present) so we don't change their internals.
   if(window.saveCompleteAccount){
     const orig = window.saveCompleteAccount;
-    window.saveCompleteAccount = async function(){
-      try{
-        await orig.apply(this, arguments);
-      } finally {
-        try{
-          const uid = window.pendingNewUserUid || (window.myUID ? window.myUID : null);
-          if(uid) localStorage.setItem('profiles_complete_prompt_shown_' + String(uid), '1');
-        }catch(e){ console.warn('mark prompt shown after save failed', e); }
-      }
-    };
+    
+window.saveCompleteAccount = async function(){
+  const username = (document.getElementById('complete_username').value || '').trim();
+  const age = Number(document.getElementById('complete_age').value || 0);
+  const stateVal = document.getElementById('stateInput')?.value || '';
+  const districtVal = document.getElementById('districtInput')?.value || '';
+  const cityVal = document.getElementById('cityInput')?.value || '';
+  const statusEl = document.getElementById('completeAccountStatus');
+
+  if(!window.pendingNewUserUid){ if(statusEl) statusEl.textContent = 'No pending user'; return; }
+  if(!username){ if(statusEl) statusEl.textContent = 'Username required'; document.getElementById('complete_username').focus(); return; }
+  if(!age || age < 18){ if(statusEl) statusEl.textContent = 'Valid age required (18+)'; document.getElementById('complete_age').focus(); return; }
+  if(!stateVal){ if(statusEl) statusEl.textContent = 'State required'; document.getElementById('stateInput').focus(); return; }
+  if(!districtVal){ if(statusEl) statusEl.textContent = 'District required'; document.getElementById('districtInput').focus(); return; }
+  if(!cityVal){ if(statusEl) statusEl.textContent = 'City required'; document.getElementById('cityInput').focus(); return; }
+
+  if(statusEl) statusEl.textContent = 'Saving…';
+  const uid = String(window.pendingNewUserUid);
+  const dbInst = _getDb();
+  try{
+    if(dbInst){
+      await dbInst.collection('users').doc(uid).set({
+        displayName: username,
+        age: age,
+        email: (_getAuth()?.currentUser?.email) || null,
+        state: stateVal,
+        district: districtVal,
+        city: cityVal,
+        updatedAt: new Date().toISOString()
+      }, { merge: true });
+    }
+    localStorage.setItem('profiles_my_uid_v1', uid);
+    window.myUID = uid;
+    try{ await bindUserProfile(uid); }catch(e){ console.warn('bindUserProfile failed', e); }
+    if(statusEl) statusEl.textContent = 'Saved';
+    setTimeout(()=>{ closeCompleteAccountModal(); showPage && typeof showPage==='function' && showPage('home'); showAuthStatus(''); }, 500);
+  }catch(err){
+    console.warn('saveCompleteAccount err', err);
+    if(statusEl) statusEl.textContent = err?.message || String(err);
+  }
+};
+    
   }
   if(window.skipCompleteAccount){
     const origSkip = window.skipCompleteAccount;
@@ -5604,25 +5629,48 @@ document.addEventListener("DOMContentLoaded", () => {
     // Wrap existing saveCompleteAccount to enforce final validation and show message if invalid
     if(window.saveCompleteAccount && typeof window.saveCompleteAccount === 'function'){
       var origSave = window.saveCompleteAccount;
-      window.saveCompleteAccount = async function(){
-        try{
-          if(!validateAccountComplete()){
-            if(status) status.textContent = 'Please fill all required fields correctly.';
-            // focus first invalid
-            if(!username.value.trim()){ username.focus(); return; }
-            if(!isPositiveNumber(age.value) || Number(age.value) < 18){ age.focus(); alert('Age must be 18 or above.'); return; }
-            if(!stateInput.value.trim()){ stateInput.focus(); return; }
-            if(!district.value.trim()){ district.focus(); return; }
-            if(!city.value.trim()){ city.focus(); return; }
-          } else {
-            if(status) status.textContent = 'Saving…';
-            return await origSave.apply(this, arguments);
-          }
-        }catch(e){
-          // fallback to calling original (safer)
-          try{ return await origSave.apply(this, arguments); }catch(_){}
-        }
-      };
+      
+window.saveCompleteAccount = async function(){
+  const username = (document.getElementById('complete_username').value || '').trim();
+  const age = Number(document.getElementById('complete_age').value || 0);
+  const stateVal = document.getElementById('stateInput')?.value || '';
+  const districtVal = document.getElementById('districtInput')?.value || '';
+  const cityVal = document.getElementById('cityInput')?.value || '';
+  const statusEl = document.getElementById('completeAccountStatus');
+
+  if(!window.pendingNewUserUid){ if(statusEl) statusEl.textContent = 'No pending user'; return; }
+  if(!username){ if(statusEl) statusEl.textContent = 'Username required'; document.getElementById('complete_username').focus(); return; }
+  if(!age || age < 18){ if(statusEl) statusEl.textContent = 'Valid age required (18+)'; document.getElementById('complete_age').focus(); return; }
+  if(!stateVal){ if(statusEl) statusEl.textContent = 'State required'; document.getElementById('stateInput').focus(); return; }
+  if(!districtVal){ if(statusEl) statusEl.textContent = 'District required'; document.getElementById('districtInput').focus(); return; }
+  if(!cityVal){ if(statusEl) statusEl.textContent = 'City required'; document.getElementById('cityInput').focus(); return; }
+
+  if(statusEl) statusEl.textContent = 'Saving…';
+  const uid = String(window.pendingNewUserUid);
+  const dbInst = _getDb();
+  try{
+    if(dbInst){
+      await dbInst.collection('users').doc(uid).set({
+        displayName: username,
+        age: age,
+        email: (_getAuth()?.currentUser?.email) || null,
+        state: stateVal,
+        district: districtVal,
+        city: cityVal,
+        updatedAt: new Date().toISOString()
+      }, { merge: true });
+    }
+    localStorage.setItem('profiles_my_uid_v1', uid);
+    window.myUID = uid;
+    try{ await bindUserProfile(uid); }catch(e){ console.warn('bindUserProfile failed', e); }
+    if(statusEl) statusEl.textContent = 'Saved';
+    setTimeout(()=>{ closeCompleteAccountModal(); showPage && typeof showPage==='function' && showPage('home'); showAuthStatus(''); }, 500);
+  }catch(err){
+    console.warn('saveCompleteAccount err', err);
+    if(statusEl) statusEl.textContent = err?.message || String(err);
+  }
+};
+    
     }
   });
 
@@ -6006,5 +6054,217 @@ window.deleteProfile = function(){
   const observer = new MutationObserver(hideStatusBox);
   observer.observe(document.body, { childList: true, subtree: true });
 })();
-</script></body>
+</script>
+<!-- Final override for saveCompleteAccount to ensure Save & Continue works -->
+<script>
+(function(){
+  async function finalSave(){
+    const statusEl = document.getElementById('completeAccountStatus');
+    function setStatus(msg){ if(statusEl) statusEl.textContent = msg || ''; }
+    const uid = window.pendingNewUserUid || window.myUID;
+    if(!uid){ setStatus('No pending user'); return; }
+    const username = (document.getElementById('complete_username').value||'').trim();
+    const age = Number(document.getElementById('complete_age').value||0);
+    const stateVal = (document.getElementById('stateInput')?.value||'').trim();
+    const districtVal = (document.getElementById('districtInput')?.value||'').trim();
+    const cityVal = (document.getElementById('cityInput')?.value||'').trim();
+    if(!username){ setStatus('Username required'); try{ document.getElementById('complete_username').focus(); }catch(e){}; return; }
+    if(!age || age<18){ setStatus('Age must be 18 or above'); try{ document.getElementById('complete_age').focus(); }catch(e){}; return; }
+    if(!stateVal){ setStatus('State required'); try{ document.getElementById('stateInput').focus(); }catch(e){}; return; }
+    if(!districtVal){ setStatus('District required'); try{ document.getElementById('districtInput').focus(); }catch(e){}; return; }
+    if(!cityVal){ setStatus('City required'); try{ document.getElementById('cityInput').focus(); }catch(e){}; return; }
+    setStatus('Saving…');
+    try{
+      const dbInst = (typeof db !== 'undefined' && db) ? db : ((typeof firebase !== 'undefined' && firebase.firestore) ? firebase.firestore() : null);
+      const authInst = (typeof auth !== 'undefined' && auth) ? auth : ((typeof firebase !== 'undefined' && firebase.auth) ? firebase.auth() : null);
+      const email = authInst && authInst.currentUser && authInst.currentUser.email ? authInst.currentUser.email : null;
+      if(dbInst){
+        await dbInst.collection('users').doc(String(uid)).set({
+          displayName: username,
+          age: age,
+          email: email,
+          state: stateVal,
+          district: districtVal,
+          city: cityVal,
+          updatedAt: new Date().toISOString()
+        }, { merge: true });
+      } else {
+        console.warn('Firestore not available, saving locally');
+      }
+      try{
+        if(window.myProfile && window.myProfile.uid && dbInst){
+          await dbInst.collection('profiles').doc(String(window.myProfile.uid)).set({ ownerUid: String(uid) }, { merge: true });
+          await dbInst.collection('users').doc(String(uid)).set({ profileUid: String(window.myProfile.uid) }, { merge: true });
+        }
+      }catch(e){ console.warn('profile linking failed', e); }
+      localStorage.setItem('profiles_my_uid_v1', String(uid));
+      window.myUID = String(uid);
+      try{ if(typeof bindUserProfile === 'function') await bindUserProfile(uid); }catch(e){ console.warn('bindUserProfile', e); }
+      setStatus('Saved — redirecting…');
+      setTimeout(function(){ document.getElementById('completeAccountModal')?.classList.remove('open'); if(typeof showPage === 'function') showPage('home'); }, 400);
+    }catch(err){ console.error('finalSave', err); setStatus(err && err.message ? err.message : String(err)); }
+  }
+  window.saveCompleteAccount = finalSave;
+  // ensure button onclick/click listener set
+  const btn = document.getElementById('completeSaveBtn');
+  if(btn){
+    btn.onclick = function(e){ e.preventDefault(); window.saveCompleteAccount && window.saveCompleteAccount(); };
+    try{ btn.removeAttribute('disabled'); }catch(e){}
+  }
+})();
+</script>
+
+
+<!-- DEBUG OVERRIDE: robust saveCompleteAccount with verbose logging and local fallback -->
+<script>
+(function(){
+  function _getAuth(){ if(typeof auth !== 'undefined' && auth) return auth; if(typeof firebase !== 'undefined' && firebase.auth) return firebase.auth(); return null; }
+  function _getDb(){ if(typeof db !== 'undefined' && db) return db; if(typeof firebase !== 'undefined' && firebase.firestore) return firebase.firestore(); return null; }
+
+  async function debugSaveCompleteAccount(){
+    try{
+      console.log('[DEBUG] saveCompleteAccount invoked');
+      var statusEl = document.getElementById('completeAccountStatus');
+      var usernameEl = document.getElementById('complete_username');
+      var ageEl = document.getElementById('complete_age');
+      var stateEl = document.getElementById('stateInput');
+      var districtEl = document.getElementById('districtInput');
+      var cityEl = document.getElementById('cityInput');
+
+      if(statusEl) statusEl.textContent = '';
+      var username = usernameEl ? (usernameEl.value||'').trim() : '';
+      var age = ageEl ? Number(ageEl.value||0) : 0;
+      var stateVal = stateEl ? (stateEl.value||'').trim() : '';
+      var districtVal = districtEl ? (districtEl.value||'').trim() : '';
+      var cityVal = cityEl ? (cityEl.value||'').trim() : '';
+
+      if(!window.pendingNewUserUid && !window.myUID){
+        // try account keys in localStorage
+        window.pendingNewUserUid = localStorage.getItem('profiles_account_uid_v1') || localStorage.getItem('profiles_my_uid_v1') || null;
+      }
+      var uid = window.pendingNewUserUid || window.myUID || null;
+      console.log('[DEBUG] resolved uid:', uid);
+
+      if(!uid){
+        if(statusEl) statusEl.textContent = 'No pending user (uid missing). Check auth.';
+        console.warn('[DEBUG] No uid - aborting save');
+        return;
+      }
+      // validation
+      if(!username){ if(statusEl) statusEl.textContent='Username required'; if(usernameEl) usernameEl.focus(); return; }
+      if(!age || age < 18){ if(statusEl) statusEl.textContent='Valid age required (18+)'; if(ageEl) ageEl.focus(); return; }
+      if(!stateVal){ if(statusEl) statusEl.textContent='State required'; if(stateEl) stateEl.focus(); return; }
+      if(!districtVal){ if(statusEl) statusEl.textContent='District required'; if(districtEl) districtEl.focus(); return; }
+      if(!cityVal){ if(statusEl) statusEl.textContent='City required'; if(cityEl) cityEl.focus(); return; }
+
+      if(statusEl) statusEl.textContent = 'Saving...';
+      console.log('[DEBUG] validated fields, attempting Firestore save if available');
+
+      const dbInst = _getDb();
+      const authInst = _getAuth();
+      // Helpful debug info
+      console.log('[DEBUG] dbInst present?', !!dbInst, ' auth present?', !!authInst, ' auth.currentUser?', !!(authInst && authInst.currentUser));
+
+      var userObj = {
+        uid: String(uid),
+        displayName: username,
+        age: (age > 0 ? Number(age) : null),
+        email: (authInst && authInst.currentUser && authInst.currentUser.email) ? authInst.currentUser.email : null,
+        state: stateVal,
+        district: districtVal,
+        city: cityVal,
+        updatedAt: (new Date()).toISOString()
+      };
+
+      var wroteToFirestore = false;
+      if(dbInst){
+        try{
+          await dbInst.collection('users').doc(String(uid)).set(userObj, { merge: true });
+          console.log('[DEBUG] Firestore set(users) OK');
+          wroteToFirestore = true;
+        }catch(e){
+          console.error('[DEBUG] Firestore users write failed:', e);
+          if(statusEl) statusEl.textContent = 'Firestore save failed: ' + (e && e.message ? e.message : String(e));
+        }
+      } else {
+        console.log('[DEBUG] No Firestore available; will use localStorage fallback');
+      }
+
+      // attempt profile linking if myProfile exists
+      try{
+        if(typeof window.myProfile !== 'undefined' && window.myProfile && window.myProfile.uid){
+          var profileUid = String(window.myProfile.uid);
+          if(dbInst){
+            try{
+              await dbInst.collection('profiles').doc(profileUid).set({ ownerUid: String(uid) }, { merge: true });
+              await dbInst.collection('users').doc(String(uid)).set({ profileUid: String(profileUid) }, { merge: true });
+              console.log('[DEBUG] Linked profile', profileUid, 'to user', uid);
+            }catch(e){
+              console.warn('[DEBUG] profile linking to Firestore failed', e);
+            }
+          }
+        }
+      }catch(e){ console.warn('[DEBUG] profile linking check failed', e); }
+
+      // Always persist locally as fallback and trustworthy record
+      try{
+        var storageKey = 'profiles_user_info_v1';
+        var existing = {};
+        try{
+          existing = JSON.parse(localStorage.getItem(storageKey) || '{}');
+        }catch(_){ existing = {}; }
+        existing[String(uid)] = userObj;
+        localStorage.setItem(storageKey, JSON.stringify(existing));
+        // also set profiles_my_uid_v1 for quick access
+        try{ localStorage.setItem('profiles_my_uid_v1', String(uid)); }catch(_){}
+        console.log('[DEBUG] saved user info to localStorage key', storageKey);
+      }catch(e){ console.warn('[DEBUG] localStorage save failed', e); }
+
+      // try to bind profile in-memory
+      try{ if(typeof bindUserProfile === 'function') await bindUserProfile(uid); }catch(e){ console.warn('[DEBUG] bindUserProfile failed', e); }
+
+      if(statusEl){
+        if(wroteToFirestore) statusEl.textContent = 'Saved';
+        else statusEl.textContent = 'Saved';
+      }
+
+      // mark prompt shown
+      try{ localStorage.setItem('profiles_complete_prompt_shown_' + String(uid), '1'); }catch(_){}
+
+      setTimeout(function(){
+        try{ closeCompleteAccountModal(); }catch(e){ console.warn('[DEBUG] close modal failed', e); }
+        try{ if(typeof showPage === 'function') showPage('home'); }catch(e){ console.warn('[DEBUG] showPage failed', e); }
+        try{ if(typeof showAuthStatus === 'function') showAuthStatus(''); }catch(e){};
+      }, 600);
+
+    }catch(err){
+      console.error('[DEBUG] saveCompleteAccount fatal error', err);
+      try{ document.getElementById('completeAccountStatus').textContent = 'Save failed: ' + (err && err.message ? err.message : String(err)); }catch(_){}
+    }
+  }
+
+  // Attach as final override after DOM ready
+  function attachDebugOverride(){
+    window.saveCompleteAccount = debugSaveCompleteAccount;
+    var btn = document.getElementById('completeSaveBtn');
+    if(btn){
+      try{ btn.removeAttribute('onclick'); }catch(e){};
+      btn.disabled = false;
+      btn.addEventListener('click', function(e){ e.preventDefault(); debugSaveCompleteAccount(); });
+      console.log('[DEBUG] attached debugSaveCompleteAccount to #completeSaveBtn');
+    } else {
+      console.warn('[DEBUG] #completeSaveBtn not found to attach override');
+    }
+  }
+
+  if(document.readyState === 'complete' || document.readyState === 'interactive'){
+    setTimeout(attachDebugOverride, 80);
+  } else {
+    document.addEventListener('DOMContentLoaded', function(){ setTimeout(attachDebugOverride, 80); });
+  }
+})();
+</script>
+<!-- END DEBUG OVERRIDE -->
+
+</body>
 </html>

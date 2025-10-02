@@ -650,7 +650,6 @@
   .otp-card{background:#ecfdf5;border:1px solid #bbf7d0;color:#065f46;padding:12px;border-radius:10px;font-weight:800;box-shadow:0 8px 30px rgba(2,6,23,0.04);margin-top:10px}
 </style>
 <!-- End injection -->
-
 <style id="authDelayStyle">#authPage{display:none !important;}</style>
 </head>
 <body>
@@ -658,9 +657,8 @@
 <div id="topMenu" style="position:fixed; top:12px; left:12px; z-index:10000;">
 <button id="menuBtn" style="background:none;border:none;font-size:22px;cursor:pointer;">⋮</button>
 <div id="menuDropdown" style="display:none; position:absolute; top:28px; left:0; background:white; border:1px solid #ccc; border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.15); min-width:160px; overflow:hidden;">
-
 <div onclick="showPage('savedProfilesPage'); closeMenu()" style="padding:10px; cursor:pointer; font-weight:600;">⭐ Saved Profiles</div>
-  <div onclick="showPage('leaderboardPage'); closeMenu()" style="padding:10px; cursor:pointer; font-weight:600;">🏆 Leaderboards</div>
+<div onclick="showPage('leaderboardPage'); closeMenu()" style="padding:10px; cursor:pointer; font-weight:600;">🏆 Leaderboards</div>
 </div>
 </div>
 <script>
@@ -731,52 +729,40 @@ document.addEventListener('DOMContentLoaded', function(){
 </style>
 <!-- Auth Page -->
 <div class="page" id="authPage" style="display:none; align-items:center; justify-content:center; height:100vh; background:#f9fafb;">
-  <div aria-label="Authentication" class="auth-card" role="region" 
-       style="padding:20px; border-radius:12px; background:white; box-shadow:0 4px 15px rgba(0,0,0,0.1); width:320px;">
-    
-    
-    <!-- Email / password area -->
-    <div id="emailFormArea" style="margin-top:12px;">
-      <input autocomplete="email" class="auth-input" id="emailInput" placeholder="Email" type="email"/>
-      <div style="height:8px"></div>
-      <input autocomplete="current-password" class="auth-input" id="passwordInput" placeholder="Password" type="password"/>
-      
-      <div class="auth-row" style="margin-top:12px; display:flex; gap:8px;">
-        <button class="auth-primary" id="primaryAuthBtn">Create account</button>
-        <button class="auth-secondary" id="secondaryAuthBtn" style="display:none">Login</button>
-      </div>
-      
-      <div style="margin-top:12px; text-align:center;">
-        <button class="google-btn" id="googleBtn">Continue with Google</button>
-      </div>
-      
-      <div class="auth-small-note" style="text-align:center;">
-        <span class="linkish" id="authToggleLink">Already have an account? Login</span>
-      </div>
-    </div>
-
-    <!-- Phone/OTP area (hidden by default) -->
-    <div id="phoneFormArea" style="margin-top:12px; display:none;">
-      <input class="auth-input" id="phoneInput" placeholder="+91 98765 43210" type="text"/>
-      <div id="recaptcha-container" style="margin-top:8px;"></div>
-      
-      <div style="display:flex; gap:8px; margin-top:8px;">
-        <button class="auth-primary" id="sendOtpBtn">Send OTP</button>
-        <input class="auth-input" id="otpInput" placeholder="Enter OTP" style="flex:1;" type="text"/>
-      </div>
-      
-      <div style="display:flex; gap:8px; margin-top:8px;">
-        <button class="auth-secondary" id="verifyOtpBtn">Verify OTP</button>
-      </div>
-      
-      <div class="auth-small-note">Use phone if you prefer contact-based sign in.</div>
-    </div>
-
-    <!-- Status/Error messages -->
-    <p id="authStatus" style="color:#d73a49; font-weight:800; margin-top:12px;"></p>
-  </div>
+<div aria-label="Authentication" class="auth-card" role="region" style="padding:20px; border-radius:12px; background:white; box-shadow:0 4px 15px rgba(0,0,0,0.1); width:320px;">
+<!-- Email / password area -->
+<div id="emailFormArea" style="margin-top:12px;">
+<input autocomplete="email" class="auth-input" id="emailInput" placeholder="Email" type="email"/>
+<div style="height:8px"></div>
+<input autocomplete="current-password" class="auth-input" id="passwordInput" placeholder="Password" type="password"/>
+<div class="auth-row" style="margin-top:12px; display:flex; gap:8px;">
+<button class="auth-primary" id="primaryAuthBtn">Create account</button>
+<button class="auth-secondary" id="secondaryAuthBtn" style="display:none">Login</button>
 </div>
-
+<div style="margin-top:12px; text-align:center;">
+<button class="google-btn" id="googleBtn">Continue with Google</button>
+</div>
+<div class="auth-small-note" style="text-align:center;">
+<span class="linkish" id="authToggleLink">Already have an account? Login</span>
+</div>
+</div>
+<!-- Phone/OTP area (hidden by default) -->
+<div id="phoneFormArea" style="margin-top:12px; display:none;">
+<input class="auth-input" id="phoneInput" placeholder="+91 98765 43210" type="text"/>
+<div id="recaptcha-container" style="margin-top:8px;"></div>
+<div style="display:flex; gap:8px; margin-top:8px;">
+<button class="auth-primary" id="sendOtpBtn">Send OTP</button>
+<input class="auth-input" id="otpInput" placeholder="Enter OTP" style="flex:1;" type="text"/>
+</div>
+<div style="display:flex; gap:8px; margin-top:8px;">
+<button class="auth-secondary" id="verifyOtpBtn">Verify OTP</button>
+</div>
+<div class="auth-small-note">Use phone if you prefer contact-based sign in.</div>
+</div>
+<!-- Status/Error messages -->
+<p id="authStatus" style="color:#d73a49; font-weight:800; margin-top:12px;"></p>
+</div>
+</div>
 <!-- Script -->
 <script>
   const switchInput = document.getElementById("useContactSwitch");
@@ -793,7 +779,6 @@ document.addEventListener('DOMContentLoaded', function(){
     }
   });
 </script>
-
 <!-- Styles -->
 <style>
   .auth-input {
@@ -879,64 +864,60 @@ document.addEventListener('DOMContentLoaded', function(){
     transform: translateX(18px);
   }
 </style>
-
 <!-- Post-register "Complete account" modal (inserts when needed) -->
 <div aria-labelledby="completeTitle" aria-modal="true" class="modal" id="completeAccountModal" role="dialog">
-  <div class="modal-content">
-    
-    <h4 id="completeTitle">Complete your account</h4>
-    <p class="auth-small-note">Pick a username and enter your age so we can link your profile.</p>
-    <input class="auth-input" id="complete_username" placeholder="Username (public)">
-    <div style="height:8px"></div>
-    <input class="auth-input" id="complete_age" placeholder="Age" type="number">
-    <div style="display:flex; flex-direction:column; gap:12px; margin-top:12px;">
-      <div style="height:8px"></div>
-      <label for="stateInput" style="font-weight:600; margin-top:6px;">State</label>
-      <select id="stateInput" class="auth-input" name="state" required>
-        <option value="">Select state</option>
-        <option>Andhra Pradesh</option>
-        <option>Arunachal Pradesh</option>
-        <option>Assam</option>
-        <option>Bihar</option>
-        <option>Chhattisgarh</option>
-        <option>Goa</option>
-        <option>Gujarat</option>
-        <option>Haryana</option>
-        <option>Himachal Pradesh</option>
-        <option>Jammu and Kashmir</option>
-        <option>Jharkhand</option>
-        <option>Karnataka</option>
-        <option>Kerala</option>
-        <option>Madhya Pradesh</option>
-        <option>Maharashtra</option>
-        <option>Manipur</option>
-        <option>Meghalaya</option>
-        <option>Mizoram</option>
-        <option>Nagaland</option>
-        <option>Odisha</option>
-        <option>Punjab</option>
-        <option>Rajasthan</option>
-        <option>Sikkim</option>
-        <option>Tamil Nadu</option>
-        <option>Telangana</option>
-        <option>Tripura</option>
-        <option>Uttar Pradesh</option>
-        <option>Uttarakhand</option>
-        <option>West Bengal</option>
-        <option>Other</option>
-      </select>
-      <div style="height:8px"></div>
-      <label for="districtInput" style="font-weight:600; margin-top:6px;">District</label>
-      <input id="districtInput" class="auth-input" name="district" type="text" placeholder=\"Enter district\" required />
-
-      <div style="height:8px"></div>
+<div class="modal-content">
+<h4 id="completeTitle">Complete your account</h4>
+<p class="auth-small-note">Pick a username and enter your age so we can link your profile.</p>
+<input class="auth-input" id="complete_username" placeholder="Username (public)"/>
+<div style="height:8px"></div>
+<input class="auth-input" id="complete_age" placeholder="Age" type="number"/>
+<div style="display:flex; flex-direction:column; gap:12px; margin-top:12px;">
+<div style="height:8px"></div>
+<label for="stateInput" style="font-weight:600; margin-top:6px;">State</label>
+<select class="auth-input" id="stateInput" name="state" required="">
+<option value="">Select state</option>
+<option>Andhra Pradesh</option>
+<option>Arunachal Pradesh</option>
+<option>Assam</option>
+<option>Bihar</option>
+<option>Chhattisgarh</option>
+<option>Goa</option>
+<option>Gujarat</option>
+<option>Haryana</option>
+<option>Himachal Pradesh</option>
+<option>Jammu and Kashmir</option>
+<option>Jharkhand</option>
+<option>Karnataka</option>
+<option>Kerala</option>
+<option>Madhya Pradesh</option>
+<option>Maharashtra</option>
+<option>Manipur</option>
+<option>Meghalaya</option>
+<option>Mizoram</option>
+<option>Nagaland</option>
+<option>Odisha</option>
+<option>Punjab</option>
+<option>Rajasthan</option>
+<option>Sikkim</option>
+<option>Tamil Nadu</option>
+<option>Telangana</option>
+<option>Tripura</option>
+<option>Uttar Pradesh</option>
+<option>Uttarakhand</option>
+<option>West Bengal</option>
+<option>Other</option>
+</select>
+<div style="height:8px"></div>
+<label for="districtInput" style="font-weight:600; margin-top:6px;">District</label>
+<input class="auth-input" district\"="" id="districtInput" name="district" placeholder='\"Enter' required="" type="text">
+<div style="height:8px"></div>
 <label for="cityInput" style="font-weight:600; margin-top:6px;">City</label>
-<input id="cityInput" class="auth-input" name="city" type="text" placeholder="Enter city" required />
-
+<input class="auth-input" id="cityInput" name="city" placeholder="Enter city" required="" type="text">
 <button class="auth-primary" id="completeSaveBtn">Save &amp; Continue</button>
-    </div>
-    <div class="auth-small-note" id="completeAccountStatus"></div>
-  </div>
+</input></input></div>
+<div class="auth-small-note" id="completeAccountStatus"></div>
+</div>
 </div>
 <script>
 /* Robust auth helpers: DOM-ready, fallbacks for auth/db, modal fixes, and proper binding of profile data.
@@ -1381,9 +1362,9 @@ document.addEventListener('DOMContentLoaded', function(){
 <option value="Welder">Welder</option>
 </select>
 <input id="address" placeholder="Your Address" required="" type="text"/>
-<input id="city" placeholder="Your City" required type="text"/>
+<input id="city" placeholder="Your City" required="" type="text"/>
 <input id="contact" placeholder="Contact No." required="" type="text"/>
-<input id="language" placeholder="Languages Spoken" type="text"/>
+<input id="language" placeholder="Languages You Speak" type="text"/>
 <textarea id="description" placeholder="Short description about you (will show under your name)" rows="3"></textarea>
 <div id="statusSection" style="display:none;">
 <label for="status">Profile Status:</label>
@@ -1393,7 +1374,7 @@ document.addEventListener('DOMContentLoaded', function(){
 </select>
 <p class="note">Free means your profile is visible in the app. Busy will hide it, letting you rest.</p>
 </div>
-<button id="submitBtn" type="submit">₹250</button>
+<button id="submitBtn" type="submit">Create</button>
 </form>
 <button class="back-btn" onclick="showPage('home')">Back</button>
 </div>
@@ -1482,19 +1463,16 @@ document.addEventListener('DOMContentLoaded', function(){
 </div>
 <!-- Leaderboards Page -->
 <div class="page" id="leaderboardPage">
-  <h2 style="text-align:center;">Leaderboards</h2>
-  <div class="leaderboard-tabs">
- 
- 
-    <button onclick="switchLeaderboard('rated')">Top 10 Most Rated</button>
-  </div>
-  <div class="leaderboard-list" id="leaderboardList"></div>
-  <button class="back-btn" onclick="showPage('home')">Back</button>
+<h2 style="text-align:center;">Leaderboards</h2>
+<div class="leaderboard-tabs">
+<button onclick="switchLeaderboard('rated')">Top 10 Most Rated</button>
 </div>
-
+<div class="leaderboard-list" id="leaderboardList"></div>
+<button class="back-btn" onclick="showPage('home')">Back</button>
+</div>
 <!-- Saved Profiles -->
 <div class="page" id="savedProfilesPage">
-<h2>Saved Profiles</h2>
+<h2>Saved Wokers Profiles</h2>
 <div class="categories" id="savedCategoryFilter">
 <div class="category" onclick="savedSkill='All';displaySaved()">All</div>
 <div class="category" onclick="savedSkill='Plumber';displaySaved()">Plumber</div>
@@ -1550,7 +1528,7 @@ function filterSkill(skill){ currentSkill=skill; displayProfiles(); }
 function openProfileForm(){
   showPage('createProfilePage');
   if(myProfile){
-    document.getElementById('formTitle').textContent="Manage Your Profile";
+    document.getElementById('formTitle').textContent="Manage Your Worker Profile";
     document.getElementById('submitBtn').textContent="Save";
     document.getElementById('statusSection').style.display="block";
     document.getElementById('name').value=myProfile.name;
@@ -1564,7 +1542,7 @@ function openProfileForm(){
     document.getElementById('status').value=myProfile.status;
   } else {
     document.getElementById('formTitle').textContent="Create Your Profile";
-    document.getElementById('submitBtn').textContent="Create";
+    document.getElementById('submitBtn').textContent="₹250";
     document.getElementById('statusSection').style.display="none";
     document.getElementById('profileForm').reset();
   }
@@ -2722,7 +2700,8 @@ try{ updateChatHireButton(); }catch(e){}
 <div class="page" id="leaderboardPage" style="display:none; padding-top:28px;">
 <h2 style="text-align:center; margin-top:0;">Leaderboards</h2>
 <div aria-label="Leaderboards" class="leaderboard-tabs" role="tablist">
-
+<button class="active" id="lb-tab-hired" onclick="displayLeaderboard('hired')">Top 10 Most Hired</button>
+<button id="lb-tab-alltime" onclick="displayLeaderboard('alltime')">Top 10 All Time</button>
 <button id="lb-tab-rated" onclick="displayLeaderboard('rated')">Top 10 Most Rated</button>
 </div>
 <div aria-live="polite" class="leaderboard-list" id="leaderboardList"></div>
@@ -3067,9 +3046,7 @@ function listenToChatMessages(myUid, otherUid){
 }
 // --- end injection ---
 
-
-
-
+const statusBox = document.createElement('div'); statusBox.id = "firebaseStatusBox"; statusBox.style.position = "fixed"; statusBox.style.bottom = "10px"; statusBox.style.left = "10px"; statusBox.style.padding = "8px 12px"; statusBox.style.background = "#000"; statusBox.style.color = "#0f0"; statusBox.style.fontSize = "12px"; statusBox.style.fontFamily = "monospace"; statusBox.style.borderRadius = "6px"; statusBox.style.zIndex = 99999; statusBox.textContent = "Firebase: Initializing..."; document.addEventListener("DOMContentLoaded", ()=>document.body.appendChild(statusBox)); function setFBStatus(msg, color="#0f0") { const box = document.getElementById("firebaseStatusBox"); if(box) { box.textContent = "Firebase: " + msg; box.style.color = color; }
 // --- BEGIN: Ensure Manage Profile loads the user's profile for editing ---
 async function loadMyProfileIfExists() {
   try {
@@ -4532,7 +4509,6 @@ function createChangeModal(){
     document.getElementById('leaderboardContent').innerHTML=html;
   })();
 </script>
-
 <!-- BEGIN: Profile-completion watcher (added by assistant) -->
 <script>
 (function(){
@@ -4618,10 +4594,6 @@ function createChangeModal(){
 })();
 </script>
 <!-- END: Profile-completion watcher -->
-
-
-
-
 <!-- BEGIN: Ratings - Robust Firestore-backed implementation (single patch) -->
 <script>
 (function(){
@@ -4925,10 +4897,6 @@ function createChangeModal(){
 })();
 </script>
 <!-- END: Ratings - Robust Firestore-backed implementation -->
-
-
-
-
 <script>
 // --- Assistant: non-invasive safety & rating-percent enhancer ---
 (function(){
@@ -5063,7 +5031,6 @@ function createChangeModal(){
 
 })(); 
 </script>
-
 <script>
 // --- Assistant: enforce MIN_VOTES=1 and clean rating display ---
 (function(){
@@ -5117,7 +5084,6 @@ function createChangeModal(){
   window.__assistantEnhanceLeaderboards = enhanceLeaderboards;
 })();
 </script>
-
 <script>
 function refreshLeaderboards(type){
   try{ if(typeof normalizeRatingsForProfiles==='function') normalizeRatingsForProfiles(); }catch(e){}
@@ -5270,16 +5236,12 @@ function downloadLeaderboard(){
 })();
 </script>
 <!-- END RUNTIME PATCH -->
-
-
 <script>
 document.addEventListener("DOMContentLoaded", () => {
   // Always land on Home when app opens
   showPage("home");
 });
 </script>
-
-
 <!-- BEGIN: DevTools deterrent + detection (inserted by ChatGPT) -->
 <style id="devtools-overlay-style">
 #devtools-overlay {
@@ -5307,7 +5269,6 @@ document.addEventListener("DOMContentLoaded", () => {
 }
 #devtools-overlay.hidden { display:none !important; }
 </style>
-
 <script id="devtools-deterrent">
 (function(){
   // ---- Config ----
@@ -5338,53 +5299,7 @@ document.addEventListener("DOMContentLoaded", () => {
     } catch(e){}
   }
 
-  // Build and show overlay (only the first time)
-  function ensureOverlay(){
-    if(overlayAdded) return;
-    overlayAdded = true;
-    try{
-      const div = document.createElement('div');
-      div.id = 'devtools-overlay';
-      div.className = 'hidden';
-      div.innerHTML = '<div class="box"><h2 style="margin:0 0 8px 0; font-size:20px;">Developer tools detected</h2><div style="opacity:0.9">We detected that developer tools (or a similar inspector) is open. For security and privacy reasons, please close them to continue using this app normally.</div><div style="height:12px"></div><div style="opacity:0.9; font-size:13px">If this is a mistake, resize your window to a normal size and the overlay will disappear automatically.</div></div>';
-      document.documentElement.appendChild(div);
-    }catch(e){}
-  }
-
-  function showOverlay(){
-    ensureOverlay();
-    try{
-      const el = document.getElementById('devtools-overlay');
-      if(el){ el.classList.remove('hidden'); overlayVisible = true; }
-    }catch(e){}
-  }
-  function hideOverlay(){
-    try{
-      const el = document.getElementById('devtools-overlay');
-      if(el){ el.classList.add('hidden'); overlayVisible = false; }
-    }catch(e){}
-  }
-
-  // Heuristic detection: compare outer vs inner dimensions
-  function detectBySize(){
-    try{
-      const widthDiff = Math.abs(window.outerWidth - window.innerWidth);
-      const heightDiff = Math.abs(window.outerHeight - window.innerHeight);
-      return (widthDiff > dimensionThreshold) || (heightDiff > dimensionThreshold);
-    }catch(e){ return false; }
-  }
-
-  // Secondary detection: timing side-effect (pauses when devtools open with debugger)
-  // Use a high-resolution timer and measure if setTimeout gets delayed significantly.
-  function detectByTimer(cb){
-    const start = performance.now();
-    setTimeout(function(){
-      const delta = performance.now() - start;
-      // If timeout delayed by a noticeable amount, devtools or heavy inspector may be open.
-      if(delta > 200) cb(true); else cb(false);
-    }, 50);
-  }
-
+  
   // Main periodic detection combining heuristics
   function periodicDetect(){
     try{
@@ -5424,8 +5339,6 @@ document.addEventListener("DOMContentLoaded", () => {
 })();
 </script>
 <!-- END: DevTools deterrent + detection -->
-
-
 <!-- BEGIN: Improved robust delayed auth patch (10s; shows and centers auth reliably) -->
 <script>
 (function(){
@@ -5541,32 +5454,29 @@ document.addEventListener("DOMContentLoaded", () => {
 })();
 </script>
 <!-- END: Improved robust delayed auth patch -->
-
-
 <!-- BEGIN: Profile & Account-completion validation + Privacy confirmation modal -->
 <!-- Privacy modal shown before creating a new profile -->
-<div class="modal" id="privacyModal" aria-modal="true" role="dialog" style="z-index:2147484000;">
-  <div class="modal-content" role="dialog" aria-modal="true">
-    <button class="modal-close" onclick="document.getElementById('privacyModal')?.classList.remove('open')">✕</button>
-    <h4>Confirm your profile</h4>
-    <p class="note">Before creating your profile, please confirm the following — this helps build trust on the platform:</p>
-    <ul class="note" style="text-align:left;">
-      <li>You are a legitimate worker offering real services.</li>
-      <li>Your contact number is valid and belongs to you.</li>
-      <li>All profile fields are filled honestly.</li>
-    </ul>
-    <div style="display:flex; align-items:center; gap:8px; margin-top:8px;">
-      <input type="checkbox" id="privacyConfirmCheckbox" />
-      <label for="privacyConfirmCheckbox" style="font-weight:700;">I confirm I am a real worker and my contact number is valid</label>
-    </div>
-    <div class="modal-buttons" style="margin-top:12px;">
-      <button class="auth-primary" id="privacyConfirmBtn" disabled>Confirm &amp; Create</button>
-      <button class="auth-secondary" id="privacyCancelBtn">Cancel</button>
-    </div>
-    <p class="auth-small-note" id="privacyNote" style="margin-top:10px;"></p>
-  </div>
+<div aria-modal="true" class="modal" id="privacyModal" role="dialog" style="z-index:2147484000;">
+<div aria-modal="true" class="modal-content" role="dialog">
+<button class="modal-close" onclick="document.getElementById('privacyModal')?.classList.remove('open')">✕</button>
+<h4>Confirm your profile</h4>
+<p class="note">Before creating your profile, please confirm the following — this helps build trust on the platform:</p>
+<ul class="note" style="text-align:left;">
+<li>You are a legitimate worker offering real services.</li>
+<li>Your contact number is valid and belongs to you.</li>
+<li>All profile fields are filled honestly.</li>
+</ul>
+<div style="display:flex; align-items:center; gap:8px; margin-top:8px;">
+<input id="privacyConfirmCheckbox" type="checkbox"/>
+<label for="privacyConfirmCheckbox" style="font-weight:700;">I confirm I am a real worker and my contact number is valid</label>
 </div>
-
+<div class="modal-buttons" style="margin-top:12px;">
+<button class="auth-primary" disabled="" id="privacyConfirmBtn">Confirm &amp; Create</button>
+<button class="auth-secondary" id="privacyCancelBtn">Cancel</button>
+</div>
+<p class="auth-small-note" id="privacyNote" style="margin-top:10px;"></p>
+</div>
+</div>
 <script>
 /* BEGIN: Enhancements: (1) Account-completion required fields enforcement
              (2) Create Profile: contact validation, focus behavior, privacy confirmation modal
@@ -5864,59 +5774,169 @@ document.addEventListener("DOMContentLoaded", () => {
 /* END enhancements */
 </script>
 <!-- END: Profile & Account-completion validation + Privacy confirmation modal -->
-
-
-<script>
+<script type="text/javascript">
 // Delete profile helper — removes current myProfile, clears form and navigates home
 window.deleteProfile = function(){
-  try{
+  try {
     if(!window.myProfile){
       alert('No profile to delete.');
       return;
     }
     if(!confirm('Delete your profile? This cannot be undone.')) return;
-    try{
+
+    try {
       var uid = String(window.myProfile.uid);
       var idx = profiles.findIndex(function(p){ return String(p.uid) === uid; });
       if(idx !== -1) profiles.splice(idx,1);
-    }catch(e){}
+    } catch(e){}
+
     window.myProfile = null;
     localStorage.removeItem('profiles_my_uid_v1');
-    try{
+
+    try {
       var f = document.getElementById('profileForm');
       if(f) f.reset();
-      document.getElementById('profileBtn').textContent = 'Create a Profile';
-    }catch(e){}
-    try{ showPage('home'); }catch(e){
+      var btn = document.getElementById('profileBtn');
+      if(btn) btn.textContent = 'Create a Profile';
+    } catch(e){}
+
+    try {
+      showPage('home');
+    } catch(e){
       document.querySelectorAll('.page').forEach(function(p){ p.style.display='none'; });
       var homeEl = document.getElementById('home');
       if(homeEl) homeEl.style.display = 'block';
     }
-  }catch(e){ console.warn('deleteProfile failed', e); alert('Failed to delete profile.'); }
+  } catch(e){
+    console.warn('deleteProfile failed', e);
+    alert('Failed to delete profile.');
+  }
 };
 
 // Ensure create profile form is blank when there is no myProfile
 (function(){
   var origShowPage = window.showPage;
   window.showPage = function(id){
-    try{
-      if(id === 'createProfilePage'){
-        // if no myProfile, reset form to avoid prefilled values from previous deleted profile
-        if(!window.myProfile){
-          try{ var f = document.getElementById('profileForm'); if(f) f.reset(); }catch(e){}
-          try{
-            document.getElementById('formTitle').textContent = 'Create Your Worker Profile';
-            document.getElementById('submitBtn').textContent = 'Create';
-            document.getElementById('statusSection').style.display='none';
-          }catch(e){}
-        }
+    try {
+      if(id === 'createProfilePage' && !window.myProfile){
+        try {
+          var f = document.getElementById('profileForm');
+          if(f) f.reset();
+        } catch(e){}
+
+        try {
+          document.getElementById('formTitle').textContent = 'Create Your Worker Profile';
+          document.getElementById('submitBtn').textContent = 'Create';
+          document.getElementById('statusSection').style.display = 'none';
+        } catch(e){}
       }
-    }catch(e){}
-    if(typeof origShowPage === 'function') return origShowPage.apply(this, arguments);
+    } catch(e){}
+
+    if(typeof origShowPage === 'function')
+      return origShowPage.apply(this, arguments);
     else return;
   };
 })();
 </script>
 
+<script id="profilesFirestorePatch">
+(async function(){
+  function _getDb(){
+    if(typeof db !== 'undefined' && db) return db;
+    if(typeof firebase !== 'undefined' && firebase.firestore) return firebase.firestore();
+    return null;
+  }
+
+  // Save profile to Firestore on submit
+  const form = document.getElementById("profileForm");
+  if(form){
+    form.addEventListener("submit", async function(e){
+      e.preventDefault();
+      const profile={
+        uid: window.myProfile ? window.myProfile.uid : (Date.now()+Math.floor(Math.random()*1000)).toString(),
+        name:document.getElementById("name").value.trim(),
+        age:document.getElementById("age").value,
+        skill:document.getElementById("skill").value,
+        address:document.getElementById("address").value,
+        city:document.getElementById("city").value || '',
+        contact:document.getElementById("contact").value.trim(),
+        language:document.getElementById("language").value,
+        description: document.getElementById("description").value.trim(),
+        status: window.myProfile ? document.getElementById("status").value : "Free",
+        ownerUid: window.myUID || null,
+        ratingCount: window.myProfile?.ratingCount || 0,
+        ratingSum: window.myProfile?.ratingSum || 0,
+        updatedAt: new Date().toISOString()
+      };
+      try{
+        const dbInst = _getDb();
+        if(dbInst){
+          await dbInst.collection("profiles").doc(profile.uid).set(profile, {merge:true});
+          window.myProfile = profile;
+          alert("Profile saved to Firestore!");
+        } else {
+          alert("Firestore not available");
+        }
+      }catch(err){
+        console.error("Save profile error", err);
+        alert("Error saving profile: " + (err.message||err));
+      }
+      showPage('home');
+    });
+  }
+
+  // Load profiles from Firestore instead of memory
+  window.loadProfilesFromFirestore = async function(){
+    try{
+      const dbInst = _getDb();
+      if(!dbInst) return;
+      const snapshot = await dbInst.collection("profiles").get();
+      window.profiles = snapshot.docs.map(doc => ({uid: doc.id, ...doc.data()}));
+      displayProfiles();
+    }catch(e){ console.error("loadProfilesFromFirestore failed", e); }
+  };
+
+  // Override showPage to fetch profiles for categoriesPage
+  const origShowPage = window.showPage;
+  window.showPage = function(id){
+    if(id==='categoriesPage'){
+      window.loadProfilesFromFirestore().then(()=>{
+        if(typeof displayProfiles==='function') displayProfiles();
+      });
+    }
+    if(origShowPage) origShowPage(id);
+  };
+
+  // Rating save handler
+  window.saveRating = async function(profileId, ratingValue){
+    const dbInst = _getDb();
+    if(!dbInst) return;
+    try{
+      await dbInst.collection("profiles").doc(String(profileId)).set({
+        ratingCount: firebase.firestore.FieldValue.increment(1),
+        ratingSum: firebase.firestore.FieldValue.increment(ratingValue)
+      }, {merge:true});
+      console.log("Saved rating", ratingValue, "for", profileId);
+    }catch(e){ console.error("saveRating failed", e); }
+  };
+
+  // Leaderboard loader for "Most Rated"
+  window.loadMostRatedLeaderboard = async function(){
+    const dbInst = _getDb();
+    if(!dbInst) return [];
+    try{
+      const snapshot = await dbInst.collection("profiles")
+        .orderBy("ratingCount","desc")
+        .limit(10)
+        .get();
+      return snapshot.docs.map(doc=>{
+        const d = doc.data();
+        const avg = (d.ratingCount>0)? (d.ratingSum/d.ratingCount).toFixed(2):0;
+        return { uid: doc.id, name: d.name, ratingCount:d.ratingCount||0, avg:avg, hires:d.hires||0 };
+      });
+    }catch(e){ console.error("loadMostRatedLeaderboard failed", e); return []; }
+  };
+})();
+</script>
 </body>
 </html>

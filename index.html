@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"/>
-<title>Profiles App — Updated (Hire + description + better notifications)</title>
+<title>Meurbal - Your Local Hiring Platform</title>
 <meta content="width=device-width,initial-scale=1" name="viewport"/>
 <style>
   :root{
@@ -3067,25 +3067,6 @@ function listenToChatMessages(myUid, otherUid){
 }
 // --- end injection ---
 
-// Status box (black box)
-const statusBox = document.createElement('div');
-statusBox.id = "firebaseStatusBox";
-statusBox.style.position = "fixed";
-statusBox.style.bottom = "10px";
-statusBox.style.left = "10px";
-statusBox.style.padding = "8px 12px";
-statusBox.style.background = "#000";
-statusBox.style.color = "#0f0";
-statusBox.style.fontSize = "12px";
-statusBox.style.fontFamily = "monospace";
-statusBox.style.borderRadius = "6px";
-statusBox.style.zIndex = 99999;
-statusBox.textContent = "Firebase: Initializing...";
-document.addEventListener("DOMContentLoaded", ()=>document.body.appendChild(statusBox));
-
-function setFBStatus(msg, color="#0f0") {
-  const box = document.getElementById("firebaseStatusBox");
-  if(box) { box.textContent = "Firebase: " + msg; box.style.color = color; }
 
 
 

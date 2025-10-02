@@ -1063,16 +1063,11 @@ document.addEventListener('DOMContentLoaded', function(){
     const authInst = _getAuth();
     if(!authInst){ showAuthStatus('Auth not initialized'); return; }
     try{
-      const provider = new (window.firebase && window.firebase.auth && window.firebase.auth.GoogleAuthProvider ? firebase.auth.GoogleAuthProvider : window.googleProviderConstructor || (function(){return null})())();
-      // fallback: use firebase.auth.GoogleAuthProvider directly if available
-      const prov = (typeof firebase !== 'undefined' && firebase.auth && firebase.auth.GoogleAuthProvider) ? new firebase.auth.GoogleAuthProvider() : null;
-      const chosenProvider = prov || provider;
-      if(!chosenProvider){ showAuthStatus('Google Auth provider not available'); return; }
-      const result = await authInst.signInWithPopup(chosenProvider);
+      const provider = new firebase.auth.GoogleAuthProvider();
+      const result = await authInst.signInWithPopup(provider);
       const user = result && result.user ? result.user : null;
       if(user && user.uid){
         window.pendingNewUserUid = String(user.uid);
-        // Check if users/{uid} exists, else ask for completion
         const dbInst = _getDb();
         if(dbInst){
           try{

@@ -1359,8 +1359,8 @@ document.addEventListener('DOMContentLoaded', function(){
 <!-- Main menu -->
 <div class="page" id="home">
 <div class="menu-container">
-<button class="menu-btn view-btn" onclick="showPage('categoriesPage')">View Profiles</button>
-<button class="menu-btn profile-btn" id="profileBtn" onclick="openProfileForm()">Create a Profile</button>
+<button class="menu-btn view-btn" onclick="showPage('categoriesPage')">View Worker Profiles</button>
+<button class="menu-btn profile-btn" id="profileBtn" onclick="openProfileForm()">Create a Worker Profile</button>
 </div>
 </div>
 <!-- Create Profile -->
@@ -1399,7 +1399,7 @@ document.addEventListener('DOMContentLoaded', function(){
 </div>
 <!-- View Profiles -->
 <div class="page" id="categoriesPage">
-<h2>View Profiles</h2>
+<h2>View Worker Profiles</h2>
 <div class="categories" id="categoryFilter">
 <div class="category" onclick="filterSkill('All')">All</div>
 <div class="category" onclick="filterSkill('Plumber')">Plumber</div>
@@ -1485,7 +1485,7 @@ document.addEventListener('DOMContentLoaded', function(){
   <h2 style="text-align:center;">Leaderboards</h2>
   <div class="leaderboard-tabs">
  
-    <button onclick="switchLeaderboard('alltime')">Top 10 Workers of All Time</button>
+ 
     <button onclick="switchLeaderboard('rated')">Top 10 Most Rated</button>
   </div>
   <div class="leaderboard-list" id="leaderboardList"></div>
@@ -1564,7 +1564,7 @@ function openProfileForm(){
     document.getElementById('status').value=myProfile.status;
   } else {
     document.getElementById('formTitle').textContent="Create Your Profile";
-    document.getElementById('submitBtn').textContent="₹250";
+    document.getElementById('submitBtn').textContent="Create";
     document.getElementById('statusSection').style.display="none";
     document.getElementById('profileForm').reset();
   }
@@ -5905,8 +5905,8 @@ window.deleteProfile = function(){
         if(!window.myProfile){
           try{ var f = document.getElementById('profileForm'); if(f) f.reset(); }catch(e){}
           try{
-            document.getElementById('formTitle').textContent = 'Create Your Profile';
-            document.getElementById('submitBtn').textContent = '₹250';
+            document.getElementById('formTitle').textContent = 'Create Your Worker Profile';
+            document.getElementById('submitBtn').textContent = 'Create';
             document.getElementById('statusSection').style.display='none';
           }catch(e){}
         }

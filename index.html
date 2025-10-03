@@ -21,8 +21,6 @@
   .page{ display:none; min-height:100vh; box-sizing:border-box; padding:28px; }
 
   #home {
-  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 50%, #fdf2f8 100%);
-
     display: flex;
     align-items: center;
     justify-content: center;
@@ -37,10 +35,6 @@
 
 
   .menu-container {
-  position: relative;
-  top: 50%;
-  transform: translateY(-50%);
-
     position: absolute;
     top: 50%;
     left: 50%;
@@ -656,61 +650,54 @@
   .otp-card{background:#ecfdf5;border:1px solid #bbf7d0;color:#065f46;padding:12px;border-radius:10px;font-weight:800;box-shadow:0 8px 30px rgba(2,6,23,0.04);margin-top:10px}
 </style>
 <!-- End injection -->
+
 <style id="authDelayStyle">#authPage{display:none !important;}</style>
-<style>
-#recaptcha-container {
-  opacity: 0 !important;
-  position: absolute !important;
-  left: -9999px !important;
-  height: 1px !important;
-  width: 1px !important;
-  overflow: hidden !important;
-}
-</style><style>
-#firebaseStatusBox {
-  display: none !important;
-}
-</style><style>
-/* Polished Main Buttons with new color patterns */
-.menu-container .menu-btn {
-  min-width: 260px;
-  padding: 16px 38px;
-  border: none;
-  border-radius: 16px;
-  cursor: pointer;
-  font-weight: 800;
-  font-size: 19px;
-  color: #fff;
-  letter-spacing: 0.6px;
-  background: linear-gradient(135deg, #6d28d9, #a21caf); /* Purple tones */
-  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.18);
-  transition: all 0.28s ease;
-}
 
-/* Hover effect */
-.menu-container .menu-btn:hover {
-  transform: translateY(-4px) scale(1.04);
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.25);
-  filter: brightness(1.08);
-}
+<!-- Upgraded heading and button gradients -->
+<style id="heading-button-upgrades">
+  /* Heading gradient */
+  .welcome-title {
+    background: linear-gradient(135deg,#0077ff,#2aa0ff);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-size: 42px;
+    font-weight: 900;
+    text-align: center;
+    margin-bottom: 8px;
+    letter-spacing: 1px;
+  }
+  /* Subtitle gradient */
+  .welcome-subtitle {
+    background: linear-gradient(135deg,#6b7280,#93c5fd);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-size: 20px;
+    text-align: center;
+    margin-bottom: 28px;
+  }
+  /* Buttons */
+  .menu-container .menu-btn.view-btn {
+    background: linear-gradient(135deg,#0ea5e9,#2563eb) !important;
+    color: #fff !important;
+    box-shadow: 0 12px 28px rgba(0,0,0,0.12) !important;
+  }
+  .menu-container .menu-btn.profile-btn,
+  .menu-container .menu-btn.manage-btn {
+    background: linear-gradient(135deg,#f43f5e,#f97316) !important;
+    color: #fff !important;
+    box-shadow: 0 12px 28px rgba(0,0,0,0.12) !important;
+  }
+</style>
 
-/* View Profiles button - teal/blue */
-.menu-container .menu-btn.view-btn {
-  background: linear-gradient(135deg, #0ea5e9, #2563eb);
-}
-
-/* Create/Manage Profile button - pink/orange */
-.menu-container .menu-btn.profile-btn {
-  background: linear-gradient(135deg, #f43f5e, #f97316);
-}
-</style></head>
+</head>
 <body>
 <!-- Top-left 3-dots menu -->
 <div id="topMenu" style="position:fixed; top:12px; left:12px; z-index:10000;">
 <button id="menuBtn" style="background:none;border:none;font-size:22px;cursor:pointer;">⋮</button>
 <div id="menuDropdown" style="display:none; position:absolute; top:28px; left:0; background:white; border:1px solid #ccc; border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.15); min-width:160px; overflow:hidden;">
+
 <div onclick="showPage('savedProfilesPage'); closeMenu()" style="padding:10px; cursor:pointer; font-weight:600;">⭐ Saved Profiles</div>
-<div onclick="showPage('leaderboardPage'); closeMenu()" style="padding:10px; cursor:pointer; font-weight:600;">🏆 Leaderboards</div>
+  <div onclick="showPage('leaderboardPage'); closeMenu()" style="padding:10px; cursor:pointer; font-weight:600;">🏆 Leaderboards</div>
 </div>
 </div>
 <script>
@@ -781,40 +768,52 @@ document.addEventListener('DOMContentLoaded', function(){
 </style>
 <!-- Auth Page -->
 <div class="page" id="authPage" style="display:none; align-items:center; justify-content:center; height:100vh; background:#f9fafb;">
-<div aria-label="Authentication" class="auth-card" role="region" style="padding:20px; border-radius:12px; background:white; box-shadow:0 4px 15px rgba(0,0,0,0.1); width:320px;">
-<!-- Email / password area -->
-<div id="emailFormArea" style="margin-top:12px;">
-<input autocomplete="email" class="auth-input" id="emailInput" placeholder="Email" type="email"/>
-<div style="height:8px"></div>
-<input autocomplete="current-password" class="auth-input" id="passwordInput" placeholder="Password" type="password"/>
-<div class="auth-row" style="margin-top:12px; display:flex; gap:8px;">
-<button class="auth-primary" id="primaryAuthBtn">Create account</button>
-<button class="auth-secondary" id="secondaryAuthBtn" style="display:none">Login</button>
+  <div aria-label="Authentication" class="auth-card" role="region" 
+       style="padding:20px; border-radius:12px; background:white; box-shadow:0 4px 15px rgba(0,0,0,0.1); width:320px;">
+    
+   
+    <!-- Email / password area -->
+    <div id="emailFormArea" style="margin-top:12px;">
+      <input autocomplete="email" class="auth-input" id="emailInput" placeholder="Email" type="email"/>
+      <div style="height:8px"></div>
+      <input autocomplete="current-password" class="auth-input" id="passwordInput" placeholder="Password" type="password"/>
+      
+      <div class="auth-row" style="margin-top:12px; display:flex; gap:8px;">
+        <button class="auth-primary" id="primaryAuthBtn">Create account</button>
+        <button class="auth-secondary" id="secondaryAuthBtn" style="display:none">Login</button>
+      </div>
+      
+      <div style="margin-top:12px; text-align:center;">
+        <button class="google-btn" id="googleBtn">Continue with Google</button>
+      </div>
+      
+      <div class="auth-small-note" style="text-align:center;">
+        <span class="linkish" id="authToggleLink">Already have an account? Login</span>
+      </div>
+    </div>
+
+    <!-- Phone/OTP area (hidden by default) -->
+    <div id="phoneFormArea" style="margin-top:12px; display:none;">
+      <input class="auth-input" id="phoneInput" placeholder="+91 98765 43210" type="text"/>
+      <div id="recaptcha-container" style="margin-top:8px;"></div>
+      
+      <div style="display:flex; gap:8px; margin-top:8px;">
+        <button class="auth-primary" id="sendOtpBtn">Send OTP</button>
+        <input class="auth-input" id="otpInput" placeholder="Enter OTP" style="flex:1;" type="text"/>
+      </div>
+      
+      <div style="display:flex; gap:8px; margin-top:8px;">
+        <button class="auth-secondary" id="verifyOtpBtn">Verify OTP</button>
+      </div>
+      
+      <div class="auth-small-note">Use phone if you prefer contact-based sign in.</div>
+    </div>
+
+    <!-- Status/Error messages -->
+    <p id="authStatus" style="color:#d73a49; font-weight:800; margin-top:12px;"></p>
+  </div>
 </div>
-<div style="margin-top:12px; text-align:center;">
-<button class="google-btn" id="googleBtn">Continue with Google</button>
-</div>
-<div class="auth-small-note" style="text-align:center;">
-<span class="linkish" id="authToggleLink">Already have an account? Login</span>
-</div>
-</div>
-<!-- Phone/OTP area (hidden by default) -->
-<div id="phoneFormArea" style="margin-top:12px; display:none;">
-<input class="auth-input" id="phoneInput" placeholder="+91 98765 43210" type="text"/>
-<div id="recaptcha-container" style="margin-top:8px;"></div>
-<div style="display:flex; gap:8px; margin-top:8px;">
-<button class="auth-primary" id="sendOtpBtn">Send OTP</button>
-<input class="auth-input" id="otpInput" placeholder="Enter OTP" style="flex:1;" type="text"/>
-</div>
-<div style="display:flex; gap:8px; margin-top:8px;">
-<button class="auth-secondary" id="verifyOtpBtn">Verify OTP</button>
-</div>
-<div class="auth-small-note">Use phone if you prefer contact-based sign in.</div>
-</div>
-<!-- Status/Error messages -->
-<p id="authStatus" style="color:#d73a49; font-weight:800; margin-top:12px;"></p>
-</div>
-</div>
+
 <!-- Script -->
 <script>
   const switchInput = document.getElementById("useContactSwitch");
@@ -831,6 +830,7 @@ document.addEventListener('DOMContentLoaded', function(){
     }
   });
 </script>
+
 <!-- Styles -->
 <style>
   .auth-input {
@@ -916,60 +916,64 @@ document.addEventListener('DOMContentLoaded', function(){
     transform: translateX(18px);
   }
 </style>
+
 <!-- Post-register "Complete account" modal (inserts when needed) -->
 <div aria-labelledby="completeTitle" aria-modal="true" class="modal" id="completeAccountModal" role="dialog">
-<div class="modal-content">
-<h4 id="completeTitle">Complete your account</h4>
-<p class="auth-small-note">Pick a username and enter your age so we can link your profile.</p>
-<input class="auth-input" id="complete_username" placeholder="Username (public)"/>
-<div style="height:8px"></div>
-<input class="auth-input" id="complete_age" placeholder="Age" type="number"/>
-<div style="display:flex; flex-direction:column; gap:12px; margin-top:12px;">
-<div style="height:8px"></div>
-<label for="stateInput" style="font-weight:600; margin-top:6px;">State</label>
-<select class="auth-input" id="stateInput" name="state" required="">
-<option value="">Select state</option>
-<option>Andhra Pradesh</option>
-<option>Arunachal Pradesh</option>
-<option>Assam</option>
-<option>Bihar</option>
-<option>Chhattisgarh</option>
-<option>Goa</option>
-<option>Gujarat</option>
-<option>Haryana</option>
-<option>Himachal Pradesh</option>
-<option>Jammu and Kashmir</option>
-<option>Jharkhand</option>
-<option>Karnataka</option>
-<option>Kerala</option>
-<option>Madhya Pradesh</option>
-<option>Maharashtra</option>
-<option>Manipur</option>
-<option>Meghalaya</option>
-<option>Mizoram</option>
-<option>Nagaland</option>
-<option>Odisha</option>
-<option>Punjab</option>
-<option>Rajasthan</option>
-<option>Sikkim</option>
-<option>Tamil Nadu</option>
-<option>Telangana</option>
-<option>Tripura</option>
-<option>Uttar Pradesh</option>
-<option>Uttarakhand</option>
-<option>West Bengal</option>
-<option>Other</option>
-</select>
-<div style="height:8px"></div>
-<label for="districtInput" style="font-weight:600; margin-top:6px;">District</label>
-<input class="auth-input" district\"="" id="districtInput" name="district" placeholder='\"Enter' required="" type="text"/>
-<div style="height:8px"></div>
+  <div class="modal-content">
+    
+    <h4 id="completeTitle">Complete your account</h4>
+    <p class="auth-small-note">Pick a username and enter your age so we can link your profile.</p>
+    <input class="auth-input" id="complete_username" placeholder="Username (public)">
+    <div style="height:8px"></div>
+    <input class="auth-input" id="complete_age" placeholder="Age" type="number">
+    <div style="display:flex; flex-direction:column; gap:12px; margin-top:12px;">
+      <div style="height:8px"></div>
+      <label for="stateInput" style="font-weight:600; margin-top:6px;">State</label>
+      <select id="stateInput" class="auth-input" name="state" required>
+        <option value="">Select state</option>
+        <option>Andhra Pradesh</option>
+        <option>Arunachal Pradesh</option>
+        <option>Assam</option>
+        <option>Bihar</option>
+        <option>Chhattisgarh</option>
+        <option>Goa</option>
+        <option>Gujarat</option>
+        <option>Haryana</option>
+        <option>Himachal Pradesh</option>
+        <option>Jammu and Kashmir</option>
+        <option>Jharkhand</option>
+        <option>Karnataka</option>
+        <option>Kerala</option>
+        <option>Madhya Pradesh</option>
+        <option>Maharashtra</option>
+        <option>Manipur</option>
+        <option>Meghalaya</option>
+        <option>Mizoram</option>
+        <option>Nagaland</option>
+        <option>Odisha</option>
+        <option>Punjab</option>
+        <option>Rajasthan</option>
+        <option>Sikkim</option>
+        <option>Tamil Nadu</option>
+        <option>Telangana</option>
+        <option>Tripura</option>
+        <option>Uttar Pradesh</option>
+        <option>Uttarakhand</option>
+        <option>West Bengal</option>
+        <option>Other</option>
+      </select>
+      <div style="height:8px"></div>
+      <label for="districtInput" style="font-weight:600; margin-top:6px;">District</label>
+      <input id="districtInput" class="auth-input" name="district" type="text" placeholder=\"Enter district\" required />
+
+      <div style="height:8px"></div>
 <label for="cityInput" style="font-weight:600; margin-top:6px;">City</label>
-<input class="auth-input" id="cityInput" name="city" placeholder="Enter city" required="" type="text"/>
-<button class="auth-primary" id="completeSaveBtn" onclick="window.saveCompleteAccount && window.saveCompleteAccount()">Save &amp; Continue</button>
-</div>
-<div class="auth-small-note" id="completeAccountStatus"></div>
-</div>
+<input id="cityInput" class="auth-input" name="city" type="text" placeholder="Enter city" required />
+
+<button class="auth-primary" id="completeSaveBtn">Save &amp; Continue</button>
+    </div>
+    <div class="auth-small-note" id="completeAccountStatus"></div>
+  </div>
 </div>
 <script>
 /* Robust auth helpers: DOM-ready, fallbacks for auth/db, modal fixes, and proper binding of profile data.
@@ -1063,11 +1067,16 @@ document.addEventListener('DOMContentLoaded', function(){
     const authInst = _getAuth();
     if(!authInst){ showAuthStatus('Auth not initialized'); return; }
     try{
-      const provider = new firebase.auth.GoogleAuthProvider();
-      const result = await authInst.signInWithPopup(provider);
+      const provider = new (window.firebase && window.firebase.auth && window.firebase.auth.GoogleAuthProvider ? firebase.auth.GoogleAuthProvider : window.googleProviderConstructor || (function(){return null})())();
+      // fallback: use firebase.auth.GoogleAuthProvider directly if available
+      const prov = (typeof firebase !== 'undefined' && firebase.auth && firebase.auth.GoogleAuthProvider) ? new firebase.auth.GoogleAuthProvider() : null;
+      const chosenProvider = prov || provider;
+      if(!chosenProvider){ showAuthStatus('Google Auth provider not available'); return; }
+      const result = await authInst.signInWithPopup(chosenProvider);
       const user = result && result.user ? result.user : null;
       if(user && user.uid){
         window.pendingNewUserUid = String(user.uid);
+        // Check if users/{uid} exists, else ask for completion
         const dbInst = _getDb();
         if(dbInst){
           try{
@@ -1148,48 +1157,55 @@ document.addEventListener('DOMContentLoaded', function(){
   };
 
   // Save after modal: persist to users/{uid} and link/create profile
-  
-window.saveCompleteAccount = async function(){
-  const username = (document.getElementById('complete_username').value || '').trim();
-  const age = Number(document.getElementById('complete_age').value || 0);
-  const stateVal = document.getElementById('stateInput')?.value || '';
-  const districtVal = document.getElementById('districtInput')?.value || '';
-  const cityVal = document.getElementById('cityInput')?.value || '';
-  const statusEl = document.getElementById('completeAccountStatus');
-
-  if(!window.pendingNewUserUid){ if(statusEl) statusEl.textContent = 'No pending user'; return; }
-  if(!username){ if(statusEl) statusEl.textContent = 'Username required'; document.getElementById('complete_username').focus(); return; }
-  if(!age || age < 18){ if(statusEl) statusEl.textContent = 'Valid age required (18+)'; document.getElementById('complete_age').focus(); return; }
-  if(!stateVal){ if(statusEl) statusEl.textContent = 'State required'; document.getElementById('stateInput').focus(); return; }
-  if(!districtVal){ if(statusEl) statusEl.textContent = 'District required'; document.getElementById('districtInput').focus(); return; }
-  if(!cityVal){ if(statusEl) statusEl.textContent = 'City required'; document.getElementById('cityInput').focus(); return; }
-
-  if(statusEl) statusEl.textContent = 'Saving…';
-  const uid = String(window.pendingNewUserUid);
-  const dbInst = _getDb();
-  try{
-    if(dbInst){
-      await dbInst.collection('users').doc(uid).set({
-        displayName: username,
-        age: age,
-        email: (_getAuth()?.currentUser?.email) || null,
-        state: stateVal,
-        district: districtVal,
-        city: cityVal,
-        updatedAt: new Date().toISOString()
-      }, { merge: true });
+  window.saveCompleteAccount = async function(){
+    const username = (document.getElementById('complete_username').value || '').trim();
+    const age = Number(document.getElementById('complete_age').value || 0);
+    const statusEl = document.getElementById('completeAccountStatus');
+    if(!window.pendingNewUserUid){ if(statusEl) statusEl.textContent = 'No pending user'; return; }
+    if(!username){ if(statusEl) statusEl.textContent = 'Username required'; return; }
+    if(statusEl) statusEl.textContent = 'Saving…';
+    const uid = String(window.pendingNewUserUid);
+    const dbInst = _getDb();
+    try{
+      if(dbInst){
+        // read state/district fields from modal
+        const stateVal = (document.getElementById('stateInput') ? (document.getElementById('stateInput').value||'') : '');
+        const districtVal = (document.getElementById('districtInput') ? (document.getElementById('districtInput').value||'') : '');
+        await dbInst.collection('users').doc(String(uid)).set({
+          displayName: username,
+          age: (age > 0 ? Number(age) : null),
+          email: (_getAuth() && _getAuth().currentUser && _getAuth().currentUser.email) ? _getAuth().currentUser.email : null,
+          state: stateVal,
+          district: districtVal,
+          city: (document.getElementById('cityInput')?.value || ''),
+          updatedAt: new Date().toISOString()
+        }, { merge: true });
+      }
+      // Link or create profile
+      try{
+        if(typeof window.myProfile !== 'undefined' && window.myProfile && window.myProfile.uid){
+          const profileUid = String(window.myProfile.uid);
+          if(dbInst){
+            await dbInst.collection('profiles').doc(String(profileUid)).set({ ownerUid: String(uid) }, { merge: true });
+            await dbInst.collection('users').doc(String(uid)).set({ profileUid: String(profileUid) }, { merge: true });
+          }
+        } else {
+          // IMPORTANT: Do NOT auto-create a profile here.
+          // The user explicitly asked that profile creation be manual — so skip creating profiles/{uid}.
+          // The user can create a profile later via the "Create Your Profile" form.
+          console.log('No existing profile linked for uid', uid, '- skipping automatic profile creation.');
+        }
+      }catch(e){ console.warn('profile linking failed', e); }
+      localStorage.setItem('profiles_my_uid_v1', String(uid));
+      window.myUID = String(uid);
+      try{ await bindUserProfile(uid); }catch(e){}
+      if(statusEl) statusEl.textContent = 'Saved — redirecting…';
+      setTimeout(()=>{ closeCompleteAccountModal(); showPage && typeof showPage === 'function' && showPage('home'); showAuthStatus(''); }, 400);
+    }catch(err){
+      console.warn('saveCompleteAccount err', err);
+      if(statusEl) statusEl.textContent = String(err && err.message ? err.message : err);
     }
-    localStorage.setItem('profiles_my_uid_v1', uid);
-    window.myUID = uid;
-    try{ await bindUserProfile(uid); }catch(e){ console.warn('bindUserProfile failed', e); }
-    if(statusEl) statusEl.textContent = 'Saved';
-    setTimeout(()=>{ closeCompleteAccountModal(); showPage && typeof showPage==='function' && showPage('home'); showAuthStatus(''); }, 500);
-  }catch(err){
-    console.warn('saveCompleteAccount err', err);
-    if(statusEl) statusEl.textContent = err?.message || String(err);
-  }
-};
-    
+  };
 
   window.skipCompleteAccount = function(){
     if(window.pendingNewUserUid){
@@ -1380,14 +1396,9 @@ window.saveCompleteAccount = async function(){
 <!-- Main menu -->
 <div class="page" id="home">
 <div class="menu-container">
-    <h1 style="font-size:42px; font-weight:900; text-align:center; margin-bottom:10px; background: linear-gradient(135deg, #0077ff, #2aa0ff); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
-      Welcome to Meurbal
-    </h1>
-    <p style="font-size:18px; font-weight:600; text-align:center; margin-bottom:28px; background: linear-gradient(135deg, #6b7280, #93c5fd); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
-      Your local hiring platform
-    </p>
-
-<button class="menu-btn view-btn" onclick="showPage('categoriesPage')">View Worker Profiles</button>
+        <h1 class="welcome-title">WELCOME TO MEURBAL</h1>
+        <p class="welcome-subtitle">Your Local Hiring Platform</p>
+<button class="menu-btn view-btn" onclick="showPage('categoriesPage')">View Workers Profiles</button>
 <button class="menu-btn profile-btn" id="profileBtn" onclick="openProfileForm()">Create a Worker Profile</button>
 </div>
 </div>
@@ -1409,9 +1420,9 @@ window.saveCompleteAccount = async function(){
 <option value="Welder">Welder</option>
 </select>
 <input id="address" placeholder="Your Address" required="" type="text"/>
-<input id="city" placeholder="Your City" required="" type="text"/>
+<input id="city" placeholder="Your City" required type="text"/>
 <input id="contact" placeholder="Contact No." required="" type="text"/>
-<input id="language" placeholder="Languages You Speak" type="text"/>
+<input id="language" placeholder="Languages Spoken" type="text"/>
 <textarea id="description" placeholder="Short description about you (will show under your name)" rows="3"></textarea>
 <div id="statusSection" style="display:none;">
 <label for="status">Profile Status:</label>
@@ -1421,7 +1432,7 @@ window.saveCompleteAccount = async function(){
 </select>
 <p class="note">Free means your profile is visible in the app. Busy will hide it, letting you rest.</p>
 </div>
-<button id="submitBtn" type="submit">Create</button>
+<button id="submitBtn" type="submit">₹250</button>
 </form>
 <button class="back-btn" onclick="showPage('home')">Back</button>
 </div>
@@ -1486,57 +1497,50 @@ window.saveCompleteAccount = async function(){
 </div>
 </div>
 <!-- Hire modal -->
-<div class="modal" id="hireModal" onclick="modalBackgroundClick(event)">
-<div aria-labelledby="hireTitle" aria-modal="true" class="modal-content" role="dialog">
-<button class="modal-close" onclick="closeHireModal()">✕</button>
-<h4 id="hireTitle">Hire Options</h4>
-<p class="note">Choose how you'd like to proceed with this profile.</p>
-<div class="modal-buttons">
-<button id="modalContactBtn" onclick="showContact()">Contact</button>
+<div id="hireModal" class="modal" onclick="modalBackgroundClick(event)">
+  <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="hireTitle">
+    <button class="modal-close" onclick="closeHireModal()">✕</button>
+    <h4 id="hireTitle">Hire Options</h4>
+    <p class="note">Choose how you'd like to proceed with this profile.</p>
+    <div class="modal-buttons">
+      <button id="modalContactBtn" onclick="showContact()">📞 Contact</button>
+      
+    </div>
+    <div id="modalResult" class="modal-result" aria-live="polite"></div>
+  </div>
 </div>
-<div aria-live="polite" class="modal-result" id="modalResult"></div>
-</div>
-</div>
+
 <!-- Notifications -->
-<div class="page" id="notificationsPage">
-<h2>Notifications</h2>
-<div class="tabs">
-<button class="active" id="tab-unread" onclick="switchTab('unread')">Unread</button>
-<button id="tab-read" onclick="switchTab('read')">Read</button>
-<button id="tab-hire" onclick="switchTab('hire')">Hire Requests</button>
+<div id="notificationsPage" class="page">
+  <h2>Notifications</h2>
+  <div class="tabs">
+    <button onclick="switchTab('unread')" id="tab-unread" class="active">Unread</button>
+    <button onclick="switchTab('read')" id="tab-read">Read</button>
+    <button onclick="switchTab('hire')" id="tab-hire">Hire Requests</button>
+  </div>
+  <div id="notificationContent"></div>
+  <button class="back-btn" onclick="showPage('home')">Back</button>
 </div>
-<div id="notificationContent"></div>
-<button class="back-btn" onclick="showPage('home')">Back</button>
-</div>
-<!-- Leaderboards Page -->
-<div class="page" id="leaderboardPage">
-<h2 style="text-align:center;">Leaderboards</h2>
-<div class="leaderboard-tabs">
-<button onclick="switchLeaderboard('rated')">Top 10 Most Rated</button>
-</div>
-<div class="leaderboard-list" id="leaderboardList"></div>
-<button class="back-btn" onclick="showPage('home')">Back</button>
-</div>
+
+
 <!-- Saved Profiles -->
-<div class="page" id="savedProfilesPage">
-<h2>Saved Wokers Profiles</h2>
-<div class="categories" id="savedCategoryFilter">
-<div class="category" onclick="savedSkill='All';displaySaved()">All</div>
-<div class="category" onclick="savedSkill='Plumber';displaySaved()">Plumber</div>
-<div class="category" onclick="savedSkill='Mechanic';displaySaved()">Mechanic</div>
-<div class="category" onclick="savedSkill='Electrician';displaySaved()">Electrician</div>
-<div class="category" onclick="savedSkill='Painter';displaySaved()">Painter</div>
-<div class="category" onclick="savedSkill='Tutor';displaySaved()">Tutor</div>
-<div class="category" onclick="savedSkill='Mistri';displaySaved()">Mistri</div>
-<div class="category" onclick="savedSkill='Carpenter';displaySaved()">Carpenter</div>
-<div class="category" onclick="savedSkill='Welder';displaySaved()">Welder</div>
+<div id="savedProfilesPage" class="page">
+  <h2>Saved Profiles</h2>
+  <div class="categories" id="savedCategoryFilter">
+    <div class="category" onclick="savedSkill='All';displaySaved()">All</div>
+    <div class="category" onclick="savedSkill='Plumber';displaySaved()">Plumber</div>
+    <div class="category" onclick="savedSkill='Mechanic';displaySaved()">Mechanic</div>
+    <div class="category" onclick="savedSkill='Electrician';displaySaved()">Electrician</div>
+    <div class="category" onclick="savedSkill='Painter';displaySaved()">Painter</div>
+    <div class="category" onclick="savedSkill='Tutor';displaySaved()">Tutor</div>
+  </div>
+  <div class="search-bar">
+    <input type="text" id="savedSearchInput" placeholder="Search in Saved" oninput="displaySaved()">
+  </div>
+  <div id="savedList" class="profile-list"></div>
+  <button class="back-btn" onclick="showPage('home')">Back</button>
 </div>
-<div class="search-bar">
-<input id="savedSearchInput" oninput="displaySaved()" placeholder="Search in Saved" type="text"/>
-</div>
-<div class="profile-list" id="savedList"></div>
-<button class="back-btn" onclick="showPage('home')">Back</button>
-</div>
+
 <script>
 let profiles=[];
 let savedProfiles=[];
@@ -1575,20 +1579,19 @@ function filterSkill(skill){ currentSkill=skill; displayProfiles(); }
 function openProfileForm(){
   showPage('createProfilePage');
   if(myProfile){
-    document.getElementById('formTitle').textContent="Manage Your Worker Profile";
+    document.getElementById('formTitle').textContent="Manage Your Profile";
     document.getElementById('submitBtn').textContent="Save";
     document.getElementById('statusSection').style.display="block";
     document.getElementById('name').value=myProfile.name;
     document.getElementById('age').value=myProfile.age;
     document.getElementById('skill').value=myProfile.skill;
     document.getElementById('address').value=myProfile.address;
-    document.getElementById('city').value=myProfile.city || '';
     document.getElementById('contact').value=myProfile.contact;
     document.getElementById('language').value=myProfile.language;
     document.getElementById('description').value = myProfile.description || '';
     document.getElementById('status').value=myProfile.status;
   } else {
-    document.getElementById('formTitle').textContent="Create Your Profile";
+    document.getElementById('formTitle').textContent="Create Your Worker Profile";
     document.getElementById('submitBtn').textContent="Create";
     document.getElementById('statusSection').style.display="none";
     document.getElementById('profileForm').reset();
@@ -1603,7 +1606,6 @@ document.getElementById("profileForm").addEventListener("submit",function(e){
     age:document.getElementById("age").value,
     skill:document.getElementById("skill").value,
     address:document.getElementById("address").value,
-    city:document.getElementById("city").value,
     contact:document.getElementById("contact").value.trim(),
     language:document.getElementById("language").value,
     description: document.getElementById("description").value.trim(),
@@ -1636,37 +1638,16 @@ function saveProfile(p){
   }
 }
 
-
 function displayProfiles(){
   const container=document.getElementById("profileList");
   container.innerHTML='';
   const search=document.getElementById("searchInput")?document.getElementById("searchInput").value.toLowerCase():"";
-  const cityVal=document.getElementById("change_city")?document.getElementById("change_city").value.trim().toLowerCase():"";
-  const districtVal=document.getElementById("change_district")?document.getElementById("change_district").value.trim().toLowerCase():"";
-  const stateVal=document.getElementById("change_state")?document.getElementById("change_state").value.trim().toLowerCase():"";
-
-  let filtered = profiles.filter(p=>{
+  profiles.filter(p=>{
     const statusMatch=p.status==="Free";
     const skillMatch=currentSkill==='All'||p.skill===currentSkill;
     const searchMatch=p.name.toLowerCase().includes(search)||p.uid.toString().includes(search);
     return statusMatch&&skillMatch&&searchMatch;
-  });
-
-  // Priority: city > district > state > others
-  let cityMatches = [], districtMatches = [], stateMatches = [], others = [];
-  filtered.forEach(p=>{
-    const city = (p.city||"").toLowerCase();
-    const district = (p.district||"").toLowerCase();
-    const state = (p.state||"").toLowerCase();
-    if(cityVal && city === cityVal){ cityMatches.push(p); }
-    else if(districtVal && district === districtVal){ districtMatches.push(p); }
-    else if(stateVal && state === stateVal){ stateMatches.push(p); }
-    else { others.push(p); }
-  });
-
-  let ordered = [...cityMatches, ...districtMatches, ...stateMatches, ...others];
-
-  ordered.forEach(p=>{
+  }).forEach(p=>{
     const box=document.createElement('div'); box.className='profile-box';
     const left=document.createElement('div'); left.style.display='flex'; left.style.gap='12px'; left.style.alignItems='center';
     const tag=document.createElement('div'); tag.style.width='44px'; tag.style.height='44px'; tag.style.borderRadius='10px'; tag.style.background='linear-gradient(135deg,#1e3a8a,#0ea5a6)'; tag.style.display='flex'; tag.style.alignItems='center'; tag.style.justifyContent='center'; tag.style.color='#fff'; tag.style.fontWeight='800'; tag.textContent = p.name.split(' ').map(s=>s[0]||'').slice(0,2).join('').toUpperCase();
@@ -1674,7 +1655,6 @@ function displayProfiles(){
     const nameSpan=document.createElement('span'); nameSpan.textContent=p.name; nameSpan.style.fontWeight='700';
     const descSpan=document.createElement('div'); descSpan.style.fontSize='13px'; descSpan.style.color='#6b7280'; descSpan.textContent = p.description ? previewText(p.description,50) : '';
     nameContainer.appendChild(nameSpan); nameContainer.appendChild(descSpan);
-    const locSpan=document.createElement('div'); locSpan.style.fontSize='12px'; locSpan.style.color='#374151'; locSpan.textContent = buildLocationString(p); nameContainer.appendChild(locSpan);
     left.appendChild(tag); left.appendChild(nameContainer);
 
     const actions=document.createElement('div'); actions.className='profile-actions';
@@ -1694,35 +1674,10 @@ function openProfile(p){
   currentOpenProfile = p;
   document.getElementById('profileName').textContent=p.name;
   document.getElementById('profileDescription').textContent = p.description || '';
-  (function(){
-  let displayUid = p.uid;
-  if(typeof displayUid === 'string' && /[a-zA-Z]/.test(displayUid)){
-    const digits = displayUid.replace(/\D/g,'');
-    displayUid = digits || displayUid.slice(0,12); // show digits if present, else a short preview
-  }
-  document.getElementById('profileUID').textContent = displayUid;
-})();
+  document.getElementById('profileUID').textContent=p.uid;
   document.getElementById('profileAge').textContent=p.age;
   document.getElementById('profileSkill').textContent=p.skill;
-  {
-  let parts = [];
-  if (p.address) parts.push(p.address);
-  if (p.city && (!p.address || !p.address.toLowerCase().includes(p.city.toLowerCase()))) {
-    parts.push(p.city);
-  }
-  if (p.district) parts.push(p.district);
-  if (p.state) parts.push(p.state);
-  {
-  let parts = [];
-  if (p.address) parts.push(p.address);
-  if (p.city && (!p.address || !p.address.toLowerCase().includes(p.city.toLowerCase()))) {
-    parts.push(p.city);
-  }
-  if (p.district) parts.push(p.district);
-  if (p.state) parts.push(p.state);
-  document.getElementById('profileAddress').textContent = parts.join(', ');
-}
-}
+  document.getElementById('profileAddress').textContent=p.address;
   document.getElementById('profileLanguage').textContent=p.language;
   document.getElementById('profileStatus').textContent = p.status ? p.status : 'Free';
 
@@ -1758,7 +1713,6 @@ function displaySaved(){
     const nameSpan=document.createElement('span'); nameSpan.textContent=p.name; nameSpan.style.fontWeight='700';
     const descSpan=document.createElement('div'); descSpan.style.fontSize='13px'; descSpan.style.color='#6b7280'; descSpan.textContent = p.description ? previewText(p.description,50) : '';
     nameContainer.appendChild(nameSpan); nameContainer.appendChild(descSpan);
-    const locSpan=document.createElement('div'); locSpan.style.fontSize='12px'; locSpan.style.color='#374151'; locSpan.textContent = buildLocationString(p); nameContainer.appendChild(locSpan);
     left.appendChild(tag); left.appendChild(nameContainer);
 
     const actions=document.createElement('div'); actions.className='profile-actions';
@@ -1791,23 +1745,22 @@ function modalBackgroundClick(e){
 
 function showContact(){
   if(!currentOpenProfile) return;
-  const modalResult = document.getElementById('modalResult');
-  // show contact with gentle privacy warning
-  modalResult.innerHTML = `
-    <div><strong>Contact No.:</strong> <span id="visibleContact">${escapeHtml(currentOpenProfile.contact)}</span></div>
-    <div class="note">Click 'Hire → Contact' to view the number.</div>
-    <div style="margin-top:10px; display:flex; gap:8px;">
-      <button class="contact-btn copy-btn" onclick="copyToClipboard('${escapeJs(currentOpenProfile.contact)}')">📋 Copy</button>
-      <button class="contact-btn close-btn" onclick="closeHireModal()">✖ Close</button>
-    </div>
-  `;
+  const modal = document.getElementById('contactModal');
+  document.getElementById('contactTitle').textContent = 
+    "Contact of " + (currentOpenProfile.name || "Profile");
+  document.getElementById('contactNumber').textContent = currentOpenProfile.contact || "Not available";
+  modal.classList.add("open");
 }
 
-function showMessage(){
-  // Open the chat page for the profile selected in the Hire modal
-  if(!currentOpenProfile) return;
-  try{ closeHireModal(); }catch(e){}
-  try{ openChat(currentOpenProfile); }catch(e){}
+function closeContactModal(){
+  document.getElementById('contactModal').classList.remove("open");
+}
+
+function copyContact(){
+  const number = document.getElementById('contactNumber').textContent;
+  navigator.clipboard.writeText(number).then(()=>{
+    alert("Copied: " + number);
+  });
 }
 /* Copy helper (uses Clipboard API when available) */
 function copyToClipboard(text){
@@ -1895,11 +1848,6 @@ function normalizeRatingsForProfiles(){
 
 function renderLeaderboard(type){
   try{ normalizeRatingsForProfiles(); }catch(e){ console.warn('normalizeRatingsForProfiles failed', e); }
-
-  // 🚫 Hard delete known ghost UIDs
-  const bannedUIDs = ["1759306248435","1759334129988","1759334397327"];
-  profiles = (profiles || []).filter(p => p && !bannedUIDs.includes(String(p.uid)));
-
 
   const container=document.getElementById('leaderboardList');
   if(!container) return;
@@ -3098,7 +3046,25 @@ function listenToChatMessages(myUid, otherUid){
 }
 // --- end injection ---
 
-const statusBox = document.createElement('div'); statusBox.id = "firebaseStatusBox"; statusBox.style.position = "fixed"; statusBox.style.bottom = "10px"; statusBox.style.left = "10px"; statusBox.style.padding = "8px 12px"; statusBox.style.background = "#000"; statusBox.style.color = "#0f0"; statusBox.style.fontSize = "12px"; statusBox.style.fontFamily = "monospace"; statusBox.style.borderRadius = "6px"; statusBox.style.zIndex = 99999; statusBox.textContent = "Firebase: Initializing..."; document.addEventListener("DOMContentLoaded", ()=>document.body.appendChild(statusBox)); function setFBStatus(msg, color="#0f0") { const box = document.getElementById("firebaseStatusBox"); if(box) { box.textContent = "Firebase: " + msg; box.style.color = color; }
+// Status box (black box)
+const statusBox = document.createElement('div');
+statusBox.id = "firebaseStatusBox";
+statusBox.style.position = "fixed";
+statusBox.style.bottom = "10px";
+statusBox.style.left = "10px";
+statusBox.style.padding = "8px 12px";
+statusBox.style.fontSize = "12px";
+statusBox.style.fontFamily = "monospace";
+statusBox.style.borderRadius = "6px";
+statusBox.style.zIndex = 99999;
+document.addEventListener("DOMContentLoaded", ()=>document.body.appendChild(statusBox));
+
+function setFBStatus(msg, color="#0f0") {
+  const box = document.getElementById("firebaseStatusBox");
+
+
+
+
 // --- BEGIN: Ensure Manage Profile loads the user's profile for editing ---
 async function loadMyProfileIfExists() {
   try {
@@ -3127,7 +3093,7 @@ async function loadMyProfileIfExists() {
     // If we found a profile, update UI/text
     if (myProfile) {
       const btn = document.getElementById('profileBtn');
-      if (btn) btn.textContent = 'Manage Profile';
+      if (btn) btn.textContent = 'Manage Your Profile';
       // ensure profile is present in profiles array
       const idx = profiles.findIndex(p => String(p.uid) === String(myProfile.uid));
       if (idx === -1) profiles.push(myProfile); else profiles[idx] = myProfile;
@@ -3338,7 +3304,7 @@ document.addEventListener("DOMContentLoaded", ()=>{
       if(storedMy){
         myUID = storedMy;
         const btn = document.getElementById('profileBtn');
-        if(btn) btn.textContent = 'Manage Profile';
+        if(btn) btn.textContent = 'Manage Your Profile';
         await loadUserData(myUID);
         setFBStatus('Ready (user '+String(myUID)+')');
       } else {
@@ -3370,7 +3336,7 @@ document.addEventListener("DOMContentLoaded", ()=>{
           localStorage.setItem('profiles_my_uid_v1', String(profile.uid));
           const profRef = db.collection('profiles').doc(String(profile.uid));
           await profRef.set({ hireCount: Number(profile.hireCount || 0), ratingsCount: Number(profile.ratingsCount || 0) }, { merge: true });
-          const btn = document.getElementById('profileBtn'); if(btn) btn.textContent = 'Manage Profile';
+          const btn = document.getElementById('profileBtn'); if(btn) btn.textContent = 'Manage Your Profile';
           try{ await loadUserData(String(profile.uid)); }catch(e){ /* best-effort */ }
           setFBStatus('Profile saved (local) & linked to UI');
         }
@@ -3783,7 +3749,17 @@ document.addEventListener("DOMContentLoaded", ()=>{
       del.style.display = show ? 'inline-block' : 'none';
     }
 
-
+    // add "Wipe All Profiles" to dropdown menu for dev use
+    const menu = document.getElementById('menuDropdown');
+    if (menu && !menu.querySelector('.wipe-all-item')) {
+      const item = document.createElement('div');
+      item.className = 'wipe-all-item';
+      item.textContent = 'Wipe All Profiles (dev)';
+      item.style.color = '#ff3333';
+      item.onclick = function(){ wipeAllProfiles(); };
+      menu.appendChild(item);
+    }
+  });
 
   // Also expose wipe function globally for console testing
   window.wipeAllProfiles = wipeAllProfiles;
@@ -4561,6 +4537,7 @@ function createChangeModal(){
     document.getElementById('leaderboardContent').innerHTML=html;
   })();
 </script>
+
 <!-- BEGIN: Profile-completion watcher (added by assistant) -->
 <script>
 (function(){
@@ -4620,48 +4597,16 @@ function createChangeModal(){
   // We monkeypatch the existing functions (if present) so we don't change their internals.
   if(window.saveCompleteAccount){
     const orig = window.saveCompleteAccount;
-    
-window.saveCompleteAccount = async function(){
-  const username = (document.getElementById('complete_username').value || '').trim();
-  const age = Number(document.getElementById('complete_age').value || 0);
-  const stateVal = document.getElementById('stateInput')?.value || '';
-  const districtVal = document.getElementById('districtInput')?.value || '';
-  const cityVal = document.getElementById('cityInput')?.value || '';
-  const statusEl = document.getElementById('completeAccountStatus');
-
-  if(!window.pendingNewUserUid){ if(statusEl) statusEl.textContent = 'No pending user'; return; }
-  if(!username){ if(statusEl) statusEl.textContent = 'Username required'; document.getElementById('complete_username').focus(); return; }
-  if(!age || age < 18){ if(statusEl) statusEl.textContent = 'Valid age required (18+)'; document.getElementById('complete_age').focus(); return; }
-  if(!stateVal){ if(statusEl) statusEl.textContent = 'State required'; document.getElementById('stateInput').focus(); return; }
-  if(!districtVal){ if(statusEl) statusEl.textContent = 'District required'; document.getElementById('districtInput').focus(); return; }
-  if(!cityVal){ if(statusEl) statusEl.textContent = 'City required'; document.getElementById('cityInput').focus(); return; }
-
-  if(statusEl) statusEl.textContent = 'Saving…';
-  const uid = String(window.pendingNewUserUid);
-  const dbInst = _getDb();
-  try{
-    if(dbInst){
-      await dbInst.collection('users').doc(uid).set({
-        displayName: username,
-        age: age,
-        email: (_getAuth()?.currentUser?.email) || null,
-        state: stateVal,
-        district: districtVal,
-        city: cityVal,
-        updatedAt: new Date().toISOString()
-      }, { merge: true });
-    }
-    localStorage.setItem('profiles_my_uid_v1', uid);
-    window.myUID = uid;
-    try{ await bindUserProfile(uid); }catch(e){ console.warn('bindUserProfile failed', e); }
-    if(statusEl) statusEl.textContent = 'Saved';
-    setTimeout(()=>{ closeCompleteAccountModal(); showPage && typeof showPage==='function' && showPage('home'); showAuthStatus(''); }, 500);
-  }catch(err){
-    console.warn('saveCompleteAccount err', err);
-    if(statusEl) statusEl.textContent = err?.message || String(err);
-  }
-};
-    
+    window.saveCompleteAccount = async function(){
+      try{
+        await orig.apply(this, arguments);
+      } finally {
+        try{
+          const uid = window.pendingNewUserUid || (window.myUID ? window.myUID : null);
+          if(uid) localStorage.setItem('profiles_complete_prompt_shown_' + String(uid), '1');
+        }catch(e){ console.warn('mark prompt shown after save failed', e); }
+      }
+    };
   }
   if(window.skipCompleteAccount){
     const origSkip = window.skipCompleteAccount;
@@ -4678,6 +4623,10 @@ window.saveCompleteAccount = async function(){
 })();
 </script>
 <!-- END: Profile-completion watcher -->
+
+
+
+
 <!-- BEGIN: Ratings - Robust Firestore-backed implementation (single patch) -->
 <script>
 (function(){
@@ -4981,6 +4930,10 @@ window.saveCompleteAccount = async function(){
 })();
 </script>
 <!-- END: Ratings - Robust Firestore-backed implementation -->
+
+
+
+
 <script>
 // --- Assistant: non-invasive safety & rating-percent enhancer ---
 (function(){
@@ -5115,6 +5068,7 @@ window.saveCompleteAccount = async function(){
 
 })(); 
 </script>
+
 <script>
 // --- Assistant: enforce MIN_VOTES=1 and clean rating display ---
 (function(){
@@ -5168,6 +5122,7 @@ window.saveCompleteAccount = async function(){
   window.__assistantEnhanceLeaderboards = enhanceLeaderboards;
 })();
 </script>
+
 <script>
 function refreshLeaderboards(type){
   try{ if(typeof normalizeRatingsForProfiles==='function') normalizeRatingsForProfiles(); }catch(e){}
@@ -5320,12 +5275,16 @@ function downloadLeaderboard(){
 })();
 </script>
 <!-- END RUNTIME PATCH -->
+
+
 <script>
 document.addEventListener("DOMContentLoaded", () => {
   // Always land on Home when app opens
   showPage("home");
 });
 </script>
+
+
 <!-- BEGIN: DevTools deterrent + detection (inserted by ChatGPT) -->
 <style id="devtools-overlay-style">
 #devtools-overlay {
@@ -5353,6 +5312,7 @@ document.addEventListener("DOMContentLoaded", () => {
 }
 #devtools-overlay.hidden { display:none !important; }
 </style>
+
 <script id="devtools-deterrent">
 (function(){
   // ---- Config ----
@@ -5383,7 +5343,53 @@ document.addEventListener("DOMContentLoaded", () => {
     } catch(e){}
   }
 
-  
+  // Build and show overlay (only the first time)
+  function ensureOverlay(){
+    if(overlayAdded) return;
+    overlayAdded = true;
+    try{
+      const div = document.createElement('div');
+      div.id = 'devtools-overlay';
+      div.className = 'hidden';
+      div.innerHTML = '<div class="box"><h2 style="margin:0 0 8px 0; font-size:20px;">Developer tools detected</h2><div style="opacity:0.9">We detected that developer tools (or a similar inspector) is open. For security and privacy reasons, please close them to continue using this app normally.</div><div style="height:12px"></div><div style="opacity:0.9; font-size:13px">If this is a mistake, resize your window to a normal size and the overlay will disappear automatically.</div></div>';
+      document.documentElement.appendChild(div);
+    }catch(e){}
+  }
+
+  function showOverlay(){
+    ensureOverlay();
+    try{
+      const el = document.getElementById('devtools-overlay');
+      if(el){ el.classList.remove('hidden'); overlayVisible = true; }
+    }catch(e){}
+  }
+  function hideOverlay(){
+    try{
+      const el = document.getElementById('devtools-overlay');
+      if(el){ el.classList.add('hidden'); overlayVisible = false; }
+    }catch(e){}
+  }
+
+  // Heuristic detection: compare outer vs inner dimensions
+  function detectBySize(){
+    try{
+      const widthDiff = Math.abs(window.outerWidth - window.innerWidth);
+      const heightDiff = Math.abs(window.outerHeight - window.innerHeight);
+      return (widthDiff > dimensionThreshold) || (heightDiff > dimensionThreshold);
+    }catch(e){ return false; }
+  }
+
+  // Secondary detection: timing side-effect (pauses when devtools open with debugger)
+  // Use a high-resolution timer and measure if setTimeout gets delayed significantly.
+  function detectByTimer(cb){
+    const start = performance.now();
+    setTimeout(function(){
+      const delta = performance.now() - start;
+      // If timeout delayed by a noticeable amount, devtools or heavy inspector may be open.
+      if(delta > 200) cb(true); else cb(false);
+    }, 50);
+  }
+
   // Main periodic detection combining heuristics
   function periodicDetect(){
     try{
@@ -5423,6 +5429,8 @@ document.addEventListener("DOMContentLoaded", () => {
 })();
 </script>
 <!-- END: DevTools deterrent + detection -->
+
+
 <!-- BEGIN: Improved robust delayed auth patch (10s; shows and centers auth reliably) -->
 <script>
 (function(){
@@ -5538,733 +5546,451 @@ document.addEventListener("DOMContentLoaded", () => {
 })();
 </script>
 <!-- END: Improved robust delayed auth patch -->
-<!-- BEGIN: Profile & Account-completion validation + Privacy confirmation modal -->
-<!-- Privacy modal shown before creating a new profile -->
-<div aria-modal="true" class="modal" id="privacyModal" role="dialog" style="z-index:2147484000;">
-<div aria-modal="true" class="modal-content" role="dialog">
-<button class="modal-close" onclick="document.getElementById('privacyModal')?.classList.remove('open')">✕</button>
-<h4>Confirm your profile</h4>
-<p class="note">Before creating your profile, please confirm the following — this helps build trust on the platform:</p>
-<ul class="note" style="text-align:left;">
-<li>You are a legitimate worker offering real services.</li>
-<li>Your contact number is valid and belongs to you.</li>
-<li>All profile fields are filled honestly.</li>
-</ul>
-<div style="display:flex; align-items:center; gap:8px; margin-top:8px;">
-<input id="privacyConfirmCheckbox" type="checkbox"/>
-<label for="privacyConfirmCheckbox" style="font-weight:700;">I confirm I am a real worker and my contact number is valid</label>
+
+
+
+<!-- RULES / CONFIRMATION MODAL (inserted by assistant) -->
+<style>
+  /* Centered rules modal */
+  #rulesModal { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; z-index: 100000; background: rgba(2,6,23,0.6); }
+  #rulesModal.open { display: flex; }
+  #rulesModal .content { width: 100%; max-width: 560px; background: #fff; border-radius: 12px; padding: 18px; box-shadow: 0 22px 60px rgba(2,6,23,0.3); }
+  #rulesModal h3{ margin:0 0 8px 0; font-size:20px; }
+  #rulesModal ul{ margin: 10px 0 0 20px; color:#111; }
+  #rulesModal .buttons{ display:flex; gap:10px; margin-top:14px; }
+  #rulesModal .btn { flex:1; padding:10px; border:none; border-radius:6px; cursor:pointer; font-size:15px; }
+  #rulesModal .accept { background:#16a34a; color:#fff; }
+  #rulesModal .decline { background:#dc2626; color:#fff; }
+  #rulesModal .error { margin-top:10px; font-size:14px; color:#b91c1c; }
+</style>
+
+<div id="rulesModal" hidden aria-hidden="true" role="dialog" aria-labelledby="rulesTitle">
+  <div class="content" role="document">
+    <h3 id="rulesTitle">Before creating your profile</h3>
+    <p>Please confirm the following rules:</p>
+    <ul>
+      <li>You are a legitimate worker offering real services.</li>
+      <li>You filled the form correctly — no fake data.</li>
+      <li>Your contact number is valid and belongs to you.</li>
+    </ul>
+    <div class="error" style="display:none"></div>
+    <div class="buttons">
+      <button class="btn decline" type="button">Decline</button>
+      <button class="btn accept" type="button">Accept</button>
+    </div>
+  </div>
 </div>
-<div class="modal-buttons" style="margin-top:12px;">
-<button class="auth-primary" disabled="" id="privacyConfirmBtn">Confirm &amp; Create</button>
-<button class="auth-secondary" id="privacyCancelBtn">Cancel</button>
-</div>
-<p class="auth-small-note" id="privacyNote" style="margin-top:10px;"></p>
-</div>
-</div>
+
 <script>
-/* BEGIN: Enhancements: (1) Account-completion required fields enforcement
-             (2) Create Profile: contact validation, focus behavior, privacy confirmation modal
-             (3) Respect editing flow (existing profile edits still save directly)
-*/
-
 (function(){
-  // Helpers
-  function isValidContact(v){ return /^\d{10}$/.test((v||'').trim()); }
-  function isPositiveNumber(v){ return !isNaN(Number(v)) && Number(v) > 0; }
-
-  // --- Account completion modal: require fields and enable Save only when valid ---
-  document.addEventListener('DOMContentLoaded', function(){
-    var modal = document.getElementById('completeAccountModal');
-    if(!modal) return;
-    var username = document.getElementById('complete_username');
-    var age = document.getElementById('complete_age');
-    var stateInput = document.getElementById('stateInput');
-    var district = document.getElementById('districtInput');
-    var city = document.getElementById('cityInput');
-    var saveBtn = document.getElementById('completeSaveBtn');
-    var status = document.getElementById('completeAccountStatus');
-
-    if(!saveBtn) return;
-
-    function validateAccountComplete(){
-      try{
-        var ok = true;
-        if(!username || !username.value.trim()) ok = false;
-        if(!age || !isPositiveNumber(age.value) || Number(age.value) < 18) ok = false;
-        if(!stateInput || !stateInput.value.trim()) ok = false;
-        if(!district || !district.value.trim()) ok = false;
-        if(!city || !city.value.trim()) ok = false;
-        saveBtn.disabled = !ok;
-        return ok;
-      }catch(e){ return false; }
-    }
-
-    // Attach listeners
-    [username, age, stateInput, district, city].forEach(function(el){
-      if(!el) return;
-      el.addEventListener('input', validateAccountComplete);
-      el.addEventListener('change', validateAccountComplete);
-    });
-
-    // Observe when the modal opens so we can focus the first missing input
-    var obs = new MutationObserver(function(muts){
-      muts.forEach(function(m){
-        if(m.attributeName === 'class'){
-          if(modal.classList.contains('open')){
-            // focus first missing
-            setTimeout(function(){
-              if(!username.value.trim()){ username.focus(); }
-              else if(!isPositiveNumber(age.value)){ age.focus(); }
-              else if(!stateInput.value.trim()){ stateInput.focus(); }
-              else if(!district.value.trim()){ district.focus(); }
-              else if(!city.value.trim()){ city.focus(); }
-              validateAccountComplete();
-            }, 120);
-          }
-        }
-      });
-    });
-    obs.observe(modal, { attributes: true });
-
-    // Wrap existing saveCompleteAccount to enforce final validation and show message if invalid
-    if(window.saveCompleteAccount && typeof window.saveCompleteAccount === 'function'){
-      var origSave = window.saveCompleteAccount;
-      
-window.saveCompleteAccount = async function(){
-  const username = (document.getElementById('complete_username').value || '').trim();
-  const age = Number(document.getElementById('complete_age').value || 0);
-  const stateVal = document.getElementById('stateInput')?.value || '';
-  const districtVal = document.getElementById('districtInput')?.value || '';
-  const cityVal = document.getElementById('cityInput')?.value || '';
-  const statusEl = document.getElementById('completeAccountStatus');
-
-  if(!window.pendingNewUserUid){ if(statusEl) statusEl.textContent = 'No pending user'; return; }
-  if(!username){ if(statusEl) statusEl.textContent = 'Username required'; document.getElementById('complete_username').focus(); return; }
-  if(!age || age < 18){ if(statusEl) statusEl.textContent = 'Valid age required (18+)'; document.getElementById('complete_age').focus(); return; }
-  if(!stateVal){ if(statusEl) statusEl.textContent = 'State required'; document.getElementById('stateInput').focus(); return; }
-  if(!districtVal){ if(statusEl) statusEl.textContent = 'District required'; document.getElementById('districtInput').focus(); return; }
-  if(!cityVal){ if(statusEl) statusEl.textContent = 'City required'; document.getElementById('cityInput').focus(); return; }
-
-  if(statusEl) statusEl.textContent = 'Saving…';
-  const uid = String(window.pendingNewUserUid);
-  const dbInst = _getDb();
-  try{
-    if(dbInst){
-      await dbInst.collection('users').doc(uid).set({
-        displayName: username,
-        age: age,
-        email: (_getAuth()?.currentUser?.email) || null,
-        state: stateVal,
-        district: districtVal,
-        city: cityVal,
-        updatedAt: new Date().toISOString()
-      }, { merge: true });
-    }
-    localStorage.setItem('profiles_my_uid_v1', uid);
-    window.myUID = uid;
-    try{ await bindUserProfile(uid); }catch(e){ console.warn('bindUserProfile failed', e); }
-    if(statusEl) statusEl.textContent = 'Saved';
-    setTimeout(()=>{ closeCompleteAccountModal(); showPage && typeof showPage==='function' && showPage('home'); showAuthStatus(''); }, 500);
-  }catch(err){
-    console.warn('saveCompleteAccount err', err);
-    if(statusEl) statusEl.textContent = err?.message || String(err);
-  }
-};
-    
-    }
-  });
-
-  // --- Create Profile: contact validation, privacy modal, focus contact on open ---
-  document.addEventListener('DOMContentLoaded', function(){
-    var profileForm = document.getElementById('profileForm');
-    var contactInput = document.getElementById('contact');
-    var nameInput = document.getElementById('name');
-    var ageInput = document.getElementById('age');
-    var skillInput = document.getElementById('skill');
-    var addressInput = document.getElementById('address');
-    var cityInput = document.getElementById('city');
-    var submitBtn = document.getElementById('submitBtn');
-
-    var privacyModal = document.getElementById('privacyModal');
-    var privacyCheckbox = document.getElementById('privacyConfirmCheckbox');
-    var privacyBtn = document.getElementById('privacyConfirmBtn');
-    var privacyCancel = document.getElementById('privacyCancelBtn');
-    var privacyNote = document.getElementById('privacyNote');
-
-    // Ensure privacy modal exists
-    if(!profileForm || !contactInput) return;
-
-    // Helper to validate profile fields
-    
-    function validateProfileFields(){
-      // Stronger validation rules:
-      // - name: letters, spaces, dots, hyphens, apostrophes, at least 2 letters and not digits-only
-      // - age: number >=18 and <=100
-      // - skill: selected
-      // - address: at least 5 chars and contains at least 3 letters
-      // - city: at least 2 letters
-      // - contact: exactly 10 digits
-      // - description: at least 10 chars and contains letters
-      try{
-        var name = (nameInput && nameInput.value || '').trim();
-        var ageVal = (ageInput && ageInput.value || '').toString().trim();
-        var skill = (skillInput && skillInput.value || '');
-        var addr = (addressInput && addressInput.value || '').trim();
-        var city = (cityInput && cityInput.value || '').trim();
-        var contact = (contactInput && contactInput.value || '').trim();
-        var desc = (document.getElementById("description") && document.getElementById("description").value || '').trim();
-
-        var lettersCount = function(s){ return (s.match(/[A-Za-z]/g) || []).length; };
-
-        // name validation
-        if(!name || lettersCount(name) < 2 || /[^A-Za-z\s\.\-\'\u00C0-\u017F]/.test(name)){
-          return {ok:false, msg:'Enter a valid name (letters and basic punctuation only)', field:nameInput};
-        }
-        // age validation
-        var ageNum = Number(ageVal);
-        if(isNaN(ageNum) || ageNum < 18 || ageNum > 100){
-          return {ok:false, msg:'Age must be between 18 and 100', field:ageInput};
-        }
-        // skill
-        if(!skill || skill === ''){
-          return {ok:false, msg:'Select a skill', field:skillInput};
-        }
-        // address validation (not random): min length and at least 3 letters
-        if(!addr || addr.length < 5 || lettersCount(addr) < 3){
-          return {ok:false, msg:'Enter a valid address', field:addressInput};
-        }
-        // city validation
-        if(!city || lettersCount(city) < 2){
-          return {ok:false, msg:'Enter a valid city name', field:cityInput};
-        }
-        // contact validation
-        if(!/^\d{10}$/.test(contact)){
-          return {ok:false, msg:'Contact must be a valid 10-digit number', field:contactInput};
-        }
-        // description
-        if(desc.length < 10 || lettersCount(desc) < 3){
-          return {ok:false, msg:'Description too short or unclear (min 10 characters)', field:document.getElementById('description')};
-        }
-
-        return {ok:true};
-      }catch(e){
-        console.warn('validateProfileFields error', e);
-        return {ok:false, msg:'Validation failed', field:null};
+  // utility to find create/save button by id/class/text
+  function findCreateButton(){
+    // try id first
+    var btn = document.getElementById('createProfileBtn') || document.getElementById('createBtn');
+    if(btn) return btn;
+    var candidates = Array.from(document.querySelectorAll('button, a, input[type="button"], input[type="submit"]'));
+    for(var i=0;i<candidates.length;i++){
+      var el = candidates[i];
+      var text = (el.innerText || el.value || '').trim().toLowerCase();
+      if(!text) continue;
+      if(text.indexOf('₹250') !== -1 || text.indexOf('250 rs') !== -1 || text.indexOf('250') !== -1 && (text.indexOf('₹') !== -1 || text.indexOf('rs') !== -1 || text.indexOf('rupee') !== -1 || text.indexOf('rupees') !== -1)){
+        return el;
       }
     }
-
-
-    // Wrap existing openProfileForm to focus contact input for creation
-    if(window.openProfileForm && typeof window.openProfileForm === 'function'){
-      var origOpenProfileForm = window.openProfileForm;
-      window.openProfileForm = function(){
-        origOpenProfileForm.apply(this, arguments);
-        // small delay to let page rendering happen
-        setTimeout(function(){
-          var createPage = document.getElementById('createProfilePage');
-          if(createPage && createPage.style.display === 'block'){
-            contactInput = document.getElementById('contact');
-            if(contactInput) try{ contactInput.focus(); }catch(e){}
-          }
-        }, 120);
-      };
-    }
-
-    // Extract existing save logic into a reusable function
-    function saveProfileFromForm(){
-      try{
-        var profile = {
-          uid: myProfile ? myProfile.uid : generateUID(),
-          name: (document.getElementById("name").value || '').trim(),
-          age: document.getElementById("age").value,
-          skill: document.getElementById("skill").value,
-          address: document.getElementById("address").value,
-          city: document.getElementById("city").value,
-          contact: (document.getElementById("contact").value || '').trim(),
-          language: document.getElementById("language").value,
-          description: (document.getElementById("description").value || '').trim(),
-          status: myProfile ? document.getElementById("status")?.value || "Free" : "Free"
-        };
-        // final validation (defensive)
-        var v = validateProfileFields();
-        if(!v.ok){
-          alert(v.msg);
-          if(v.field) try{ v.field.focus(); }catch(e){}
-          return;
-        }
-
-        if(myProfile){
-          var idx = profiles.findIndex(function(p){ return p.uid === myProfile.uid; });
-          if(idx !== -1) profiles[idx] = profile;
-        } else {
-          profiles.push(profile);
-        }
-        myProfile = profile;
-        var profileBtn = document.getElementById("profileBtn");
-        if(profileBtn) profileBtn.textContent = "Manage Profile";
-        alert("Profile saved successfully!");
-        try{ showPage('home'); }catch(e){}
-      }catch(e){
-        console.warn('saveProfileFromForm failed', e);
-        alert('Failed to save profile. See console for details.');
-      }
-    }
-
-    // Intercept form submit
-    profileForm.addEventListener('submit', function(e){
-      // prevent other handlers from running and stop default submit
-      try{ e.preventDefault(); e.stopImmediatePropagation(); }catch(_){}
-      // guard to avoid re-entrancy
-      if(window.__profileSubmitHandled) return;
-      window.__profileSubmitHandled = true;
-      try{
-        // run quick validation
-        var v = validateProfileFields();
-        if(!v.ok){
-          alert(v.msg);
-          if(v.field) try{ v.field.focus(); }catch(e){}
-          window.__profileSubmitHandled = false;
-          return;
-        }
-        // if editing existing profile (myProfile exists) -> save immediately (still validate age/contact)
-        if(window.myProfile){
-          saveProfileFromForm();
-          window.__profileSubmitHandled = false;
-          return;
-        }
-        // New profile: show privacy modal to confirm identity & contact BEFORE saving
-        if(privacyModal){
-          privacyModal.classList.add('open');
-          // reset checkbox and disable confirm
-          if(privacyCheckbox) { privacyCheckbox.checked = false; }
-          if(privacyBtn) { privacyBtn.disabled = true; }
-          if(privacyNote) { privacyNote.textContent = 'Please confirm you are a real worker and the contact number is accurate.'; }
-          window.__profileSubmitHandled = false;
-        } else {
-          // fallback: save directly
-          saveProfileFromForm();
-          window.__profileSubmitHandled = false;
-        }
-      }catch(err){
-        console.warn('submit handler failed', err);
-        window.__profileSubmitHandled = false;
-      }
-    }, true);
-
-    // Privacy modal interactions
-    if(privacyCheckbox){
-      privacyCheckbox.addEventListener('change', function(){ var ok = privacyCheckbox.checked && isValidContact(contactInput.value); if(privacyBtn) privacyBtn.disabled = !ok; if(!isValidContact(contactInput.value)){ if(privacyNote) privacyNote.textContent = 'Contact must be a valid 10-digit number.'; } else { if(privacyNote) privacyNote.textContent = ''; } });
-    }
-
-    if(privacyBtn){ privacyBtn.addEventListener('click', function(){
-        // final verification before saving
-        var v = validateProfileFields();
-        if(!v.ok){ alert(v.msg); if(v.field) try{ v.field.focus(); }catch(e){}; return; }
-        // close modal and save
-        if(privacyModal) privacyModal.classList.remove('open');
-        saveProfileFromForm();
-      }); }
-    if(privacyCancel){
-      privacyCancel.addEventListener('click', function(){ if(privacyModal) privacyModal.classList.remove('open'); });
-    }
-
-    // Live contact validation: if user edits contact while privacy modal open, update button state
-    contactInput.addEventListener('input', function(){
-      if(privacyCheckbox && privacyCheckbox.checked){
-        if(privacyBtn) privacyBtn.disabled = !isValidContact(contactInput.value);
-      }
-    });
-
-  });
-
-})(); 
-/* END enhancements */
-</script>
-<!-- END: Profile & Account-completion validation + Privacy confirmation modal -->
-<script type="text/javascript">
-// Delete profile helper — removes current myProfile, clears form and navigates home
-window.deleteProfile = function(){
-  try {
-    if(!window.myProfile){
-      alert('No profile to delete.');
-      return;
-    }
-    if(!confirm('Delete your profile? This cannot be undone.')) return;
-
-    try {
-      var uid = String(window.myProfile.uid);
-      var idx = profiles.findIndex(function(p){ return String(p.uid) === uid; });
-      if(idx !== -1) profiles.splice(idx,1);
-    } catch(e){}
-
-    window.myProfile = null;
-    localStorage.removeItem('profiles_my_uid_v1');
-
-    try {
-      var f = document.getElementById('profileForm');
-      if(f) f.reset();
-      var btn = document.getElementById('profileBtn');
-      if(btn) btn.textContent = 'Create a Profile';
-    } catch(e){}
-
-    try {
-      showPage('home');
-    } catch(e){
-      document.querySelectorAll('.page').forEach(function(p){ p.style.display='none'; });
-      var homeEl = document.getElementById('home');
-      if(homeEl) homeEl.style.display = 'block';
-    }
-  } catch(e){
-    console.warn('deleteProfile failed', e);
-    alert('Failed to delete profile.');
-  }
-};
-
-// Ensure create profile form is blank when there is no myProfile
-(function(){
-  var origShowPage = window.showPage;
-  window.showPage = function(id){
-    try {
-      if(id === 'createProfilePage' && !window.myProfile){
-        try {
-          var f = document.getElementById('profileForm');
-          if(f) f.reset();
-        } catch(e){}
-
-        try {
-          document.getElementById('formTitle').textContent = 'Create Your Worker Profile';
-          document.getElementById('submitBtn').textContent = 'Create';
-          document.getElementById('statusSection').style.display = 'none';
-        } catch(e){}
-      }
-    } catch(e){}
-
-    if(typeof origShowPage === 'function')
-      return origShowPage.apply(this, arguments);
-    else return;
-  };
-})();
-</script>
-<script id="profilesFirestorePatch">
-(async function(){
-  function _getDb(){
-    if(typeof db !== 'undefined' && db) return db;
-    if(typeof firebase !== 'undefined' && firebase.firestore) return firebase.firestore();
     return null;
   }
 
-  // Save profile to Firestore on submit
-  const form = document.getElementById("profileForm");
-  if(form){
-    form.addEventListener("submit", async function(e){
-      e.preventDefault();
-      const profile={
-        uid: window.myProfile ? window.myProfile.uid : (Date.now()+Math.floor(Math.random()*1000)).toString(),
-        name:document.getElementById("name").value.trim(),
-        age:document.getElementById("age").value,
-        skill:document.getElementById("skill").value,
-        address:document.getElementById("address").value,
-        city:document.getElementById("city").value || '',
-        contact:document.getElementById("contact").value.trim(),
-        language:document.getElementById("language").value,
-        description: document.getElementById("description").value.trim(),
-        status: window.myProfile ? document.getElementById("status").value : "Free",
-        ownerUid: window.myUID || null,
-        ratingCount: window.myProfile?.ratingCount || 0,
-        ratingSum: window.myProfile?.ratingSum || 0,
-        updatedAt: new Date().toISOString()
-      };
-      try{
-        const dbInst = _getDb();
-        if(dbInst){
-          await dbInst.collection("profiles").doc(profile.uid).set(profile, {merge:true});
-          window.myProfile = profile;
-          alert("Profile saved to Firestore!");
-        } else {
-          alert("Firestore not available");
-        }
-      }catch(err){
-        console.error("Save profile error", err);
-        alert("Error saving profile: " + (err.message||err));
-      }
-      showPage('home');
-    });
-  }
-
-  // Load profiles from Firestore instead of memory
-  window.loadProfilesFromFirestore = async function(){
+  // determine if the current action is editing an existing profile
+  function isEditingProfile(){
     try{
-      const dbInst = _getDb();
-      if(!dbInst) return;
-      const snapshot = await dbInst.collection("profiles").get();
-      window.profiles = snapshot.docs.map(doc => ({uid: doc.id, ...doc.data()}));
-      displayProfiles();
-    }catch(e){ console.error("loadProfilesFromFirestore failed", e); }
-  };
-
-  // Override showPage to fetch profiles for categoriesPage
-  const origShowPage = window.showPage;
-  window.showPage = function(id){
-    if(id==='categoriesPage'){
-      window.loadProfilesFromFirestore().then(()=>{
-        if(typeof displayProfiles==='function') displayProfiles();
-      });
+      // obvious: global myProfile with uid
+      if(window.myProfile && window.myProfile.uid) return true;
+      if(window.currentOpenProfile) return true;
+      if(window.profileUid) return true;
+      // form-level indicators
+      var form = document.getElementById('profileForm') || document.querySelector('form');
+      if(form){
+        var hidden = form.querySelector('input[name="profileUid"], input[name="profile_id"], input[name="uid"], input#profileUid, input#uid');
+        if(hidden && (hidden.value || hidden.value === '0')) return true;
+        // sometimes form has data-mode attribute set to 'edit'
+        if(form.dataset && form.dataset.mode && form.dataset.mode.toLowerCase().indexOf('edit')!==-1) return true;
+      }
+      // button-level hints
+      var btn = findCreateButton();
+      if(btn){
+        if(btn.dataset && (btn.dataset.mode === 'edit' || btn.dataset.action === 'save')) return true;
+        if(btn.classList && (btn.classList.contains('save-btn') || btn.classList.contains('update-btn') || btn.classList.contains('edit-btn'))) return true;
+      }
+      // if none of the above, assume it's a create action (show modal)
+      return false;
+    }catch(e){
+      console.warn('isEditingProfile err', e);
+      return false;
     }
-    if(origShowPage) origShowPage(id);
-  };
-
-  // Rating save handler
-  window.saveRating = async function(profileId, ratingValue){
-    const dbInst = _getDb();
-    if(!dbInst) return;
-    try{
-      await dbInst.collection("profiles").doc(String(profileId)).set({
-        ratingCount: firebase.firestore.FieldValue.increment(1),
-        ratingSum: firebase.firestore.FieldValue.increment(ratingValue)
-      }, {merge:true});
-      console.log("Saved rating", ratingValue, "for", profileId);
-    }catch(e){ console.error("saveRating failed", e); }
-  };
-
-  // Leaderboard loader for "Most Rated"
-  window.loadMostRatedLeaderboard = async function(){
-    const dbInst = _getDb();
-    if(!dbInst) return [];
-    try{
-      const snapshot = await dbInst.collection("profiles")
-        .orderBy("ratingCount","desc")
-        .limit(10)
-        .get();
-      return snapshot.docs.map(doc=>{
-        const d = doc.data();
-        const avg = (d.ratingCount>0)? (d.ratingSum/d.ratingCount).toFixed(2):0;
-        return { uid: doc.id, name: d.name, ratingCount:d.ratingCount||0, avg:avg, hires:d.hires||0 };
-      });
-    }catch(e){ console.error("loadMostRatedLeaderboard failed", e); return []; }
-  };
-})();
-</script>
-<script>
-(function(){
-  function hideStatusBox(){
-    const el = document.getElementById("firebaseStatusBox");
-    if(el) el.style.display = "none";
   }
-  hideStatusBox();
-  const observer = new MutationObserver(hideStatusBox);
-  observer.observe(document.body, { childList: true, subtree: true });
-})();
-</script>
-<!-- Final override for saveCompleteAccount to ensure Save & Continue works -->
-<script>
-(function(){
-  async function finalSave(){
-    const statusEl = document.getElementById('completeAccountStatus');
-    function setStatus(msg){ if(statusEl) statusEl.textContent = msg || ''; }
-    const uid = window.pendingNewUserUid || window.myUID;
-    if(!uid){ setStatus('No pending user'); return; }
-    const username = (document.getElementById('complete_username').value||'').trim();
-    const age = Number(document.getElementById('complete_age').value||0);
-    const stateVal = (document.getElementById('stateInput')?.value||'').trim();
-    const districtVal = (document.getElementById('districtInput')?.value||'').trim();
-    const cityVal = (document.getElementById('cityInput')?.value||'').trim();
-    if(!username){ setStatus('Username required'); try{ document.getElementById('complete_username').focus(); }catch(e){}; return; }
-    if(!age || age<18){ setStatus('Age must be 18 or above'); try{ document.getElementById('complete_age').focus(); }catch(e){}; return; }
-    if(!stateVal){ setStatus('State required'); try{ document.getElementById('stateInput').focus(); }catch(e){}; return; }
-    if(!districtVal){ setStatus('District required'); try{ document.getElementById('districtInput').focus(); }catch(e){}; return; }
-    if(!cityVal){ setStatus('City required'); try{ document.getElementById('cityInput').focus(); }catch(e){}; return; }
-    setStatus('Saving…');
-    try{
-      const dbInst = (typeof db !== 'undefined' && db) ? db : ((typeof firebase !== 'undefined' && firebase.firestore) ? firebase.firestore() : null);
-      const authInst = (typeof auth !== 'undefined' && auth) ? auth : ((typeof firebase !== 'undefined' && firebase.auth) ? firebase.auth() : null);
-      const email = authInst && authInst.currentUser && authInst.currentUser.email ? authInst.currentUser.email : null;
-      if(dbInst){
-        await dbInst.collection('users').doc(String(uid)).set({
-          displayName: username,
-          age: age,
-          email: email,
-          state: stateVal,
-          district: districtVal,
-          city: cityVal,
-          updatedAt: new Date().toISOString()
-        }, { merge: true });
-      } else {
-        console.warn('Firestore not available, saving locally');
-      }
-      try{
-        if(window.myProfile && window.myProfile.uid && dbInst){
-          await dbInst.collection('profiles').doc(String(window.myProfile.uid)).set({ ownerUid: String(uid) }, { merge: true });
-          await dbInst.collection('users').doc(String(uid)).set({ profileUid: String(window.myProfile.uid) }, { merge: true });
-        }
-      }catch(e){ console.warn('profile linking failed', e); }
-      localStorage.setItem('profiles_my_uid_v1', String(uid));
-      window.myUID = String(uid);
-      try{ if(typeof bindUserProfile === 'function') await bindUserProfile(uid); }catch(e){ console.warn('bindUserProfile', e); }
-      setStatus('Saved — redirecting…');
-      setTimeout(function(){ document.getElementById('completeAccountModal')?.classList.remove('open'); if(typeof showPage === 'function') showPage('home'); }, 400);
-    }catch(err){ console.error('finalSave', err); setStatus(err && err.message ? err.message : String(err)); }
+
+  function openModal(modal){
+    modal.removeAttribute('hidden');
+    modal.setAttribute('aria-hidden','false');
+    modal.classList.add('open');
+    var a = modal.querySelector('.accept');
+    if(a) a.focus();
   }
-  window.saveCompleteAccount = finalSave;
-  // ensure button onclick/click listener set
-  const btn = document.getElementById('completeSaveBtn');
-  if(btn){
-    btn.onclick = function(e){ e.preventDefault(); window.saveCompleteAccount && window.saveCompleteAccount(); };
-    try{ btn.removeAttribute('disabled'); }catch(e){}
+  function closeModal(modal){
+    modal.classList.remove('open');
+    modal.setAttribute('hidden','');
+    modal.setAttribute('aria-hidden','true');
+    var err = modal.querySelector('.error');
+    if(err){ err.style.display = 'none'; err.innerText = ''; }
   }
-})();
-</script>
+  function showError(modal, msg){
+    var err = modal.querySelector('.error');
+    if(!err) return;
+    err.style.display = 'block';
+    err.innerText = msg;
+  }
 
+  document.addEventListener('DOMContentLoaded', function(){
+    var rulesModal = document.getElementById('rulesModal');
+    if(!rulesModal) return;
+    var acceptBtn = rulesModal.querySelector('.accept');
+    var declineBtn = rulesModal.querySelector('.decline');
+    var createBtn = findCreateButton();
+    if(!createBtn){
+      console.warn('Rules modal: create button (₹250) not found.');
+      return;
+    }
 
-<!-- DEBUG OVERRIDE: robust saveCompleteAccount with verbose logging and local fallback -->
-<script>
-(function(){
-  function _getAuth(){ if(typeof auth !== 'undefined' && auth) return auth; if(typeof firebase !== 'undefined' && firebase.auth) return firebase.auth(); return null; }
-  function _getDb(){ if(typeof db !== 'undefined' && db) return db; if(typeof firebase !== 'undefined' && firebase.firestore) return firebase.firestore(); return null; }
+    // save original onclick for fallback
+    var origOnClick = createBtn.getAttribute ? createBtn.getAttribute('onclick') : null;
+    window.__rulesAcceptedByUser = false;
 
-  async function debugSaveCompleteAccount(){
-    try{
-      console.log('[DEBUG] saveCompleteAccount invoked');
-      var statusEl = document.getElementById('completeAccountStatus');
-      var usernameEl = document.getElementById('complete_username');
-      var ageEl = document.getElementById('complete_age');
-      var stateEl = document.getElementById('stateInput');
-      var districtEl = document.getElementById('districtInput');
-      var cityEl = document.getElementById('cityInput');
-
-      if(statusEl) statusEl.textContent = '';
-      var username = usernameEl ? (usernameEl.value||'').trim() : '';
-      var age = ageEl ? Number(ageEl.value||0) : 0;
-      var stateVal = stateEl ? (stateEl.value||'').trim() : '';
-      var districtVal = districtEl ? (districtEl.value||'').trim() : '';
-      var cityVal = cityEl ? (cityEl.value||'').trim() : '';
-
-      if(!window.pendingNewUserUid && !window.myUID){
-        // try account keys in localStorage
-        window.pendingNewUserUid = localStorage.getItem('profiles_account_uid_v1') || localStorage.getItem('profiles_my_uid_v1') || null;
-      }
-      var uid = window.pendingNewUserUid || window.myUID || null;
-      console.log('[DEBUG] resolved uid:', uid);
-
-      if(!uid){
-        if(statusEl) statusEl.textContent = 'No pending user (uid missing). Check auth.';
-        console.warn('[DEBUG] No uid - aborting save');
+    createBtn.addEventListener('click', function(e){
+      // If editing existing profile, do NOT show modal - allow normal save/edit flow
+      if(isEditingProfile()){
+        // ensure modal not shown
+        window.__rulesAcceptedByUser = false;
         return;
       }
-      // validation
-      if(!username){ if(statusEl) statusEl.textContent='Username required'; if(usernameEl) usernameEl.focus(); return; }
-      if(!age || age < 18){ if(statusEl) statusEl.textContent='Valid age required (18+)'; if(ageEl) ageEl.focus(); return; }
-      if(!stateVal){ if(statusEl) statusEl.textContent='State required'; if(stateEl) stateEl.focus(); return; }
-      if(!districtVal){ if(statusEl) statusEl.textContent='District required'; if(districtEl) districtEl.focus(); return; }
-      if(!cityVal){ if(statusEl) statusEl.textContent='City required'; if(cityEl) cityEl.focus(); return; }
-
-      if(statusEl) statusEl.textContent = 'Saving...';
-      console.log('[DEBUG] validated fields, attempting Firestore save if available');
-
-      const dbInst = _getDb();
-      const authInst = _getAuth();
-      // Helpful debug info
-      console.log('[DEBUG] dbInst present?', !!dbInst, ' auth present?', !!authInst, ' auth.currentUser?', !!(authInst && authInst.currentUser));
-
-      var userObj = {
-        uid: String(uid),
-        displayName: username,
-        age: (age > 0 ? Number(age) : null),
-        email: (authInst && authInst.currentUser && authInst.currentUser.email) ? authInst.currentUser.email : null,
-        state: stateVal,
-        district: districtVal,
-        city: cityVal,
-        updatedAt: (new Date()).toISOString()
-      };
-
-      var wroteToFirestore = false;
-      if(dbInst){
-        try{
-          await dbInst.collection('users').doc(String(uid)).set(userObj, { merge: true });
-          console.log('[DEBUG] Firestore set(users) OK');
-          wroteToFirestore = true;
-        }catch(e){
-          console.error('[DEBUG] Firestore users write failed:', e);
-          if(statusEl) statusEl.textContent = 'Firestore save failed: ' + (e && e.message ? e.message : String(e));
-        }
-      } else {
-        console.log('[DEBUG] No Firestore available; will use localStorage fallback');
+      // If we previously programmatically allowed the click after Accept, let it pass
+      if(window.__rulesAcceptedByUser){
+        // reset and allow default behavior
+        window.__rulesAcceptedByUser = false;
+        return;
       }
+      // else intercept for new profile creation
+      e.preventDefault();
+      openModal(rulesModal);
+    });
 
-      // attempt profile linking if myProfile exists
-      try{
-        if(typeof window.myProfile !== 'undefined' && window.myProfile && window.myProfile.uid){
-          var profileUid = String(window.myProfile.uid);
-          if(dbInst){
-            try{
-              await dbInst.collection('profiles').doc(profileUid).set({ ownerUid: String(uid) }, { merge: true });
-              await dbInst.collection('users').doc(String(uid)).set({ profileUid: String(profileUid) }, { merge: true });
-              console.log('[DEBUG] Linked profile', profileUid, 'to user', uid);
-            }catch(e){
-              console.warn('[DEBUG] profile linking to Firestore failed', e);
+    declineBtn.addEventListener('click', function(){
+      closeModal(rulesModal);
+    });
+
+    acceptBtn.addEventListener('click', function(){
+      // validation checks before proceeding
+      var form = document.getElementById('profileForm') || document.querySelector('form');
+      if(form){
+        var required = Array.from(form.querySelectorAll('[required]'));
+        for(var i=0;i<required.length;i++){
+          var el = required[i];
+          var val = (el.value || '').toString().trim();
+          if(val === ''){
+            showError(rulesModal, 'Please fill all required fields before creating your profile.');
+            return;
+          }
+        }
+        // age check
+        var ageEl = form.querySelector('input[name=\"age\"], #age, input.age');
+        if(ageEl){
+          var ageVal = parseInt(ageEl.value, 10);
+          if(isNaN(ageVal) || ageVal < 18){
+            showError(rulesModal, 'You must be at least 18 years old to create a profile.');
+            return;
+          }
+        } else {
+          var dobEl = form.querySelector('input[name=\"dob\"], input[type=\"date\"][name=\"dob\"], #dob');
+          if(dobEl && dobEl.value){
+            var d = new Date(dobEl.value);
+            if(!isNaN(d.getTime())){
+              var now = new Date();
+              var age = now.getFullYear() - d.getFullYear() - ((now.getMonth() < d.getMonth() || (now.getMonth() === d.getMonth() && now.getDate() < d.getDate())) ? 1 : 0);
+              if(age < 18){
+                showError(rulesModal, 'You must be at least 18 years old to create a profile.');
+                return;
+              }
             }
           }
         }
-      }catch(e){ console.warn('[DEBUG] profile linking check failed', e); }
-
-      // Always persist locally as fallback and trustworthy record
-      try{
-        var storageKey = 'profiles_user_info_v1';
-        var existing = {};
-        try{
-          existing = JSON.parse(localStorage.getItem(storageKey) || '{}');
-        }catch(_){ existing = {}; }
-        existing[String(uid)] = userObj;
-        localStorage.setItem(storageKey, JSON.stringify(existing));
-        // also set profiles_my_uid_v1 for quick access
-        try{ localStorage.setItem('profiles_my_uid_v1', String(uid)); }catch(_){}
-        console.log('[DEBUG] saved user info to localStorage key', storageKey);
-      }catch(e){ console.warn('[DEBUG] localStorage save failed', e); }
-
-      // try to bind profile in-memory
-      try{ if(typeof bindUserProfile === 'function') await bindUserProfile(uid); }catch(e){ console.warn('[DEBUG] bindUserProfile failed', e); }
-
-      if(statusEl){
-        if(wroteToFirestore) statusEl.textContent = 'Saved';
-        else statusEl.textContent = 'Saved';
+        // contact check
+        var phoneEl = form.querySelector('input[name=\"contact\"], input[name=\"phone\"], input[name=\"mobile\"], input[id*=\"contact\"], input[id*=\"phone\"], input[id*=\"mobile\"]');
+        if(phoneEl){
+          var digits = (phoneEl.value || '').replace(/\\D/g, '');
+          if(digits.length < 7 || digits.length > 15){
+            showError(rulesModal, 'Please enter a valid contact number (digits only).');
+            return;
+          }
+        }
       }
 
-      // mark prompt shown
-      try{ localStorage.setItem('profiles_complete_prompt_shown_' + String(uid), '1'); }catch(_){}
+      // Passed validation — proceed to create
+      window.__rulesAcceptedByUser = true;
+      closeModal(rulesModal);
 
-      setTimeout(function(){
-        try{ closeCompleteAccountModal(); }catch(e){ console.warn('[DEBUG] close modal failed', e); }
-        try{ if(typeof showPage === 'function') showPage('home'); }catch(e){ console.warn('[DEBUG] showPage failed', e); }
-        try{ if(typeof showAuthStatus === 'function') showAuthStatus(''); }catch(e){};
-      }, 600);
+      // Prefer calling createProfile/createNewProfile if present
+      if(typeof window.createProfile === 'function'){
+        try{ window.createProfile(); return; }catch(e){ console.warn('createProfile call failed', e); }
+      }
+      if(typeof window.createNewProfile === 'function'){
+        try{ window.createNewProfile(); return; }catch(e){ console.warn('createNewProfile call failed', e); }
+      }
+      // if original onclick exists, attempt to execute it
+      if(origOnClick){
+        try{ (new Function(origOnClick)).call(createBtn); return; }catch(e){ console.warn('exec origOnClick failed', e); }
+      }
+      // final fallback: programmatically click the create button once (flag allows it through)
+      setTimeout(function(){ try{ createBtn.click(); }catch(e){ console.error(e); } }, 30);
 
-    }catch(err){
-      console.error('[DEBUG] saveCompleteAccount fatal error', err);
-      try{ document.getElementById('completeAccountStatus').textContent = 'Save failed: ' + (err && err.message ? err.message : String(err)); }catch(_){}
-    }
-  }
-
-  // Attach as final override after DOM ready
-  function attachDebugOverride(){
-    window.saveCompleteAccount = debugSaveCompleteAccount;
-    var btn = document.getElementById('completeSaveBtn');
-    if(btn){
-      try{ btn.removeAttribute('onclick'); }catch(e){};
-      btn.disabled = false;
-      btn.addEventListener('click', function(e){ e.preventDefault(); debugSaveCompleteAccount(); });
-      console.log('[DEBUG] attached debugSaveCompleteAccount to #completeSaveBtn');
-    } else {
-      console.warn('[DEBUG] #completeSaveBtn not found to attach override');
-    }
-  }
-
-  if(document.readyState === 'complete' || document.readyState === 'interactive'){
-    setTimeout(attachDebugOverride, 80);
-  } else {
-    document.addEventListener('DOMContentLoaded', function(){ setTimeout(attachDebugOverride, 80); });
-  }
+      // safety: reset acceptance flag after short timeout
+      setTimeout(function(){ window.__rulesAcceptedByUser = false; }, 5000);
+    });
+  });
 })();
 </script>
-<!-- END DEBUG OVERRIDE -->
+<!-- END RULES / CONFIRMATION MODAL -->
+
+<!-- Profile save/load enhancements: ensure state & district saved to Firestore and speed up loading -->
+<style>
+  #profileSaveStatus{font-size:13px;margin-left:8px; color:#064E3B; display:inline-block;}
+  #profileLoadingOverlay{position:fixed; inset:0; display:none; align-items:center; justify-content:center; background:rgba(255,255,255,0.6); z-index:99999;}
+  #profileLoadingOverlay.show{display:flex;}
+  #profileLoadingOverlay .box{background:#fff;padding:12px 18px;border-radius:8px;box-shadow:0 8px 24px rgba(2,6,23,0.08);font-weight:600;}
+</style>
+<div id="profileLoadingOverlay" aria-hidden="true"><div class="box">Loading profile…</div></div>
+<script>
+(function(){
+  // helper: set value and dispatch change event
+  function setFieldValue(sel, val){
+    try{
+      var el = document.getElementById(sel) || document.querySelector("[name='"+sel+"']") || document.querySelector("#"+sel);
+      if(!el) return false;
+      el.value = (val===null || typeof val === 'undefined') ? '' : String(val);
+      if(typeof Event === 'function'){
+        var ev = new Event('change', { bubbles:true });
+        el.dispatchEvent(ev);
+      }
+      return true;
+    }catch(e){
+      console.warn('setFieldValue error', e);
+      return false;
+    }
+  }
+
+  function getFieldValue(candidates){
+    for(var i=0;i<candidates.length;i++){
+      var sel = candidates[i];
+      var el = document.getElementById(sel) || document.querySelector("[name='"+sel+"']");
+      if(el && (el.value || el.value==='')) return el.value;
+    }
+    return '';
+  }
+
+  function showSavingStatus(msg, ok){
+    var status = document.getElementById('profileSaveStatus');
+    if(!status){
+      // try to append near save button or header
+      var saveBtn = document.querySelector('button.save-btn, button#saveProfileBtn, input.save-btn, input#saveProfileBtn, button[aria-label="Save"]');
+      if(saveBtn && saveBtn.parentNode){
+        status = document.createElement('span');
+        status.id = 'profileSaveStatus';
+        saveBtn.parentNode.insertBefore(status, saveBtn.nextSibling);
+      } else {
+        status = document.createElement('div');
+        status.id = 'profileSaveStatus';
+        document.body.appendChild(status);
+      }
+    }
+    status.textContent = msg || '';
+    status.style.color = ok ? '#064E3B' : '#B91C1C';
+  }
+
+  function showLoading(show){
+    var overlay = document.getElementById('profileLoadingOverlay');
+    if(!overlay) return;
+    if(show) overlay.classList.add('show'), overlay.setAttribute('aria-hidden','false');
+    else overlay.classList.remove('show'), overlay.setAttribute('aria-hidden','true');
+  }
+
+  async function writeToFirestore(profileUid, data){
+    try{
+      var db = (typeof getDB === 'function') ? getDB() : (typeof _getDb === 'function' ? _getDb() : null);
+      if(!db && window.firebase && window.firebase.firestore) db = window.firebase.firestore();
+      if(!db) throw new Error('No Firestore instance available');
+      await db.collection('profiles').doc(String(profileUid)).set(data, { merge: true });
+      // if we have current user uid, also mirror to users collection for convenience
+      if(window.myUID){
+        try{ await db.collection('users').doc(String(window.myUID)).set(data, { merge: true }); }catch(e){console.warn('mirror to users failed', e);}
+      }
+      return true;
+    }catch(e){
+      console.warn('writeToFirestore err', e);
+      return false;
+    }
+  }
+
+  async function enhancedSaveProfile(p){
+    try{
+      showLoading(true);
+      // determine profile UID
+      var profileUid = null;
+      if(p && p.uid) profileUid = p.uid;
+      if(!profileUid && window.currentOpenProfile) profileUid = window.currentOpenProfile;
+      if(!profileUid && window.myProfile && window.myProfile.uid) profileUid = window.myProfile.uid;
+      // fallback: look for hidden input
+      var hidden = document.querySelector('input[name="profileUid"], input#profileUid, input[name="uid"]');
+      if(!profileUid && hidden && hidden.value) profileUid = hidden.value;
+      if(!profileUid && p && typeof p === 'string') profileUid = p;
+
+      // gather fields (be permissive with several candidate names)
+      var stateVal = getFieldValue(['stateInput','change_state','state','state_input','stateField']);
+      var districtVal = getFieldValue(['districtInput','change_district','district','district_input','districtField']);
+      // other profile fields (optional)
+      var displayName = getFieldValue(['name','displayName','display_name']);
+      var age = getFieldValue(['age']);
+
+      var data = {};
+      if(stateVal) data.state = stateVal;
+      if(districtVal) data.district = districtVal;
+      if(displayName) data.displayName = displayName;
+      if(age) {
+        var n = parseInt(age,10);
+        if(!isNaN(n)) data.age = n;
+      }
+      if(Object.keys(data).length === 0){
+        // Nothing to save here — fall back to calling original saveProfile if any
+        if(typeof window.__origSaveProfile === 'function') { window.__origSaveProfile(p); }
+        showLoading(false);
+        showSavingStatus('Nothing to save', true);
+        return true;
+      }
+
+      // write to Firestore
+      if(!profileUid){
+        // if no profile uid, try creating/updating current user's profile pointer
+        if(window.myUID){
+          profileUid = window.myUID;
+        }
+      }
+
+      if(!profileUid){
+        // fallback: call original save
+        if(typeof window.__origSaveProfile === 'function') { window.__origSaveProfile(p); }
+        showLoading(false);
+        showSavingStatus('Saved (fallback)', true);
+        return true;
+      }
+
+      var ok = await writeToFirestore(profileUid, data);
+      if(ok){
+        // update local cache/window.myProfile so UI is fast next time
+        try{
+          window.myProfile = window.myProfile || {};
+          window.myProfile.uid = window.myProfile.uid || profileUid;
+          if(data.state) window.myProfile.state = data.state;
+          if(data.district) window.myProfile.district = data.district;
+          // cache in localStorage for quick prefill
+          try{ localStorage.setItem('profiles_cache_'+String(profileUid), JSON.stringify(window.myProfile)); }catch(e){}
+        }catch(e){}
+        showSavingStatus('Saved ✓', true);
+      } else {
+        showSavingStatus('Save failed — check console', false);
+      }
+      showLoading(false);
+      // call original save handler also in case it needs to update client-side arrays
+      if(typeof window.__origSaveProfile === 'function') { try{ window.__origSaveProfile(p); }catch(e){console.warn(e);} }
+      return ok;
+    }catch(e){
+      console.warn('enhancedSaveProfile err', e);
+      showLoading(false);
+      showSavingStatus('Save error', false);
+      return false;
+    }
+  }
+
+  // Attach override / wrapper
+  document.addEventListener('DOMContentLoaded', function(){
+    // keep original if present
+    if(typeof window.saveProfile === 'function' && window.__origSaveProfile !== window.saveProfile){
+      window.__origSaveProfile = window.saveProfile;
+    }
+    // override saveProfile
+    window.saveProfile = function(p){ enhancedSaveProfile(p); };
+
+    // also attach to save buttons (class 'save-btn' or id 'saveProfileBtn')
+    var btns = document.querySelectorAll('button.save-btn, button#saveProfileBtn, input.save-btn, input#saveProfileBtn');
+    btns.forEach(function(b){
+      b.addEventListener('click', function(ev){
+        try{
+          ev.preventDefault();
+        }catch(e){}
+        var ctx = null;
+        // attempt to extract profile object stored on DOM (data-profile)
+        if(b.dataset && b.dataset.profile){
+          try{ ctx = JSON.parse(b.dataset.profile); }catch(e){}
+        }
+        enhancedSaveProfile(ctx);
+      });
+    });
+
+    // fast prefill: if we have cached profile, prefill immediately
+    try{
+      var uid = (window.myProfile && window.myProfile.uid) ? window.myProfile.uid : (localStorage.getItem('profiles_my_uid_v1') || null);
+      if(uid){
+        var cached = localStorage.getItem('profiles_cache_'+String(uid));
+        if(cached){
+          try{
+            var obj = JSON.parse(cached);
+            if(obj){
+              // quick prefill without waiting for network
+              if(obj.state) setFieldValue('stateInput', obj.state) || setFieldValue('change_state', obj.state);
+              if(obj.district) setFieldValue('districtInput', obj.district) || setFieldValue('change_district', obj.district);
+            }
+          }catch(e){}
+        }
+      }
+    }catch(e){}
+
+    // wrap loadMyProfile if present to show loading overlay and prefill from cache
+    if(typeof window.loadMyProfile === 'function'){
+      var origLoad = window.loadMyProfile;
+      window.loadMyProfile = async function(){ try{ showLoading(true); 
+            // prefill from window.myProfile if available
+            if(window.myProfile){
+              if(window.myProfile.state) setFieldValue('stateInput', window.myProfile.state) || setFieldValue('change_state', window.myProfile.state);
+              if(window.myProfile.district) setFieldValue('districtInput', window.myProfile.district) || setFieldValue('change_district', window.myProfile.district);
+            }
+            await origLoad(); 
+        }catch(e){ console.warn('loadMyProfile wrapper err', e); } finally { showLoading(false); } };
+    }
+  });
+})();
+</script>
+<!-- END profile save/load enhancements -->
+
+
+<!-- Contact Modal -->
+<div id="contactModal" class="modal">
+  <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="contactTitle">
+    <button class="modal-close" onclick="closeContactModal()">✕</button>
+    <h4 id="contactTitle">Contact Info</h4>
+    <p id="contactNumber" style="font-size:18px; font-weight:bold; margin-top:10px;"></p>
+    <div class="modal-buttons">
+     
+      <button onclick="copyContact()">Copy</button>
+      <button onclick="closeContactModal()">Close</button>
+    </div>
+  </div>
+</div>
 
 </body>
 </html>

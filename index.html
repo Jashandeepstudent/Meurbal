@@ -2700,8 +2700,6 @@ try{ updateChatHireButton(); }catch(e){}
 <div class="page" id="leaderboardPage" style="display:none; padding-top:28px;">
 <h2 style="text-align:center; margin-top:0;">Leaderboards</h2>
 <div aria-label="Leaderboards" class="leaderboard-tabs" role="tablist">
-<button class="active" id="lb-tab-hired" onclick="displayLeaderboard('hired')">Top 10 Most Hired</button>
-<button id="lb-tab-alltime" onclick="displayLeaderboard('alltime')">Top 10 All Time</button>
 <button id="lb-tab-rated" onclick="displayLeaderboard('rated')">Top 10 Most Rated</button>
 </div>
 <div aria-live="polite" class="leaderboard-list" id="leaderboardList"></div>
@@ -2974,14 +2972,16 @@ try{ updateChatHireButton(); }catch(e){}
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <script>
 // Firebase config (from user)
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
-  apiKey: "AIzaSyAByLACmttf6BY6r0hEmZKYontfVqnDNpM",
-  authDomain: "mndpschoolrspura.firebaseapp.com",
-  projectId: "mndpschoolrspura",
-  storageBucket: "mndpschoolrspura.firebasestorage.app",
-  messagingSenderId: "810534224714",
-  appId: "1:810534224714:web:a3055b4a6b3bca507337b3",
-  measurementId: "G-2610K130EN"
+  apiKey: "AIzaSyCgTh6FzKWYCGyRgBmeclvGKxuuFL3L81Y",
+  authDomain: "meurbal.firebaseapp.com",
+  databaseURL: "https://meurbal-default-rtdb.firebaseio.com",
+  projectId: "meurbal",
+  storageBucket: "meurbal.firebasestorage.app",
+  messagingSenderId: "917148598257",
+  appId: "1:917148598257:web:dd42e5d690b56d2ac08e50",
+  measurementId: "G-EHJVB3XC90"
 };
 
 // Init Firebase
@@ -3749,17 +3749,7 @@ document.addEventListener("DOMContentLoaded", ()=>{
       del.style.display = show ? 'inline-block' : 'none';
     }
 
-    // add "Wipe All Profiles" to dropdown menu for dev use
-    const menu = document.getElementById('menuDropdown');
-    if (menu && !menu.querySelector('.wipe-all-item')) {
-      const item = document.createElement('div');
-      item.className = 'wipe-all-item';
-      item.textContent = 'Wipe All Profiles (dev)';
-      item.style.color = '#ff3333';
-      item.onclick = function(){ wipeAllProfiles(); };
-      menu.appendChild(item);
-    }
-  });
+
 
   // Also expose wipe function globally for console testing
   window.wipeAllProfiles = wipeAllProfiles;

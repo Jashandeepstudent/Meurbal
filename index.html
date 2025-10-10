@@ -2974,15 +2974,16 @@ try{ updateChatHireButton(); }catch(e){}
 // Firebase config (from user)
 // For Firebase JS SDK v7.20.0 and later, measurementId is optional
 // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
-  apiKey: "AIzaSyAByLACmttf6BY6r0hEmZKYontfVqnDNpM",
-  authDomain: "mndpschoolrspura.firebaseapp.com",
-  databaseURL: "https://mndpschoolrspura-default-rtdb.firebaseio.com",
-  projectId: "mndpschoolrspura",
-  storageBucket: "mndpschoolrspura.firebasestorage.app",
-  messagingSenderId: "810534224714",
-  appId: "1:810534224714:web:a3055b4a6b3bca507337b3",
-  measurementId: "G-2610K130EN"
+  apiKey: "AIzaSyCgTh6FzKWYCGyRgBmeclvGKxuuFL3L81Y",
+  authDomain: "meurbal.firebaseapp.com",
+  databaseURL: "https://meurbal-default-rtdb.firebaseio.com",
+  projectId: "meurbal",
+  storageBucket: "meurbal.firebasestorage.app",
+  messagingSenderId: "917148598257",
+  appId: "1:917148598257:web:dd42e5d690b56d2ac08e50",
+  measurementId: "G-EHJVB3XC90"
 };
 // Init Firebase
 const appFB = firebase.initializeApp(firebaseConfig);
@@ -3749,8 +3750,7 @@ document.addEventListener("DOMContentLoaded", ()=>{
       del.style.display = show ? 'inline-block' : 'none';
     }
 
-
-
+   
   // Also expose wipe function globally for console testing
   window.wipeAllProfiles = wipeAllProfiles;
 })(); 
@@ -5333,7 +5333,94 @@ document.addEventListener("DOMContentLoaded", () => {
     } catch(e){}
   }
 
- 
+  // Build and show overlay (only the first time)
+  function ensureOverlay(){
+    if(overlayAdded) return;
+    overlayAdded = true;
+    try{
+      const div = document.createElement('div');
+      div.id = 'devtools-overlay';
+      div.className = 'hidden';
+      div.innerHTML = '<div class="box"><h2 style="margin:0 0 8px 0; font-size:20px;">Developer tools detected</h2><div style="opacity:0.9">We detected that developer tools (or a similar inspector) is open. For security and privacy reasons, please close them to continue using this app normally.</div><div style="height:12px"></div><div style="opacity:0.9; font-size:13px">If this is a mistake, resize your window to a normal size and the overlay will disappear automatically.</div></div>';
+      document.documentElement.appendChild(div);
+    }catch(e){}
+  }
+
+  function showOverlay(){
+    ensureOverlay();
+    try{
+      const el = document.getElementById('devtools-overlay');
+      if(el){ el.classList.remove('hidden'); overlayVisible = true; }
+    }catch(e){}
+  }
+  function hideOverlay(){
+    try{
+      const el = document.getElementById('devtools-overlay');
+      if(el){ el.classList.add('hidden'); overlayVisible = false; }
+    }catch(e){}
+  }
+
+  // Heuristic detection: compare outer vs inner dimensions
+  function detectBySize(){
+    try{
+      const widthDiff = Math.abs(window.outerWidth - window.innerWidth);
+      const heightDiff = Math.abs(window.outerHeight - window.innerHeight);
+      return (widthDiff > dimensionThreshold) || (heightDiff > dimensionThreshold);
+    }catch(e){ return false; }
+  }
+
+  // Secondary detection: timing side-effect (pauses when devtools open with debugger)
+  // Use a high-resolution timer and measure if setTimeout gets delayed significantly.
+  function detectByTimer(cb){
+    const start = performance.now();
+    setTimeout(function(){
+      const delta = performance.now() - start;
+      // If timeout delayed by a noticeable amount, devtools or heavy inspector may be open.
+      if(delta > 200) cb(true); else cb(false);
+    }, 50);
+  }
+
+  // Main periodic detection combining heuristics
+  function periodicDetect(){
+    try{
+      const sizeOpen = detectBySize();
+      detectByTimer(function(timerOpen){
+        const open = sizeOpen || timerOpen;
+        if(open && !overlayVisible){
+          showOverlay();
+          try{ console.clear(); }catch(e){}
+        } else if(!open && overlayVisible){
+          hideOverlay();
+        }
+      });
+    }catch(e){}
+  }
+
+  // Defensive: attempt to make shortcuts less effective by resetting focus to body
+  function defensiveFocus(){
+    try{ document.activeElement && document.activeElement.blur && document.activeElement.blur(); }catch(e){}
+  }
+
+  // initialize
+  addShortcutListeners();
+  ensureOverlay();
+  // Run a few fast checks first
+  periodicDetect();
+  // Schedule periodic checks
+  const timer = setInterval(periodicDetect, checkIntervalMs);
+
+  // Expose a noop-safe API for debugging/testing
+  window.__devtoolsDeterrent = {
+    showOverlay: showOverlay,
+    hideOverlay: hideOverlay,
+    destroy: function(){ clearInterval(timer); hideOverlay(); }
+  };
+
+})();
+</script>
+<!-- END: DevTools deterrent + detection -->
+
+
 <!-- BEGIN: Improved robust delayed auth patch (10s; shows and centers auth reliably) -->
 <script>
 (function(){

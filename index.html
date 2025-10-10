@@ -5346,79 +5346,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }catch(e){}
   }
 
-  function showOverlay(){
-    ensureOverlay();
-    try{
-      const el = document.getElementById('devtools-overlay');
-      if(el){ el.classList.remove('hidden'); overlayVisible = true; }
-    }catch(e){}
-  }
-  function hideOverlay(){
-    try{
-      const el = document.getElementById('devtools-overlay');
-      if(el){ el.classList.add('hidden'); overlayVisible = false; }
-    }catch(e){}
-  }
 
-  // Heuristic detection: compare outer vs inner dimensions
-  function detectBySize(){
-    try{
-      const widthDiff = Math.abs(window.outerWidth - window.innerWidth);
-      const heightDiff = Math.abs(window.outerHeight - window.innerHeight);
-      return (widthDiff > dimensionThreshold) || (heightDiff > dimensionThreshold);
-    }catch(e){ return false; }
-  }
-
-  // Secondary detection: timing side-effect (pauses when devtools open with debugger)
-  // Use a high-resolution timer and measure if setTimeout gets delayed significantly.
-  function detectByTimer(cb){
-    const start = performance.now();
-    setTimeout(function(){
-      const delta = performance.now() - start;
-      // If timeout delayed by a noticeable amount, devtools or heavy inspector may be open.
-      if(delta > 200) cb(true); else cb(false);
-    }, 50);
-  }
-
-  // Main periodic detection combining heuristics
-  function periodicDetect(){
-    try{
-      const sizeOpen = detectBySize();
-      detectByTimer(function(timerOpen){
-        const open = sizeOpen || timerOpen;
-        if(open && !overlayVisible){
-          showOverlay();
-          try{ console.clear(); }catch(e){}
-        } else if(!open && overlayVisible){
-          hideOverlay();
-        }
-      });
-    }catch(e){}
-  }
-
-  // Defensive: attempt to make shortcuts less effective by resetting focus to body
-  function defensiveFocus(){
-    try{ document.activeElement && document.activeElement.blur && document.activeElement.blur(); }catch(e){}
-  }
-
-  // initialize
-  addShortcutListeners();
-  ensureOverlay();
-  // Run a few fast checks first
-  periodicDetect();
-  // Schedule periodic checks
-  const timer = setInterval(periodicDetect, checkIntervalMs);
-
-  // Expose a noop-safe API for debugging/testing
-  window.__devtoolsDeterrent = {
-    showOverlay: showOverlay,
-    hideOverlay: hideOverlay,
-    destroy: function(){ clearInterval(timer); hideOverlay(); }
-  };
-
-})();
-</script>
-<!-- END: DevTools deterrent + detection -->
 
 
 <!-- BEGIN: Improved robust delayed auth patch (10s; shows and centers auth reliably) -->

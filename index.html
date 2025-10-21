@@ -1824,129 +1824,144 @@ function showSerialAnalytics(serialOrTitle) {
   
     // ---------- Browse Stories rendering & Preview/Reader ----------
 function renderBrowseStories(selectedCategory = 'All') {
-  const storiesListDiv = document.getElementById('storiesBrowseList');
-  const cards = document.getElementById('storiesCards');
-  if (!cards) return;
+  try {
+    const storiesListDiv = document.getElementById('storiesBrowseList');
+    const cards = document.getElementById('storiesCards');
+    if (!cards) return;
 
-  const publicStories = storiesData.filter(s => s.status === 'Public');
+    // Filter to only public stories
+    const publicStories = storiesData.filter(s => s.status === 'Public');
 
-  // Filter by category if selected
-  const filteredStories = selectedCategory !== 'All'
-    ? publicStories.filter(s => (s.genre || '').toLowerCase() === selectedCategory.toLowerCase())
-    : publicStories;
+    // Filter by selected genre (optional)
+    const filteredStories = selectedCategory !== 'All'
+      ? publicStories.filter(s => (s.genre || '').toLowerCase() === selectedCategory.toLowerCase())
+      : publicStories;
 
-  cards.innerHTML = '';
+    cards.innerHTML = '';
 
-  if (filteredStories.length === 0) {
-    storiesListDiv.style.display = 'none';
-    return;
-  } else {
-    storiesListDiv.style.display = 'block';
-  }
+    if (filteredStories.length === 0) {
+      storiesListDiv.style.display = 'none';
+      return;
+    } else {
+      storiesListDiv.style.display = 'block';
+    }
 
-  // Group stories by genre
-  const genresMap = {};
-  filteredStories.forEach(story => {
-    const genre = story.genre || 'Uncategorized';
-    if (!genresMap[genre]) genresMap[genre] = [];
-    genresMap[genre].push(story);
-  });
-
-  Object.keys(genresMap).forEach(genre => {
-    // Optional: add a genre heading
-    const genreHeading = document.createElement('h3');
-    genreHeading.textContent = genre;
-    genreHeading.style.margin = '10px 0';
-    cards.appendChild(genreHeading);
-
-    genresMap[genre].forEach(story => {
-      const card = document.createElement('div');
-      card.className = 'story-card';
-      card.style.width = '100%';
-      card.style.padding = '18px';
-      card.style.borderRadius = '12px';
-      card.style.display = 'flex';
-      card.style.flexDirection = 'column';
-      card.style.gap = '10px';
-      card.style.boxShadow = '0 10px 30px rgba(0,0,0,0.08)';
-      card.style.minHeight = '180px';
-      card.style.flex = '1 1 100%';
-      card.style.justifyContent = 'space-between';
-
-      // Set color based on genre
-      let color;
-      switch ((story.genre || '').toLowerCase()) {
-        case 'action': color = '#ff4b4b'; break;
-        case 'romance': color = '#ff6fa8'; break;
-        case 'comedy': color = '#ffd54f'; break;
-        case 'tragic': color = '#4fc3f7'; break;
-        case 'horror': color = '#000000'; break;
-        case 'fantasy': color = '#a78bfa'; break;
-        default: color = '#888888'; break;
-      }
-      card.style.background = color;
-      card.style.color = color === '#000000' ? '#fff' : '#000'; // readable text
-
-      const title = document.createElement('h4');
-      title.style.margin = '0';
-      title.style.fontSize = '18px';
-      title.style.fontWeight = '700';
-      title.textContent = story.title || 'Untitled';
-
-      const meta = document.createElement('div');
-      meta.className = 'muted';
-      meta.style.fontSize = '13px';
-      meta.textContent = story.genre || '—';
-
-      const desc = document.createElement('p');
-      desc.style.margin = '8px 0';
-      desc.style.overflow = 'hidden';
-      desc.style.display = '-webkit-box';
-      desc.style.webkitLineClamp = '2';
-      desc.style.webkitBoxOrient = 'vertical';
-      desc.style.maxHeight = '3.2em';
-      desc.style.lineHeight = '1.6';
-      desc.textContent = story.description || '';
-
-      const bottomRow = document.createElement('div');
-      bottomRow.style.display = 'flex';
-      bottomRow.style.justifyContent = 'space-between';
-      bottomRow.style.alignItems = 'center';
-
-      const leftCol = document.createElement('div');
-      leftCol.style.display = 'flex';
-      leftCol.style.flexDirection = 'column';
-      leftCol.style.gap = '8px';
-      leftCol.appendChild(meta);
-      leftCol.appendChild(desc);
-
-      const actions = document.createElement('div');
-      actions.className = 'actions';
-      const readBtn = document.createElement('button');
-      readBtn.className = 'btn btn-primary';
-      readBtn.textContent = 'Read';
-      readBtn.addEventListener('click', () => openPreviewFullScreen(story));
-      actions.appendChild(readBtn);
-
-      // Add Reads count
-      const readsDiv = document.createElement('div');
-      readsDiv.style.fontSize = '13px';
-      readsDiv.style.fontWeight = '600';
-      readsDiv.style.display = 'flex';
-      readsDiv.style.alignItems = 'center';
-      readsDiv.textContent = '👁️ Reads: ' + (story.reads || 0);
-      leftCol.appendChild(readsDiv);
-
-      bottomRow.appendChild(leftCol);
-      bottomRow.appendChild(actions);
-
-      card.appendChild(title);
-      card.appendChild(bottomRow);
-      cards.appendChild(card);
+    // --- Group stories by genre ---
+    const genresOrder = ["Action", "Romance", "Comedy", "Fantasy", "Horror", "Tragic", "Other"];
+    const grouped = {};
+    filteredStories.forEach(story => {
+      const genre = story.genre ? story.genre.trim() : "Other";
+      if (!grouped[genre]) grouped[genre] = [];
+      grouped[genre].push(story);
     });
-  });
-}
 
+    // --- Build layout for each genre ---
+    cards.innerHTML = '';
+
+    genresOrder.forEach(genre => {
+      const list = grouped[genre];
+      if (!list || list.length === 0) return;
+
+      // Genre heading
+      const genreHeading = document.createElement('h3');
+      genreHeading.textContent = genre;
+      genreHeading.style.margin = '10px 0';
+      genreHeading.style.fontSize = '20px';
+      genreHeading.style.fontWeight = '700';
+      genreHeading.style.textAlign = 'left';
+      cards.appendChild(genreHeading);
+
+      // Horizontal scroll row
+      const scrollWrap = document.createElement('div');
+      scrollWrap.style.display = 'flex';
+      scrollWrap.style.overflowX = 'auto';
+      scrollWrap.style.gap = '14px';
+      scrollWrap.style.padding = '12px 4px';
+      scrollWrap.style.scrollBehavior = 'smooth';
+      scrollWrap.style.scrollbarWidth = 'thin';
+
+      list.forEach(story => {
+        const card = document.createElement('div');
+        card.className = 'story-card';
+        card.style.minWidth = '260px';
+        card.style.flex = '0 0 auto';
+        card.style.borderRadius = '14px';
+        card.style.padding = '14px';
+        card.style.boxShadow = '0 6px 16px rgba(0,0,0,0.1)';
+        card.style.display = 'flex';
+        card.style.flexDirection = 'column';
+        card.style.justifyContent = 'space-between';
+        card.style.cursor = 'pointer';
+        card.style.transition = 'transform 0.2s';
+        card.addEventListener('mouseenter', () => card.style.transform = 'scale(1.03)');
+        card.addEventListener('mouseleave', () => card.style.transform = 'scale(1)');
+
+        // Color theme by genre
+        let color;
+        switch ((story.genre || '').toLowerCase()) {
+          case 'action': color = '#ff4b4b'; break;
+          case 'romance': color = '#ff6fa8'; break;
+          case 'comedy': color = '#ffd54f'; break;
+          case 'tragic': color = '#4fc3f7'; break;
+          case 'horror': color = '#000000'; break;
+          case 'fantasy': color = '#a78bfa'; break;
+          default: color = '#888888'; break;
+        }
+        card.style.background = color;
+        card.style.color = color === '#000000' ? '#fff' : '#000';
+
+        const title = document.createElement('h4');
+        title.textContent = story.title || 'Untitled';
+        title.style.margin = '0';
+        title.style.fontSize = '17px';
+        title.style.fontWeight = '700';
+
+        const desc = document.createElement('p');
+        desc.textContent = story.description || '';
+        desc.style.margin = '8px 0';
+        desc.style.fontSize = '14px';
+        desc.style.lineHeight = '1.5';
+        desc.style.overflow = 'hidden';
+        desc.style.display = '-webkit-box';
+        desc.style.webkitLineClamp = '3';
+        desc.style.webkitBoxOrient = 'vertical';
+
+        const bottomRow = document.createElement('div');
+        bottomRow.style.display = 'flex';
+        bottomRow.style.justifyContent = 'space-between';
+        bottomRow.style.alignItems = 'center';
+        bottomRow.style.marginTop = '10px';
+
+        const reads = document.createElement('div');
+        reads.textContent = '👁️ ' + (story.reads || 0);
+        reads.style.fontSize = '13px';
+        reads.style.fontWeight = '600';
+
+        const readBtn = document.createElement('button');
+        readBtn.className = 'btn btn-primary';
+        readBtn.textContent = 'Read';
+        readBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          openPreviewFullScreen(story);
+        });
+
+        bottomRow.appendChild(reads);
+        bottomRow.appendChild(readBtn);
+
+        card.appendChild(title);
+        card.appendChild(desc);
+        card.appendChild(bottomRow);
+
+        scrollWrap.appendChild(card);
+      });
+
+      cards.appendChild(scrollWrap);
+    });
+
+  } catch (err) {
+    console.warn(err);
+  }
+}
     // open preview modal for a story object
     function openPreview(story){
       const modal = document.getElementById('previewModal');
@@ -2089,17 +2104,17 @@ function openPreviewFullScreen(story){
 
   const panel = document.createElement('div');
   panel.className = 'fullscreen-panel';
-  const inner = document.createElement('div'); 
+  const inner = document.createElement('div');
   inner.className = 'panel-inner';
 
   // --- Author & Date ---
   const profileRaw = localStorage.getItem(STORAGE_KEY);
   let author = 'Jashandeep'; // fallback
-  if(profileRaw){ 
-    try{ 
-      const p = JSON.parse(profileRaw); 
-      if(p.name && p.name.trim()) author = p.name; 
-    }catch(e){} 
+  if(profileRaw){
+    try{
+      const p = JSON.parse(profileRaw);
+      if(p.name && p.name.trim()) author = p.name;
+    }catch(e){}
   }
   const dateStr = story.publishedOn || new Date().toISOString().split('T')[0];
 
@@ -2115,16 +2130,21 @@ function openPreviewFullScreen(story){
 
   // --- Build inner HTML ---
   inner.innerHTML = `
-    <div class="panel-top">
-      <div>
-        <h1 style="margin:6px 0 4px 0">${storyTitle}</h1>
+    <div class="panel-top" style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start">
+      <div style="flex:1;min-width:0">
+        <h1 style="margin:6px 0 4px 0;word-break:break-word">${storyTitle}</h1>
         <div style="font-size:14px;color:var(--muted);margin-bottom:6px">Genre: ${story.genre || '—'}</div>
-        <div class="panel-meta">${story.description || ''}</div>
+        <div class="panel-meta" style="word-break:break-word">${story.description || ''}</div>
         <div class="panel-meta" style="margin-top:6px">Written by ${author} • Written on ${dateStr}</div>
       </div>
-      <div style="display:flex;gap:8px;align-items:center">
-        <button id="previewCloseBtn" class="btn btn-secondary">Close</button>
-        <button id="previewStartBtn" class="btn btn-primary">Start Reading</button>
+      <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end">
+        <div style="display:flex;gap:8px;align-items:center">
+          <button id="previewCloseBtn" class="btn btn-secondary">Close</button>
+          <button id="previewStartBtn" class="btn btn-primary">Start Reading</button>
+        </div>
+        <div>
+          <button id="previewShareBtn" class="share-btn-small" aria-haspopup="true" aria-expanded="false">Share</button>
+        </div>
       </div>
     </div>
     <hr />
@@ -2267,50 +2287,327 @@ function openPreviewFullScreen(story){
     }catch(e){ console.warn('vote setup failed', e); }
   })();
 
+  // --- Share UI: styles (single injection) ---
+  if (!document.getElementById('share-ui-style')) {
+    const style = document.createElement('style');
+    style.id = 'share-ui-style';
+    style.textContent = `
+      /* small share button inside panels */
+     .share-btn-small {
+        background: linear-gradient(135deg,#6ea8fe,#8bd3ff);
+        border:none;
+        color:#fff;
+        padding:6px 10px;
+        border-radius:12px;
+        cursor:pointer;
+        font-weight:600;
+        font-size:13px;
+        transition:transform .15s ease,box-shadow .15s ease;
+      }
+      .share-btn-small:hover{ transform:scale(1.03); box-shadow:0 4px 10px rgba(0,0,0,0.12); }
+
+      /* menu */
+      .share-menu {
+        position:absolute;
+        background:#fff;
+        border:1px solid #e6e6e6;
+        border-radius:10px;
+        padding:8px;
+        display:flex;
+        flex-direction:column;
+        gap:8px;
+        min-width:210px;
+        box-shadow:0 8px 24px rgba(15,15,15,0.12);
+        z-index:1400;
+      }
+      .share-option {
+        display:flex;
+        align-items:center;
+        gap:10px;
+        padding:8px;
+        border-radius:8px;
+        border:none;
+        background:#fbfbfb;
+        cursor:pointer;
+        font-weight:500;
+      }
+      .share-option:hover { background:#fff1e6; }
+    `;
+    document.head.appendChild(style);
+  }
+
+  // --- Create share menu and logic ---
+  const existingMenu = document.getElementById('story-preview-share-menu');
+  if (existingMenu) existingMenu.remove();
+
+  const shareMenu = document.createElement('div');
+  shareMenu.id = 'story-preview-share-menu';
+  shareMenu.className = 'share-menu';
+  shareMenu.style.display = 'none';
+  document.body.appendChild(shareMenu);
+
+  function getShareLink(platform){
+    const link = `https://meurbal.in?story=${encodeURIComponent(story.title || '')}`;
+    const message = `Title: ${story.title || 'Untitled'}\nGenre: ${story.genre || '—'}\nDescription: ${story.description || ''}\nRead here: ${link}`;
+
+    if(platform === 'WhatsApp') return `https://api.whatsapp.com/send?text=${encodeURIComponent(message)}`;
+    if(platform === 'Facebook') return `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(link)}`;
+    if(platform === 'Twitter') return `https://twitter.com/intent/tweet?text=${encodeURIComponent(message)}`;
+    return link;
+  }
+
+  const options = [
+    { name: 'WhatsApp', label: 'WhatsApp', emoji: '🟢' },
+    { name: 'Facebook', label: 'Facebook', emoji: '🔵' },
+    { name: 'Twitter', label: 'Twitter', emoji: '🐦' },
+    { name: 'Copy', label: 'Copy Link', emoji: '🔗' }
+  ];
+
+  options.forEach(opt => {
+    const btn = document.createElement('button');
+    btn.className = 'share-option';
+    btn.type = 'button';
+    btn.innerHTML = `${opt.emoji} ${opt.label}`;
+    btn.addEventListener('click', async (ev) => {
+      ev.stopPropagation();
+      if(opt.name === 'Copy'){
+        const link = getShareLink();
+        try{
+          await navigator.clipboard.writeText(link);
+          btn.textContent = '✅ Link Copied!';
+          setTimeout(()=> btn.innerHTML = `${opt.emoji} ${opt.label}`, 1400);
+        }catch(e){
+          // fallback: select temporary input
+          const tmp = document.createElement('input');
+          tmp.value = link;
+          document.body.appendChild(tmp);
+          tmp.select();
+          try{ document.execCommand('copy'); btn.textContent = '✅ Link Copied!'; }catch(_){}
+          tmp.remove();
+          setTimeout(()=> btn.innerHTML = `${opt.emoji} ${opt.label}`, 1400);
+        }
+      } else {
+        const url = getShareLink(opt.name);
+        window.open(url, '_blank');
+      }
+      shareMenu.style.display = 'none';
+      const shareBtn = inner.querySelector('#previewShareBtn');
+      if(shareBtn) shareBtn.setAttribute('aria-expanded', 'false');
+    });
+    shareMenu.appendChild(btn);
+  });
+
+
+  // Position & toggle share menu
+  const shareBtn = inner.querySelector('#previewShareBtn');
+  if (shareBtn) {
+    shareBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const rect = shareBtn.getBoundingClientRect();
+      // prefer below button; if not enough space, open above
+      const spaceBelow = window.innerHeight - rect.bottom;
+      const menuHeightGuess = 200; // safe guess
+      if(spaceBelow > menuHeightGuess) {
+        shareMenu.style.top = (rect.bottom + window.scrollY + 8) + 'px';
+      } else {
+        shareMenu.style.top = Math.max(8, rect.top + window.scrollY - menuHeightGuess - 8) + 'px';
+      }
+      // align to right edge of button when possible
+      const left = rect.right + window.scrollX - Math.min(shareMenu.offsetWidth || 220, 220);
+      shareMenu.style.left = (left > 8 ? left : rect.left + window.scrollX) + 'px';
+      shareMenu.style.display = shareMenu.style.display === 'flex' || shareMenu.style.display === 'block' ? 'none' : 'flex';
+      shareMenu.style.flexDirection = 'column';
+      shareBtn.setAttribute('aria-expanded', shareMenu.style.display !== 'none');
+    });
+  }
+
+  // Close share menu on outside click or escape
+  function closeShareMenuOnClick(e){
+    if(!shareMenu.contains(e.target) && e.target !== shareBtn) {
+      shareMenu.style.display = 'none';
+      if(shareBtn) shareBtn.setAttribute('aria-expanded', 'false');
+    }
+  }
+  function closeShareMenuOnEsc(e){
+    if(e.key === 'Escape') {
+      shareMenu.style.display = 'none';
+      if(shareBtn) shareBtn.setAttribute('aria-expanded', 'false');
+    }
+  }
+  document.addEventListener('click', closeShareMenuOnClick);
+  document.addEventListener('keydown', closeShareMenuOnEsc);
+
   // --- Close / Start Reading buttons ---
   const closeBtn = inner.querySelector('#previewCloseBtn');
   const startBtn = inner.querySelector('#previewStartBtn');
   if(closeBtn) closeBtn.addEventListener('click', ()=> previewFull.classList.add('hidden'));
-  if(startBtn) startBtn.addEventListener('click', ()=> { 
-    previewFull.classList.add('hidden'); 
-    openReaderFullScreen(story); 
+  if(startBtn) startBtn.addEventListener('click', ()=> {
+    previewFull.classList.add('hidden');
+    openReaderFullScreen(story);
+  });
+
+  // optional: remove listeners when preview closed to avoid leaks
+  // (lightweight cleanup when previewFull hidden)
+  const observer = new MutationObserver((mutations)=>{
+    if(previewFull.classList.contains('hidden')){
+      document.removeEventListener('click', closeShareMenuOnClick);
+      document.removeEventListener('keydown', closeShareMenuOnEsc);
+      observer.disconnect();
+      const menu = document.getElementById('story-preview-share-menu');
+      if(menu) menu.style.display = 'none';
+    }
+  });
+  observer.observe(previewFull, { attributes: true, attributeFilter: ['class'] });
+}
+
+	
+    // ---------- Fullscreen Reader ----------
+function openReaderFullScreen(story) {
+  const readerFull = document.getElementById('readerFull');
+  readerFull.innerHTML = '';
+
+  const panel = document.createElement('div');
+  panel.className = 'reader-full';
+
+  // Header
+  const header = document.createElement('div');
+  header.className = 'reader-header';
+  const profileRaw = localStorage.getItem(STORAGE_KEY);
+  let author = '—';
+  if (profileRaw) {
+    try {
+      const p = JSON.parse(profileRaw);
+      author = p.name || '—';
+    } catch (e) {}
+  }
+  const dateStr = story.publishedOn || new Date().toISOString().split('T')[0];
+  header.innerHTML = `
+    <div>
+      <strong>${story.title}</strong>
+      <div class="muted">${story.genre || '—'} • Written by ${author} • ${dateStr}</div>
+    </div>
+    <div>
+      <button id="readerCloseFullBtn" class="btn btn-secondary">Close</button>
+    </div>
+  `;
+  panel.appendChild(header);
+
+  // Body
+  const body = document.createElement('div');
+  body.className = 'reader-body';
+
+  const sheet = document.createElement('div');
+  sheet.className = 'reader-sheet';
+  sheet.style.position = 'relative';
+  body.appendChild(sheet);
+
+  // Canvas for drawing
+  const canvas = document.createElement('canvas');
+  canvas.style.position = 'absolute';
+  canvas.style.top = 0;
+  canvas.style.left = 0;
+  canvas.style.width = '100%';
+  canvas.style.height = '100%';
+  canvas.style.pointerEvents = 'none';
+  sheet.appendChild(canvas);
+
+  // Controls
+  const controls = document.createElement('div');
+  controls.className = 'reader-controls';
+  controls.innerHTML = `
+    <button id="prevFullBtn" class="btn btn-secondary">◀ Prev</button>
+    <button id="startFullBtn" class="btn btn-primary">Start</button>
+    <button id="nextFullBtn" class="btn btn-secondary">Next ▶</button>
+    <button id="markBtn" class="btn btn-warning">✏️ Mark Last Read</button>
+    <button id="removeMarkBtn" class="btn btn-danger" style="display:none;">🗑️ Remove Last Mark</button>
+  `;
+  body.appendChild(controls);
+  panel.appendChild(body);
+  readerFull.appendChild(panel);
+  readerFull.classList.remove('hidden');
+
+  const sheets = story.sheets || [{ content: '' }];
+  let idx = 0;
+  const savedKey = `lastReadMark_${story.id || story.title}`;
+
+  // Canvas context
+  const ctx = canvas.getContext('2d');
+  ctx.strokeStyle = 'red';
+  ctx.lineWidth = 2;
+  let drawing = false;
+
+  // Load last saved mark
+  function loadMark() {
+    const imgData = localStorage.getItem(`${savedKey}_${idx}`);
+    if (imgData) {
+      const img = new Image();
+      img.onload = () => ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      img.src = imgData;
+      document.getElementById('removeMarkBtn').style.display = 'inline-block';
+    } else {
+      document.getElementById('removeMarkBtn').style.display = 'none';
+    }
+  }
+
+  function renderSheet() {
+    sheet.innerHTML = `<div style="font-weight:600;margin-bottom:8px">
+        ${story.title} — Part ${idx + 1} / ${sheets.length}
+      </div>
+      <div>${(sheets[idx] && sheets[idx].content) || '(Empty)'}</div>`;
+    sheet.appendChild(canvas);
+    canvas.width = sheet.offsetWidth;
+    canvas.height = sheet.offsetHeight;
+    canvas.style.pointerEvents = 'none';
+    document.getElementById('prevFullBtn').disabled = idx === 0;
+    document.getElementById('nextFullBtn').disabled = idx >= sheets.length - 1;
+
+    loadMark();
+  }
+
+  renderSheet();
+
+  // Navigation
+  document.getElementById('readerCloseFullBtn').addEventListener('click', () => readerFull.classList.add('hidden'));
+  document.getElementById('prevFullBtn').addEventListener('click', () => { if(idx>0) idx--; renderSheet(); });
+  document.getElementById('nextFullBtn').addEventListener('click', () => { if(idx<sheets.length-1) idx++; renderSheet(); });
+  document.getElementById('startFullBtn').addEventListener('click', () => { idx=0; renderSheet(); });
+
+  // Drawing events
+  canvas.addEventListener('mousedown', e => { drawing=true; ctx.beginPath(); ctx.moveTo(e.offsetX, e.offsetY); });
+  canvas.addEventListener('mousemove', e => { if(!drawing) return; ctx.lineTo(e.offsetX, e.offsetY); ctx.stroke(); });
+  canvas.addEventListener('mouseup', () => drawing=false);
+  canvas.addEventListener('mouseleave', () => drawing=false);
+
+  const markBtn = document.getElementById('markBtn');
+  const removeMarkBtn = document.getElementById('removeMarkBtn');
+
+  // Step 1: Start marking
+  markBtn.addEventListener('click', () => {
+    if(markBtn.dataset.mode !== 'drawing') {
+      // Enable drawing
+      canvas.style.pointerEvents = 'auto';
+      markBtn.textContent = '✅ Complete Mark';
+      markBtn.dataset.mode = 'drawing';
+      removeMarkBtn.style.display = 'inline-block';
+      alert('Draw where you last left off, then click "Complete Mark"');
+    } else {
+      // Step 2: Complete mark
+      localStorage.setItem(`${savedKey}_${idx}`, canvas.toDataURL());
+      canvas.style.pointerEvents = 'none';
+      markBtn.textContent = '✏️ Mark Last Read';
+      markBtn.dataset.mode = '';
+      alert(`Marked Part ${idx+1} as last read!`);
+      renderSheet();
+    }
+  });
+
+  // Remove last mark
+  removeMarkBtn.addEventListener('click', () => {
+    localStorage.removeItem(`${savedKey}_${idx}`);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    removeMarkBtn.style.display = 'none';
   });
 }
-    // ---------- Fullscreen Reader ----------
-    function openReaderFullScreen(story){
-      const readerFull = document.getElementById('readerFull');
-      readerFull.innerHTML = '';
-      const panel = document.createElement('div'); panel.className = 'reader-full';
-      const header = document.createElement('div'); header.className = 'reader-header';
-      const profileRaw = localStorage.getItem(STORAGE_KEY);
-      let author = '—'; if(profileRaw){ try{ const p = JSON.parse(profileRaw); author = p.name || '—'; }catch(e){} }
-      const dateStr = story.publishedOn || new Date().toISOString().split('T')[0];
-      header.innerHTML = `<div><strong>${story.title}</strong><div class="muted">${story.genre || '—'} • Written by ${author} • ${dateStr}</div></div><div><button id="readerCloseFullBtn" class="btn btn-secondary">Close</button></div>`;
-      panel.appendChild(header);
-      const body = document.createElement('div'); body.className = 'reader-body';
-      const sheet = document.createElement('div'); sheet.className = 'reader-sheet';
-      body.appendChild(sheet);
-      const controls = document.createElement('div'); controls.className = 'reader-controls';
-      controls.innerHTML = `<button id="prevFullBtn" class="btn btn-secondary">◀ Prev</button><button id="startFullBtn" class="btn btn-primary"<button id="nextFullBtn" class="btn btn-secondary">Next ▶</button>`;
-      body.appendChild(controls);
-      panel.appendChild(body);
-      readerFull.appendChild(panel);
-      readerFull.classList.remove('hidden');
-
-      const sheets = story.sheets || [{content:''}];
-      let idx = 0;
-      function renderSheet(){
-        sheet.innerHTML = `<div style="font-weight:600;margin-bottom:8px">${story.title} — Part ${idx+1} / ${sheets.length}</div><div>${(sheets[idx] && sheets[idx].content) || '(Empty)'}</div>`;
-        document.getElementById('prevFullBtn').disabled = idx===0;
-        document.getElementById('nextFullBtn').disabled = idx >= sheets.length-1;
-      }
-      renderSheet();
-      document.getElementById('readerCloseFullBtn').addEventListener('click', ()=>{ readerFull.classList.add('hidden'); });
-      document.getElementById('prevFullBtn').addEventListener('click', ()=>{ if(idx>0) idx--; renderSheet(); });
-      document.getElementById('nextFullBtn').addEventListener('click', ()=>{ if(idx < sheets.length-1) idx++; renderSheet(); });
-      document.getElementById('startFullBtn').addEventListener('click', ()=>{ idx = 0; renderSheet(); });
-    }
-
 
     
 // --- Fix: Show only one section (stories or serials) and highlight active tab ---
@@ -2391,54 +2688,105 @@ try{
 }catch(e){ /* ignore if not accessible */ }
 
 // expose a function to render serials browse listing
-function renderBrowseSerials(list){
-  try{
+function renderBrowseSerials(list) {
+  try {
     // Prepare container (create if missing)
     let container = document.getElementById('serialsBrowseList');
-    if(!container){
+    if (!container) {
       const parent = document.getElementById('serialCategoriesPage') || document.body;
       container = document.createElement('div');
       container.id = 'serialsBrowseList';
       container.style.maxWidth = '980px';
       container.style.margin = '18px auto';
       container.style.display = 'none';
-      container.innerHTML = '<h3 style=\"text-align:left;margin:6px 12px\">Serials</h3><div id=\"serialsCards\" style=\"display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px;padding:12px\"></div>';
-      (document.getElementById('serialCategoriesPage') || document.body).appendChild(container);
+      parent.appendChild(container);
     }
-    const cards = document.getElementById('serialsCards');
-    if(!cards) return;
+
     // load if list not provided
     const serials = Array.isArray(list) ? list : loadSavedSerials();
-    if(serials.length === 0){ container.style.display = 'none'; return; }
-    container.style.display = 'block'; cards.innerHTML = '';
-    serials.forEach((s, idx)=>{
-      const card = document.createElement('div');
-      card.className = 'story-card';
-      card.style.minHeight = '140px';
-      card.style.display = 'flex';
-      card.style.flexDirection = 'column';
-      card.style.justifyContent = 'space-between';
-      // color/genre badge
-      const genre = s.genre || '—';
-      const title = s.title || 'Untitled Series';
-      const desc = s.description || '';
-      card.innerHTML = `
-        <div>
-          <h4 style="margin:0;font-size:18px">${title}</h4>
-          <div class="muted" style="font-size:13px;margin:6px 0">${genre}</div>
-          <p style="margin:0;overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;line-height:1.4">${desc}</p>
-        </div>
-        <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:10px">
-          <button class="btn btn-secondary view-serial-btn">🎬 View Serial</button>
-        </div>
-      `;
-      // attach click
-      card.querySelector('.view-serial-btn').addEventListener('click', ()=> openSerialPreview(s.title) );
-      cards.appendChild(card);
-    });
-  }catch(e){ console.warn(e); }
-}
+    if (!serials || serials.length === 0) {
+      container.style.display = 'none';
+      return;
+    }
 
+    // --- Group serials by genre ---
+    const genresOrder = ["Action", "Romance", "Comedy", "Fantasy", "Horror", "Tragedy", "Other"];
+    const grouped = {};
+    serials.forEach(s => {
+      const g = s.genre ? s.genre.trim() : "Other";
+      if (!grouped[g]) grouped[g] = [];
+      grouped[g].push(s);
+    });
+
+    // --- Build layout ---
+    container.innerHTML = ''; // clear old content
+    container.style.display = 'block';
+
+    genresOrder.forEach(genre => {
+      const list = grouped[genre];
+      if (!list || list.length === 0) return;
+
+      // Genre section wrapper
+      const section = document.createElement('div');
+      section.style.marginBottom = '32px';
+
+      const heading = document.createElement('h3');
+      heading.textContent = genre;
+      heading.style.margin = '6px 12px';
+      heading.style.textAlign = 'left';
+      section.appendChild(heading);
+
+      // Horizontal scroll container
+      const scrollWrap = document.createElement('div');
+      scrollWrap.style.display = 'flex';
+      scrollWrap.style.overflowX = 'auto';
+      scrollWrap.style.gap = '12px';
+      scrollWrap.style.padding = '12px';
+      scrollWrap.style.scrollBehavior = 'smooth';
+      scrollWrap.style.scrollbarWidth = 'thin';
+
+      // Add each serial card
+      list.forEach(s => {
+        const card = document.createElement('div');
+        card.className = 'story-card';
+        card.style.minWidth = '250px';
+        card.style.flex = '0 0 auto';
+        card.style.border = '1px solid #ddd';
+        card.style.borderRadius = '10px';
+        card.style.padding = '10px';
+        card.style.background = '#fff';
+        card.style.boxShadow = '0 2px 6px rgba(0,0,0,0.08)';
+
+        const title = s.title || 'Untitled Series';
+        const desc = s.description || '';
+
+        card.innerHTML = `
+          <div>
+            <h4 style="margin:0;font-size:17px">${title}</h4>
+            <p style="margin:6px 0 0;font-size:13px;color:#666;
+              overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;
+              -webkit-box-orient:vertical;line-height:1.4">
+              ${desc}
+            </p>
+          </div>
+          <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:10px">
+            <button class="btn btn-secondary view-serial-btn">🎬 View</button>
+          </div>
+        `;
+
+        // Attach click
+        card.querySelector('.view-serial-btn').addEventListener('click', () => openSerialPreview(s.title));
+        scrollWrap.appendChild(card);
+      });
+
+      section.appendChild(scrollWrap);
+      container.appendChild(section);
+    });
+
+  } catch (e) {
+    console.warn(e);
+  }
+}
 
 function openSerialPreview(title) {
   try {
@@ -2447,7 +2795,10 @@ function openSerialPreview(title) {
     const READS_KEY = 'serial_reads_v1';
 
     let saved = [];
-    try { saved = typeof loadSavedSerials === 'function' ? loadSavedSerials() : (JSON.parse(localStorage.getItem('saved_serials_v1')||'[]')); } catch(e) { saved = []; }
+    try { 
+      saved = typeof loadSavedSerials === 'function' ? loadSavedSerials() : (JSON.parse(localStorage.getItem('saved_serials_v1')||'[]')); 
+    } catch(e) { saved = []; }
+
     const serial = (saved || []).find(s => s.title === title) || (serialsData || []).find(s => s.title === title);
     if (!serial) { alert('Serial not found'); return; }
 
@@ -2489,157 +2840,226 @@ function openSerialPreview(title) {
     function formatDateVal(raw) {
       if (!raw && raw !== 0) return '—';
       let d = null;
-      if (typeof raw === 'number' || /^\d+$/.test(String(raw))) { d = new Date(Number(raw)); }
-      else { d = new Date(raw); }
+      if (typeof raw === 'number' || /^\d+$/.test(String(raw))) d = new Date(Number(raw));
+      else d = new Date(raw);
       if (isNaN(d.getTime())) return '—';
       return d.toLocaleDateString('en-IN', { year: 'numeric', month: 'short', day: 'numeric' });
     }
 
-    let author = serial.author || serial.authorName || serial.writtenBy || serial.writer || serial.by || 'Unknown';
-    let rawPublished = serial.publishedOn || serial.date || serial.published || serial.published_on || serial.publishedDate || serial.published_at || new Date().toISOString();
-    serial.publishedOn = rawPublished;
+    let author = serial.author || serial.authorName || serial.writtenBy || serial.writer || serial.by;
+    if (!author) {
+      const profileRaw = localStorage.getItem(STORAGE_KEY);
+      if (profileRaw) {
+        try {
+          const p = JSON.parse(profileRaw);
+          if (p.name && p.name.trim()) author = p.name.trim();
+        } catch(e) {}
+      }
+    }
+    author = author || 'Unknown';
+
+    let rawPublished = serial.publishedOn || serial.date || serial.published || serial.published_on || serial.publishedDate || serial.published_at;
+    if (!rawPublished) {
+      rawPublished = new Date().toISOString();
+      serial.publishedOn = rawPublished;
+      try { if (typeof saveSerials === 'function') saveSerials(); } catch(e){}
+    }
     const dateStr = formatDateVal(rawPublished);
 
-    // HEADER
+    // Header (with genre div for share button)
     const header = document.createElement('div');
     header.className = 'panel-top';
     header.innerHTML = `
       <div style="flex:1">
         <h1 style="margin:6px 0 4px 0">${esc(serial.title || 'Untitled')}</h1>
         <div class="panel-meta" style="margin-top:6px">Written by ${esc(author)} • Written on ${dateStr}</div>
-        <div style="font-size:14px;color:var(--muted);margin-top:6px; display:flex; align-items:center; gap:10px">
-          Genre: <span>${esc(serial.genre || '—')}</span>
+        <div class="serial-genre" style="display:flex;align-items:center;gap:8px;font-size:14px;color:var(--muted);margin-top:6px">
+          Genre: ${esc(serial.genre || '—')}
         </div>
         <div class="panel-meta" style="margin-top:6px">${esc(serial.description || '')}</div>
       </div>
     `;
-
     inner.appendChild(header);
 
-    // Add Share button beside Genre
-    const genreDiv = header.querySelector('div[style*="display:flex"]');
+    // SHARE BUTTON
+    const genreDiv = header.querySelector('.serial-genre');
     if (genreDiv) {
       const shareBtn = document.createElement('button');
-      shareBtn.className = 'jelly-btn';
+      shareBtn.className = 'share-btn';
       shareBtn.textContent = 'Share';
       genreDiv.appendChild(shareBtn);
 
-      // Share menu
+      if (!document.getElementById('share-ui-style')) {
+        const style = document.createElement('style');
+        style.id = 'share-ui-style';
+        style.textContent = `
+          .share-btn {
+            background: linear-gradient(135deg, #ff5f6d, #ffc371);
+            border: none;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+          }
+          .share-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+          }
+          .share-menu {
+            position: absolute;
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 12px;
+            padding: 8px;
+            display: none;
+            flex-direction: column;
+            gap: 8px;
+            min-width: 200px;
+            box-shadow: 0 4px 14px rgba(0,0,0,0.15);
+            z-index: 1200;
+            animation: fadeIn 0.15s ease-out;
+          }
+          .share-option {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px;
+            border: none;
+            border-radius: 8px;
+            background: #f9f9f9;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-weight: 500;
+          }
+          .share-option:hover {
+            background: #ffe9d6;
+          }
+          @keyframes fadeIn {
+            from {opacity:0; transform:translateY(-5px);}
+            to {opacity:1; transform:translateY(0);}
+          }
+        `;
+        document.head.appendChild(style);
+      }
+
       const shareMenu = document.createElement('div');
-      shareMenu.style.position = 'absolute';
-      shareMenu.style.background = 'white';
-      shareMenu.style.border = '1px solid #ccc';
-      shareMenu.style.padding = '6px';
-      shareMenu.style.borderRadius = '6px';
-      shareMenu.style.display = 'none';
-      shareMenu.style.flexDirection = 'column';
-      shareMenu.style.gap = '6px';
-      shareMenu.style.minWidth = '180px';
-      shareMenu.style.boxShadow = '0 2px 6px rgba(0,0,0,0.2)';
-      shareMenu.style.zIndex = 1200;
+      shareMenu.className = 'share-menu';
       document.body.appendChild(shareMenu);
 
-      function getShareText(platform) {
+      function getShareLink(platform) {
         const link = `https://meurbal.in?serial=${encodeURIComponent(serial.title)}`;
         const message = `Title: ${serial.title || 'Untitled'}\nGenre: ${serial.genre || '—'}\nDescription: ${serial.description || ''}\nRead here: ${link}`;
         if (platform === 'WhatsApp') return `https://api.whatsapp.com/send?text=${encodeURIComponent(message)}`;
         if (platform === 'Facebook') return `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(link)}`;
-        if (platform === 'Instagram') return null;
-        return '#';
+        if (platform === 'Twitter') return `https://twitter.com/intent/tweet?text=${encodeURIComponent(message)}`;
+        return link;
       }
 
-      ['WhatsApp', 'Instagram', 'Facebook'].forEach(platform => {
+      const platforms = [
+        { name: 'WhatsApp', emoji: '🟢' },
+        { name: 'Facebook', emoji: '🔵' },
+        { name: 'Twitter', emoji: '🐦' },
+        { name: 'Copy Link', emoji: '🔗' }
+      ];
+
+      platforms.forEach(({ name, emoji }) => {
         const option = document.createElement('button');
-        option.className = 'btn btn-secondary';
-        option.textContent = platform;
-        option.style.width = '100%';
-        option.addEventListener('click', () => {
-          const url = getShareText(platform);
-          if (url) window.open(url, '_blank');
-          else alert('Instagram sharing works only via mobile app.');
+        option.className = 'share-option';
+        option.innerHTML = `${emoji} ${name}`;
+        option.addEventListener('click', async () => {
+          if (name === 'Copy Link') {
+            const link = getShareLink();
+            await navigator.clipboard.writeText(link);
+            option.textContent = '✅ Link Copied!';
+            setTimeout(() => (option.innerHTML = `${emoji} ${name}`), 1500);
+          } else {
+            const url = getShareLink(name);
+            window.open(url, '_blank');
+          }
           shareMenu.style.display = 'none';
         });
         shareMenu.appendChild(option);
       });
 
       shareBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
         const rect = shareBtn.getBoundingClientRect();
-        shareMenu.style.top = (rect.bottom + window.scrollY + 4) + 'px';
-        shareMenu.style.left = (rect.left + window.scrollX) + 'px';
+        shareMenu.style.top = `${rect.bottom + window.scrollY + 6}px`;
+        shareMenu.style.left = `${rect.left + window.scrollX}px`;
         shareMenu.style.display = shareMenu.style.display === 'flex' ? 'none' : 'flex';
       });
 
       document.addEventListener('click', (e) => {
-        if (!shareMenu.contains(e.target) && e.target !== shareBtn) shareMenu.style.display = 'none';
+        if (!shareMenu.contains(e.target) && e.target !== shareBtn) {
+          shareMenu.style.display = 'none';
+        }
       });
     }
 
     // CONTROL WRAPPER (close + likes/dislikes + reads)
-    const controlWrapper = document.createElement('div');
-    controlWrapper.style.display = 'flex';
-    controlWrapper.style.alignItems = 'center';
-    controlWrapper.style.gap = '12px';
-    controlWrapper.style.margin = '12px 0';
+// --- CONTROL WRAPPER (close + likes/dislikes + reads) ---
+// NOTE: removed the separate "countDisplay" element to avoid duplication.
+// Like/dislike counts are shown inside the buttons (.cnt spans).
+const controlWrapper = document.createElement('div');
+controlWrapper.style.display = 'flex';
+controlWrapper.style.alignItems = 'center';
+controlWrapper.style.gap = '12px';
+controlWrapper.style.margin = '12px 0';
 
-    const closeBtn = document.createElement('button');
-    closeBtn.className = 'jelly-btn';
-    closeBtn.id = 'closeSerialPreviewBtn';
-    closeBtn.textContent = 'Close';
-    controlWrapper.appendChild(closeBtn);
+const closeBtn = document.createElement('button');
+closeBtn.className = 'jelly-btn';
+closeBtn.id = 'closeSerialPreviewBtn';
+closeBtn.textContent = 'Close';
+controlWrapper.appendChild(closeBtn);
 
-    const likeBtn = document.createElement('button');
-    likeBtn.className = 'jelly-btn';
-    likeBtn.innerHTML = '👍 <span class="cnt">0</span>';
-    likeBtn.dataset.state = 'none';
-    controlWrapper.appendChild(likeBtn);
+const likeBtn = document.createElement('button');
+likeBtn.className = 'jelly-btn';
+likeBtn.innerHTML = '👍 <span class="cnt">0</span>';
+likeBtn.dataset.state = 'none';
+controlWrapper.appendChild(likeBtn);
 
-    const dislikeBtn = document.createElement('button');
-    dislikeBtn.className = 'jelly-btn dislike-btn';
-    dislikeBtn.innerHTML = '👎 <span class="cnt">0</span>';
-    dislikeBtn.dataset.state = 'none';
-    controlWrapper.appendChild(dislikeBtn);
+const dislikeBtn = document.createElement('button');
+dislikeBtn.className = 'jelly-btn dislike-btn';
+dislikeBtn.innerHTML = '👎 <span class="cnt">0</span>';
+dislikeBtn.dataset.state = 'none';
+controlWrapper.appendChild(dislikeBtn);
 
-    const countDisplay = document.createElement('span');
-    countDisplay.style.fontSize = '14px';
-    countDisplay.style.color = 'var(--muted)';
-    countDisplay.style.minWidth = '160px';
-    countDisplay.textContent = `Likes = ${serial.likes}   Dislikes = ${serial.dislikes}`;
-    controlWrapper.appendChild(countDisplay);
+// --- keep reads display as single label ---
+// remove any existing duplicate reads element (safe-guard)
+const existingReadEl = document.getElementById('readCountDisplay');
+if (existingReadEl) existingReadEl.remove();
 
-    const readsDisplay = document.createElement('span');
-    readsDisplay.id = 'readCountDisplay';
-    readsDisplay.style.fontSize = '14px';
-    readsDisplay.style.color = 'var(--muted)';
-    readsDisplay.style.minWidth = '120px';
-    readsDisplay.textContent = `Reads = ${(readsStore[readKey] && readsStore[readKey].total) ? readsStore[readKey].total : 0}`;
-    controlWrapper.appendChild(readsDisplay);
+// --- keep reads display as single label ---
 
-    inner.appendChild(controlWrapper);
 
-    function persistAll() {
-      const votes = loadStore(VOTES_STORE_KEY);
-      votes[voteKey] = { likes: Number(serial.likes||0), dislikes: Number(serial.dislikes||0) };
-      saveStore(VOTES_STORE_KEY, votes);
-      try { if (typeof saveSerials === 'function') saveSerials(); } catch(e) {}
-    }
+inner.appendChild(controlWrapper);
 
-    function refreshUI() {
-      serial.likes = Math.max(0, Number(serial.likes || 0));
-      serial.dislikes = Math.max(0, Number(serial.dislikes || 0));
-      const likeCnt = likeBtn.querySelector('.cnt');
-      const dislikeCnt = dislikeBtn.querySelector('.cnt');
-      if (likeCnt) likeCnt.textContent = serial.likes;
-      if (dislikeCnt) dislikeCnt.textContent = serial.dislikes;
-      countDisplay.textContent = `Likes = ${serial.likes}   Dislikes = ${serial.dislikes}`;
-      const userChoice = (loadStore(USER_VOTES_KEY)[voteKey]) || 'none';
-      likeBtn.dataset.state = (userChoice === 'liked') ? 'liked' : 'none';
-      dislikeBtn.dataset.state = (userChoice === 'disliked') ? 'disliked' : 'none';
-      likeBtn.style.backgroundColor = likeBtn.dataset.state === 'liked' ? '#dbeafe' : '';
-      dislikeBtn.style.backgroundColor = dislikeBtn.dataset.state === 'disliked' ? '#fee2e2' : '';
-      const readsNow = (loadStore(READS_KEY)[readKey] || { total: 0 }).total;
-      const rDisplay = document.getElementById('readCountDisplay');
-      if (rDisplay) rDisplay.textContent = `Reads = ${readsNow}`;
-    }
+// --- refreshUI (update only button counts and reads) ---
+function refreshUI() {
+  serial.likes = Math.max(0, Number(serial.likes || 0));
+  serial.dislikes = Math.max(0, Number(serial.dislikes || 0));
+
+  // update counts inside the buttons
+  const likeCnt = likeBtn.querySelector('.cnt');
+  const dislikeCnt = dislikeBtn.querySelector('.cnt');
+  if (likeCnt) likeCnt.textContent = serial.likes;
+  if (dislikeCnt) dislikeCnt.textContent = serial.dislikes;
+
+  // update button visual states
+  const userChoice = (loadStore(USER_VOTES_KEY)[voteKey]) || 'none';
+  likeBtn.dataset.state = (userChoice === 'liked') ? 'liked' : 'none';
+  dislikeBtn.dataset.state = (userChoice === 'disliked') ? 'disliked' : 'none';
+  likeBtn.style.backgroundColor = likeBtn.dataset.state === 'liked' ? '#dbeafe' : '';
+  dislikeBtn.style.backgroundColor = dislikeBtn.dataset.state === 'disliked' ? '#fee2e2' : '';
+
+  // update reads
+  const readsNow = (loadStore(READS_KEY)[readKey] || { total: 0 }).total;
+  const rDisplay = document.getElementById('readCountDisplay');
+  if (rDisplay) rDisplay.textContent = `Reads = ${readsNow}`;
+}
+
 
     function incrementReadCount(epIndex) {
       const reads = loadStore(READS_KEY);
@@ -2725,166 +3145,309 @@ function openSerialPreview(title) {
     alert('Something went wrong opening preview — check console for details.');
   }
 }
+
+
 // Open dedicated fullscreen reader for a serial episode (separate page div)
-function openSerialReader(serialTitle, episodeIndex){
-  const saved = loadSavedSerials();
-  const serial = (saved || []).find(s => s.title === serialTitle) || (serialsData || []).find(s => s.title === serialTitle);
-  if(!serial){ alert('Serial not found'); return; }
-  const ep = (serial.episodes || [])[episodeIndex];
-  if(!ep){ alert('Episode not found'); return; }
-  // create reader panel
-  let panel = document.getElementById('serialReaderFull');
-  if(!panel){
-    panel = document.createElement('div');
-    panel.id = 'serialReaderFull';
-    panel.className = 'reader-full';
-    panel.style.zIndex = 1200;
-    panel.style.background = '#f7f7fb';
-    panel.style.overflow = 'auto';
-    document.body.appendChild(panel);
-  }
-  panel.innerHTML = '';
-  const header = document.createElement('div');
-  header.className = 'reader-header';
-  header.style.display = 'flex';
-  header.style.justifyContent = 'space-between';
-  header.style.alignItems = 'center';
-  header.innerHTML = `
-    <div>
-      <button class="btn btn-secondary" id="backToSerialBtn">← Back</button>
-    </div>
-    <div style="text-align:center;flex:1">
-      <h2 style="margin:6px 0">${serial.title} — ${ep.title}</h2>
-      <div class="muted">${serial.genre || '—'} • ${ep.description || ''}</div>
-    </div>
-    <div style="width:120px;visibility:hidden"></div>
-  `;
-  const body = document.createElement('div');
-  body.className = 'reader-body';
-  body.style.padding = '18px';
-  const sheetBox = document.createElement('div');
-  sheetBox.className = 'reader-sheet';
-  // display sheets as paged viewer (one sheet per page) --- NEW PAGING LOGIC
-  const sheetsArray = (ep.sheets || []).map(s => (typeof s === 'string') ? {content: s} : (s.content ? s : {content: s}));
-  const totalPages = Math.max(1, sheetsArray.length || 1);
-  let currentPage = 0;
+function openSerialReader(serialTitle, episodeIndex) {
+    const saved = loadSavedSerials();
+    const serial = (saved || []).find(s => s.title === serialTitle) || (serialsData || []).find(s => s.title === serialTitle);
+    if (!serial) { alert('Serial not found'); return; }
+    const ep = (serial.episodes || [])[episodeIndex];
+    if (!ep) { alert('Episode not found'); return; }
 
-  // container for sheet display
-  const pageWrap = document.createElement('div');
-  pageWrap.style.display = 'flex';
-  pageWrap.style.flexDirection = 'column';
-  pageWrap.style.alignItems = 'center';
-  pageWrap.style.justifyContent = 'center';
-  pageWrap.style.width = '100%';
-  pageWrap.style.boxSizing = 'border-box';
+    // --- CREATE PANEL ---
+    let panel = document.getElementById('serialReaderFull');
+    if (!panel) {
+        panel = document.createElement('div');
+        panel.id = 'serialReaderFull';
+        panel.className = 'reader-full';
+        panel.style.position = 'fixed';
+        panel.style.top = '0';
+        panel.style.left = '0';
+        panel.style.width = '100vw';
+        panel.style.height = '100vh';
+        panel.style.zIndex = '1200';
+        panel.style.background = '#f7f7fb';
+        panel.style.display = 'flex';
+        panel.style.flexDirection = 'column';
+        panel.style.overflow = 'hidden';
+        document.body.appendChild(panel);
+    }
+    panel.innerHTML = '';
 
-  const pageBox = document.createElement('div');
-  pageBox.className = 'reader-sheet';
+    // --- HEADER ---
+    const header = document.createElement('div');
+    header.className = 'reader-header';
+    header.style.display = 'flex';
+    header.style.justifyContent = 'space-between';
+    header.style.alignItems = 'center';
+    header.style.flexShrink = '0';
+    header.style.padding = '12px 18px';
+    header.style.background = '#fff';
+    header.innerHTML = `
+        <div><button class="btn btn-secondary" id="backToSerialBtn">← Back</button></div>
+        <div style="text-align:center;flex:1">
+            <h2 style="margin:6px 0">${serial.title} — ${ep.title}</h2>
+            <div class="muted">${serial.genre || '—'} • ${ep.description || ''}</div>
+        </div>
+        <div style="width:120px;visibility:hidden"></div>
+    `;
+
+    // --- BODY ---
+    const body = document.createElement('div');
+    body.className = 'reader-body';
+    body.style.flex = '1';
+    body.style.overflowY = 'auto';
+    body.style.padding = '18px';
+    body.style.display = 'flex';
+    body.style.flexDirection = 'column';
+    body.style.alignItems = 'center';
+    body.style.justifyContent = 'flex-start';
+
+    const sheetsArray = (ep.sheets || []).map(s => (typeof s === 'string') ? { content: s } : (s.content ? s : { content: s }));
+    const totalPages = Math.max(1, sheetsArray.length || 1);
+    let currentPage = 0;
+
+    // --- PAGE WRAP & BOX ---
+    const pageWrap = document.createElement('div');
+    pageWrap.style.display = 'flex';
+    pageWrap.style.flexDirection = 'column';
+    pageWrap.style.alignItems = 'center';
+    pageWrap.style.width = '100%';
+    pageWrap.style.boxSizing = 'border-box';
+
+    const pageBox = document.createElement('div');
+     pageBox.className = 'reader-sheet';
   pageBox.style.width = '100%';
-  pageBox.style.maxWidth = '980px';
-  pageBox.style.minHeight = '240px';
+  pageBox.style.maxWidth = '880px';
+  pageBox.style.minHeight = '540px';
+  pageBox.style.margin = '20px auto';
+  pageBox.style.padding = '40px 50px';
+  pageBox.style.background = 'linear-gradient(135deg, #fffef9 0%, #fdf8e4 100%)'; // soft parchment tone
+  pageBox.style.border = '1px solid #e5d7b7';
+  pageBox.style.borderRadius = '12px';
+  pageBox.style.boxShadow = '0 8px 16px rgba(0,0,0,0.1)';
   pageBox.style.boxSizing = 'border-box';
-  pageBox.style.padding = '18px';
+  pageBox.style.fontFamily = `'Georgia', 'Times New Roman', serif`;
+  pageBox.style.fontSize = '18px';
+  pageBox.style.lineHeight = '1.7';
+  pageBox.style.color = '#2e2b23';
+  pageBox.style.textAlign = 'justify';
+  pageBox.style.letterSpacing = '0.3px';
   pageBox.style.whiteSpace = 'pre-wrap';
   pageBox.style.overflowWrap = 'break-word';
+  pageBox.style.position = 'relative';
+  pageBox.style.transition = 'all 0.3s ease';
 
-  // pager row
-  const pagerRow = document.createElement('div');
-  pagerRow.style.display = 'flex';
-  pagerRow.style.alignItems = 'center';
-  pagerRow.style.justifyContent = 'center';
-  pagerRow.style.gap = '12px';
-  pagerRow.style.marginTop = '12px';
+    // --- PAGER ROW ---
+    const pagerRow = document.createElement('div');
+    pagerRow.style.display = 'flex';
+    pagerRow.style.alignItems = 'center';
+    pagerRow.style.justifyContent = 'center';
+    pagerRow.style.gap = '12px';
+    pagerRow.style.marginTop = '12px';
 
-  const prevPageBtn = document.createElement('button'); prevPageBtn.className = 'btn btn-secondary'; prevPageBtn.textContent = '◀ Prev Page';
-  const pageIndicator = document.createElement('div'); pageIndicator.className = 'muted'; pageIndicator.style.minWidth = '80px'; pageIndicator.style.textAlign = 'center';
-  const nextPageBtn = document.createElement('button'); nextPageBtn.className = 'btn btn-primary'; nextPageBtn.textContent = 'Next Page ▶';
+    const prevPageBtn = document.createElement('button');
+    prevPageBtn.className = 'btn btn-secondary';
+    prevPageBtn.textContent = '◀ Prev Page';
 
-  pagerRow.appendChild(prevPageBtn);
-  pagerRow.appendChild(pageIndicator);
-  pagerRow.appendChild(nextPageBtn);
+    const pageIndicator = document.createElement('div');
+    pageIndicator.className = 'muted';
+    pageIndicator.style.minWidth = '80px';
+    pageIndicator.style.textAlign = 'center';
 
-  pageWrap.appendChild(pageBox);
-  pageWrap.appendChild(pagerRow);
+    const nextPageBtn = document.createElement('button');
+    nextPageBtn.className = 'btn btn-primary';
+    nextPageBtn.textContent = 'Next Page ▶';
 
-  // helper to render current page
-  function renderPage(idx){
-    currentPage = Math.max(0, Math.min(idx, totalPages - 1));
-    const sheetObj = sheetsArray[currentPage] || {content: '(No content in this page)'};
-    // allow HTML content (if stored) or fallback to text; keep safe handling
-    if(typeof sheetObj.content === 'string' && /<[a-z][\s\S]*>/i.test(sheetObj.content)){
-      pageBox.innerHTML = sheetObj.content;
-    } else {
-      pageBox.textContent = sheetObj.content || '(No content in this page)';
-    }
-    pageIndicator.textContent = `Page ${currentPage + 1} / ${totalPages}`;
-    prevPageBtn.disabled = currentPage === 0;
-    nextPageBtn.disabled = currentPage === totalPages - 1;
-  }
+    // --- MARKING BUTTONS ---
+    const markLastReadBtn = document.createElement('button');
+    markLastReadBtn.className = 'btn btn-warning';
+    markLastReadBtn.textContent = 'Mark Last Read';
 
-  prevPageBtn.addEventListener('click', ()=> renderPage(currentPage - 1));
-  nextPageBtn.addEventListener('click', ()=> renderPage(currentPage + 1));
+    const completeMarkBtn = document.createElement('button');
+    completeMarkBtn.className = 'btn btn-success';
+    completeMarkBtn.textContent = 'Complete Mark';
+    completeMarkBtn.style.display = 'none';
 
-  // fallback: if there are no sheets, still show placeholder
-  if(sheetsArray.length === 0){
-    sheetsArray.push({content: '(No content in this episode yet)'});
-  }
+    const removeMarkBtn = document.createElement('button');
+    removeMarkBtn.className = 'btn btn-danger';
+    removeMarkBtn.textContent = 'Remove Last Mark';
+    removeMarkBtn.style.display = 'inline-block';
 
-  // append pager view to body
-  body.appendChild(pageWrap);
+    pagerRow.append(prevPageBtn, pageIndicator, nextPageBtn, markLastReadBtn, completeMarkBtn, removeMarkBtn);
+    pageWrap.append(pageBox, pagerRow);
+    body.appendChild(pageWrap);
 
-  // initialize first page
-  renderPage(0);
-  // end paging logic
-// nav footer
-  const footer = document.createElement('div');
-  footer.style.display = 'flex';
-  footer.style.justifyContent = 'center';
-  footer.style.gap = '12px';
-  footer.style.padding = '12px';
-  const prevBtn = document.createElement('button'); prevBtn.className='btn btn-secondary'; prevBtn.textContent='◀ Prev Episode';
-  const nextBtn = document.createElement('button'); nextBtn.className='btn btn-primary'; nextBtn.textContent='Next Episode ▶';
-  footer.appendChild(prevBtn); footer.appendChild(nextBtn);
-  panel.appendChild(header); panel.appendChild(body); panel.appendChild(footer);
-  // handlers
-  document.getElementById('backToSerialBtn').addEventListener('click', ()=> { panel.remove(); openSerialPreview(serialTitle); });
-  prevBtn.addEventListener('click', ()=> { if(episodeIndex>0) openSerialReader(serialTitle, episodeIndex-1); });
-  nextBtn.addEventListener('click', ()=> { if(episodeIndex < (serial.episodes||[]).length-1) openSerialReader(serialTitle, episodeIndex+1); });
-  window.scrollTo(0,0);
-}
+    // --- DRAWING CANVAS ---
+    const marksPerPage = {};
+    let drawCanvas = null;
+    let drawContext = null;
+    let isDrawing = false;
+    let lastX = 0, lastY = 0;
 
-// Render saved serials on entering the Serial Categories page
-document.addEventListener('DOMContentLoaded', ()=>{
-  // wire Browse Serials button to open serialCategories page and render list
-  const browseSerialsBtn = document.getElementById('browseSerialsBtn');
-  if(browseSerialsBtn){
-    browseSerialsBtn.addEventListener('click', ()=>{
-      // hide welcome and show serial categories page (existing logic may also do this)
-      const welcomePage = document.getElementById('welcomePage'); if(welcomePage) welcomePage.classList.add('hidden');
-      const serialPage = document.getElementById('serialCategoriesPage'); if(serialPage) serialPage.classList.remove('hidden');
-      renderBrowseSerials(loadSavedSerials());
+    markLastReadBtn.addEventListener('click', () => {
+        if (!drawCanvas) {
+            drawCanvas = document.createElement('canvas');
+            drawCanvas.style.position = 'absolute';
+            drawCanvas.style.top = '0';
+            drawCanvas.style.left = '0';
+            drawCanvas.style.width = '100%';
+            drawCanvas.style.height = '100%';
+            drawCanvas.width = pageBox.clientWidth;
+            drawCanvas.height = pageBox.clientHeight;
+            drawCanvas.style.zIndex = 5;
+            drawCanvas.style.pointerEvents = 'auto';
+            drawCanvas.style.cursor = 'crosshair';
+            pageBox.appendChild(drawCanvas);
+
+            drawContext = drawCanvas.getContext('2d');
+            drawContext.strokeStyle = 'rgba(0,0,0,0.7)';
+            drawContext.lineWidth = 2;
+
+            if (marksPerPage[currentPage]) {
+                const img = new Image();
+                img.onload = () => drawContext.drawImage(img, 0, 0, drawCanvas.width, drawCanvas.height);
+                img.src = marksPerPage[currentPage];
+            }
+
+            drawCanvas.addEventListener('mousedown', e => {
+                isDrawing = true;
+                const rect = drawCanvas.getBoundingClientRect();
+                lastX = e.clientX - rect.left;
+                lastY = e.clientY - rect.top;
+            });
+
+            drawCanvas.addEventListener('mousemove', e => {
+                if (!isDrawing) return;
+                const rect = drawCanvas.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                drawContext.beginPath();
+                drawContext.moveTo(lastX, lastY);
+                drawContext.lineTo(x, y);
+                drawContext.stroke();
+                lastX = x;
+                lastY = y;
+            });
+
+            drawCanvas.addEventListener('mouseup', () => isDrawing = false);
+            drawCanvas.addEventListener('mouseout', () => isDrawing = false);
+        }
+        completeMarkBtn.style.display = 'inline-block';
     });
-  }
-  // initial render if already on page
-  if(document.getElementById('serialCategoriesPage') && !document.getElementById('serialsBrowseList')){
-    renderBrowseSerials(loadSavedSerials());
-  }
-});
 
-// Ensure sync when serialsData mutates by wrapping push similar to storiesData earlier
+    completeMarkBtn.addEventListener('click', () => {
+        if (drawCanvas) {
+            marksPerPage[currentPage] = drawCanvas.toDataURL();
+            drawCanvas.style.pointerEvents = 'none';
+        }
+        completeMarkBtn.style.display = 'none';
+    });
+
+    removeMarkBtn.addEventListener('click', () => {
+        if (drawCanvas) {
+            drawCanvas.remove();
+            drawCanvas = null;
+            drawContext = null;
+        }
+        delete marksPerPage[currentPage];
+        completeMarkBtn.style.display = 'none';
+    });
+
+    // --- RENDER PAGE FUNCTION ---
+  function renderPage(idx) {
+        currentPage = Math.max(0, Math.min(idx, totalPages - 1));
+        const sheetObj = sheetsArray[currentPage] || { content: '(No content in this page)' };
+
+        if (typeof sheetObj.content === 'string' && /<[a-z][\s\S]*>/i.test(sheetObj.content)) {
+            pageBox.innerHTML = sheetObj.content;
+        } else {
+            pageBox.textContent = sheetObj.content || '(No content in this page)';
+        }
+
+        pageIndicator.textContent = `Page ${currentPage + 1} / ${totalPages}`;
+        prevPageBtn.disabled = currentPage === 0;
+        nextPageBtn.disabled = currentPage === totalPages - 1;
+
+        if (drawCanvas) {
+            drawCanvas.remove();
+            drawCanvas = null;
+            drawContext = null;
+            completeMarkBtn.style.display = 'none';
+            removeMarkBtn.style.display = 'none';
+        }
+
+        if (marksPerPage[currentPage] && !drawCanvas) {
+            drawCanvas = document.createElement('canvas');
+            drawCanvas.style.position = 'absolute';
+            drawCanvas.style.top = 0;
+            drawCanvas.style.left = 0;
+            drawCanvas.style.width = '100%';
+            drawCanvas.style.height = '100%';
+            drawCanvas.width = pageBox.clientWidth;
+            drawCanvas.height = pageBox.clientHeight;
+            drawCanvas.style.zIndex = 5;
+            drawCanvas.style.pointerEvents = 'none';
+            pageBox.appendChild(drawCanvas);
+            drawContext = drawCanvas.getContext('2d');
+            const img = new Image();
+            img.onload = () => drawContext.drawImage(img, 0, 0, drawCanvas.width, drawCanvas.height);
+            img.src = marksPerPage[currentPage];
+        }
+    }
+
+    prevPageBtn.addEventListener('click', () => renderPage(currentPage - 1));
+    nextPageBtn.addEventListener('click', () => renderPage(currentPage + 1));
+    if (sheetsArray.length === 0) sheetsArray.push({ content: '(No content in this episode yet)' });
+    renderPage(0);
+    // --- FOOTER ---
+    const footer = document.createElement('div');
+    footer.style.display = 'flex';
+    footer.style.justifyContent = 'center';
+    footer.style.gap = '12px';
+    footer.style.padding = '12px';
+    footer.style.flexShrink = 0;
+    footer.style.background = '#fff';
+
+    const prevBtn = document.createElement('button');
+    prevBtn.className = 'btn btn-secondary';
+    prevBtn.textContent = '◀ Prev Episode';
+
+    const nextBtn = document.createElement('button');
+    nextBtn.className = 'btn btn-primary';
+    nextBtn.textContent = 'Next Episode ▶';
+
+    footer.append(prevBtn, nextBtn);
+    panel.append(header, body, footer);
+
+    document.getElementById('backToSerialBtn').addEventListener('click', () => {
+        panel.remove();
+        openSerialPreview(serialTitle);
+    });
+
+    prevBtn.addEventListener('click', () => {
+        if (episodeIndex > 0) openSerialReader(serialTitle, episodeIndex - 1);
+    });
+
+    nextBtn.addEventListener('click', () => {
+        if (episodeIndex < (serial.episodes || []).length - 1) openSerialReader(serialTitle, episodeIndex + 1);
+    });
+
+    window.scrollTo(0, 0);
+}
+// --- DOMContentLoaded Hook --- document.addEventListener('DOMContentLoaded', ()=>{ const browseSerialsBtn = document.getElementById('browseSerialsBtn'); if(browseSerialsBtn){ browseSerialsBtn.addEventListener('click', ()=>{ const welcomePage = document.getElementById('welcomePage'); if(welcomePage) welcomePage.classList.add('hidden'); const serialPage = document.getElementById('serialCategoriesPage'); if(serialPage) serialPage.classList.remove('hidden'); renderBrowseSerials(loadSavedSerials()); }); } if(document.getElementById('serialCategoriesPage') && !document.getElementById('serialsBrowseList')){ renderBrowseSerials(loadSavedSerials()); } }); // --- Optional: Sync serialsData push --- (function(){ try{ if(Array.prototype._origSerialPush == null){ Array.prototype._origSerialPush = Array.prototype.push; } if(window.serialsData && window.serialsData.push){ const orig = window.serialsData.push; window.serialsData.push = function(){ const res = orig.apply(this, arguments); try{ syncSerialsToStorage(); }catch(e){} return res; }; } }catch(e){} })();
+// --- Optional: Sync serialsData push ---
 (function(){
   try{
     if(Array.prototype._origSerialPush == null){
       Array.prototype._origSerialPush = Array.prototype.push;
     }
-  }catch(e){}
-  // wrap serialsData.push if array exists
-  try{
     if(window.serialsData && window.serialsData.push){
       const orig = window.serialsData.push;
       window.serialsData.push = function(){
         const res = orig.apply(this, arguments);
-        try{ syncSerialsToStorage(); }catch(e){};
+        try{ syncSerialsToStorage(); }catch(e){}
         return res;
       };
     }

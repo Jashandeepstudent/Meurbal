@@ -267,6 +267,15 @@
 .story-card .view-serial-btn:hover {
   background: #1e3a8a;
 }
+.scroll-wrap {
+  display: flex;
+  overflow-x: auto;
+  gap: 12px;
+  padding: 12px;
+  scroll-behavior: smooth;
+  flex-wrap: nowrap;
+  position: relative; /* important for overlay effect */
+}
 
     /* Fullscreen preview */
     .fullscreen-panel{position:fixed;inset:0;background:var(--bg);z-index:800;display:flex;flex-direction:column;padding:22px;overflow:auto}
@@ -1930,12 +1939,12 @@ function showSerialAnalytics(serialOrTitle) {
     // ---------- Browse Stories rendering & Preview/Reader ----------
 // ------------------ CONFIG ------------------
 const STORY_ALGO_CONFIG = {
-  popularityWeight: 0.6,
-  recencyWeight: 0.25,
-  noveltyWeight: 0.3,
-  randomWeight: 0.12,
-  freshDaysBoost: 21,
-  freshBoostMultiplier: 1.3,
+  popularityWeight: 0.5,      // lower to allow new creators
+  recencyWeight: 0.25,        // same as before
+  noveltyWeight: 0.25,        // gives less popular stories a chance
+  randomWeight: 0.1,          // small exploration
+  freshDaysBoost: 21,         // recent content boost
+  freshBoostMultiplier: 1.4,  // stronger boost for fresh content
   explorationFraction: 0.25,
   cardsPerViewport: 6
 };
@@ -1943,33 +1952,103 @@ const STORY_ALGO_CONFIG = {
 // Session RNG (seeded per page load)
 (function initStorySeed() {
   if (window.__STORY_RENDER_SEED) return;
-  const time = Date.now() & 0xffffffff;
-  let extra = Math.floor(Math.random() * 0xffffffff);
-  window.__STORY_RENDER_SEED = (time ^ extra) >>> 0;
+  let extra = 0;
+  if (typeof crypto !== 'undefined' && typeof crypto.getRandomValues === 'function') {
+    const arr = new Uint32Array(1);
+    crypto.getRandomValues(arr);
+    extra = arr[0];
+  } else {
+    extra = Math.floor(Math.random() * 0xffffffff);
+  }
+  window.__STORY_RENDER_SEED = ((Date.now() & 0xffffffff) ^ extra) >>> 0;
 })();
-function mulberry32(seed) { let t = seed >>> 0; return () => { t += 0x6D2B79F5; let r = Math.imul(t ^ (t >>> 15), 1 | t); r = r + Math.imul(r ^ (r >>> 7), 61 | r) ^ r; return ((r ^ (r >>> 14)) >>> 0) / 4294967296; }; }
-function rngForStoryRender() { const seed = window.__STORY_RENDER_SEED || (Date.now() & 0xffffffff); return mulberry32(seed); }
+function mulberry32(seed) {
+  let t = seed >>> 0;
+  return function() {
+    t += 0x6D2B79F5;
+    let r = Math.imul(t ^ (t >>> 15), 1 | t);
+    r = r + Math.imul(r ^ (r >>> 7), 61 | r) ^ r;
+    return ((r ^ (r >>> 14)) >>> 0) / 4294967296;
+  };
+}
+function rngForStoryRender() {
+  return mulberry32(window.__STORY_RENDER_SEED);
+}
 
 // Utilities
-function daysSince(dateString) { if (!dateString) return Infinity; const d = new Date(dateString); if (isNaN(d)) return Infinity; return Math.floor((Date.now() - d.getTime()) / (24*60*60*1000)); }
-function normalizeArray(arr) { const clean = arr.map(v => isFinite(v)?v:0); const min = Math.min(...clean); const max = Math.max(...clean); if(max===min) return clean.map(()=>0.5); return clean.map(v=>(v-min)/(max-min)); }
-function computeStoryPopularity(s) { const reads = Number(s.reads ?? s.readCount ?? 0); const likes = Number(s.likes ?? 0); return reads*1 + likes*40; }
-function shuffleArray(arr, rng=Math.random){for(let i=arr.length-1;i>0;i--){const j=Math.floor(rng()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]];}return arr;}
+function daysSince(dateString) {
+  if (!dateString) return Number.MAX_SAFE_INTEGER;
+  const d = new Date(dateString);
+  if (isNaN(d)) return Number.MAX_SAFE_INTEGER;
+  return Math.floor((Date.now() - d.getTime()) / (1000*60*60*24));
+}
+function normalizeArray(values) {
+  const clean = values.map(v => Number.isFinite(v) ? v : 0);
+  const min = Math.min(...clean);
+  const max = Math.max(...clean);
+  return max === min ? clean.map(() => 0.5) : clean.map(v => (v - min) / (max - min));
+}
+function shuffleArray(arr, rng=Math.random) {
+  for (let i = arr.length-1; i>0; i--) {
+    const j = Math.floor((rng ? rng() : Math.random())*(i+1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+function computeStoryPopularity(s) {
+  const reads = Number(s.reads ?? s.readCount ?? 0);
+  const likes = Number(s.likes ?? 0);
+  return Math.log1p(reads) + 1.5*Math.log1p(likes); // log scale like ALGO_CONFIG
+}
 
-// Scoring & Exploration
-function scoredStories(stories, rng){ 
-  const popArr = stories.map(s=>computeStoryPopularity(s));
-  const ageArr = stories.map(s=>Math.max(0,365-(daysSince(s.published||s.createdAt||s.date||s.uploadedAt))));
-  const popNorm = normalizeArray(popArr), recNorm = normalizeArray(ageArr);
-  return stories.map((s,i)=>{ 
-    const pop = popNorm[i], rec = recNorm[i], novelty = 1-pop;
-    let base = STORY_ALGO_CONFIG.popularityWeight*pop + STORY_ALGO_CONFIG.recencyWeight*rec + STORY_ALGO_CONFIG.noveltyWeight*novelty + rng()*STORY_ALGO_CONFIG.randomWeight;
+// ================= SCORING =================
+function scoredStories(stories, rng) {
+  rng = rng || Math.random;
+
+  const popArr = stories.map(computeStoryPopularity);
+  const ageArr = stories.map(s => Math.max(0, 365 - Math.min(daysSince(s.published||s.createdAt||s.date||s.uploadedAt),365)));
+
+  const popNorm = normalizeArray(popArr);
+  const recNorm = normalizeArray(ageArr);
+
+  return stories.map((s,i) => {
+    const pop = popNorm[i];
+    const rec = recNorm[i];
+    const novelty = Math.max(0.2, 1-pop); // ensure new stories get minimum chance
+    const randomEps = (rng ? rng() : Math.random()) * STORY_ALGO_CONFIG.randomWeight;
+
+    let score = STORY_ALGO_CONFIG.popularityWeight*pop
+              + STORY_ALGO_CONFIG.recencyWeight*rec
+              + STORY_ALGO_CONFIG.noveltyWeight*novelty
+              + randomEps;
+
     const ageDays = daysSince(s.published||s.createdAt||s.date||s.uploadedAt);
-    if(isFinite(ageDays)&&ageDays<=STORY_ALGO_CONFIG.freshDaysBoost) base*=STORY_ALGO_CONFIG.freshBoostMultiplier;
-    return Object.assign({},s,{__score:base,__popNorm:pop,__recNorm:rec,__ageDays:ageDays}); 
+    if (ageDays <= STORY_ALGO_CONFIG.freshDaysBoost) score *= STORY_ALGO_CONFIG.freshBoostMultiplier;
+
+    return Object.assign({}, s, {
+      __score: score,
+      __popNorm: pop,
+      __recNorm: rec,
+      __novelty: novelty,
+      __ageDays: ageDays
+    });
   });
 }
-function pickStoryExploration(candidates,count,rng){if(!candidates||candidates.length===0||count<=0)return[];const scored=candidates.map(s=>{const novelty=1-(s.__popNorm??0),recency=s.__recNorm??0,score=(novelty*0.6)+(recency*0.4)+rng()*0.1;return Object.assign({},s,{__exploreScore:score});});scored.sort((a,b)=>b.__exploreScore-a.__exploreScore);return shuffleArray(scored.slice(0,Math.min(count,scored.length)),rng);}
+
+// ================= EXPLORATION =================
+function pickStoryExploration(candidates, count, rng) {
+  if (!candidates || candidates.length===0 || count<=0) return [];
+  rng = rng || Math.random;
+
+  const scored = candidates.map(s => {
+    const novelty = s.__novelty ?? 0.5;
+    const recency = s.__recNorm ?? 0.5;
+    return Object.assign({}, s, { __exploreScore: novelty*0.6 + recency*0.4 + (rng ? rng() : Math.random())*0.1 });
+  });
+
+  scored.sort((a,b) => b.__exploreScore - a.__exploreScore);
+  return shuffleArray(scored.slice(0, Math.min(count, scored.length)), rng);
+}
 
 // Demo stories generator
 function generateDemoStories(count=50,rng){rng=rng||rngForStoryRender(); 
@@ -2102,22 +2181,74 @@ function renderBrowseStories(selectedCategory = 'All', opts = { includeDemo: tru
       shuffleArray(finalList, rng);
 
       // --- build cards ---
-      finalList.forEach(s => {
-        const card = document.createElement('div');
-        card.className = 'story-card';
-        card.dataset.title = s.title || '';
-        card.style.minWidth = '260px';
-        card.style.flex = '0 0 auto';
-        card.style.borderRadius = '14px';
-        card.style.padding = '14px';
-        card.style.boxShadow = '0 6px 16px rgba(0,0,0,0.1)';
-        card.style.display = 'flex';
-        card.style.flexDirection = 'column';
-        card.style.justifyContent = 'space-between';
-        card.style.cursor = 'pointer';
-        card.style.transition = 'transform 0.2s';
-        card.addEventListener('mouseenter', () => card.style.transform = 'scale(1.03)');
-        card.addEventListener('mouseleave', () => card.style.transform = 'scale(1)');
+finalList.forEach(s => {
+    const card = document.createElement('div');
+    card.className = 'story-card';
+    card.dataset.title = s.title || '';
+    card.style.minWidth = '260px';
+    card.style.flex = '0 0 auto';
+    card.style.borderRadius = '14px';
+    card.style.padding = '14px';
+    card.style.boxShadow = '0 6px 16px rgba(0,0,0,0.1)';
+    card.style.display = 'flex';
+    card.style.flexDirection = 'column';
+    card.style.justifyContent = 'space-between';
+    card.style.cursor = 'pointer';
+    card.style.position = 'relative';
+    card.style.flexShrink = '0';
+    card.style.backfaceVisibility = 'hidden';
+    card.style.transition = 'box-shadow 0.25s ease-out';
+    card.style.willChange = 'transform, box-shadow';
+
+    // Inner wrapper for scaling & lifting
+    const inner = document.createElement('div');
+    inner.style.display = 'flex';
+    inner.style.flexDirection = 'column';
+    inner.style.justifyContent = 'space-between';
+    inner.style.height = '100%';
+    inner.style.transition = 'transform 0.25s ease-out';
+    inner.style.transformOrigin = 'center center';
+    card.appendChild(inner);
+
+    // State
+    let scaled = false;
+
+    const scaleUp = () => {
+        if (!scaled) {
+            inner.style.transform = 'scale(1.15) translateY(-6px)'; // bigger + lift
+            card.style.boxShadow = '0 16px 32px rgba(0,0,0,0.35)'; // stronger shadow
+            scaled = true;
+        }
+    };
+
+    const scaleDown = () => {
+        if (scaled) {
+            inner.style.transform = 'scale(1) translateY(0)';
+            card.style.boxShadow = '0 6px 16px rgba(0,0,0,0.1)';
+            scaled = false;
+        }
+    };
+
+    // Desktop hover
+    card.addEventListener('mouseenter', scaleUp);
+    card.addEventListener('mouseleave', scaleDown);
+
+    // Mobile / touch
+    let touchTimer;
+    card.addEventListener('touchstart', e => {
+        e.stopPropagation();
+        touchTimer = setTimeout(scaleUp, 150);
+    });
+    card.addEventListener('touchend', e => {
+        clearTimeout(touchTimer);
+        scaleDown();
+    });
+    card.addEventListener('touchcancel', scaleDown);
+
+    
+
+
+
 
         if (s.cover) {
           const img = new Image();

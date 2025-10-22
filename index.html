@@ -3103,6 +3103,7 @@ function pickExploration(candidates, count, rng) {
   return shuffleArray(scored.slice(0, Math.min(count, scored.length)), rng);
 }
 
+
 // ================= DEMO SERIAL GENERATOR =================
 function generateDemoSerials(count = 50, rng) {
   const genres = ["Action","Romance","Comedy","Fantasy","Horror","Tragedy","Other"];
@@ -3132,86 +3133,232 @@ function generateDemoSerials(count = 50, rng) {
 }
 
 // ================= MAIN RENDER FUNCTION =================
-function renderBrowseSerials(list=null, opts={ includeDemo:true, demoCount:50, mergeWithSaved:true }) {
+function renderBrowseSerials(list = null, opts = { includeDemo: true, demoCount: 50, mergeWithSaved: true }) {
   const rng = rngForThisRender();
   try {
+    // --- Container setup ---
     let container = document.getElementById('serialsBrowseList');
-    if(!container){
-      const parent = document.getElementById('serialCategoriesPage')||document.body;
-      container=document.createElement('div'); container.id='serialsBrowseList'; container.style.maxWidth='980px'; container.style.margin='18px auto'; container.style.display='none'; parent.appendChild(container);
+    if (!container) {
+      const parent = document.getElementById('serialCategoriesPage') || document.body;
+      container = document.createElement('div');
+      container.id = 'serialsBrowseList';
+      container.style.maxWidth = '980px';
+      container.style.margin = '18px auto';
+      container.style.display = 'none';
+      parent.appendChild(container);
     }
 
-    const saved = Array.isArray(list) ? list : (typeof loadSavedSerials==='function' ? loadSavedSerials() : (JSON.parse(localStorage.getItem('saved_serials_v1')||'[]')));
-    let demo = opts.includeDemo ? generateDemoSerials(opts.demoCount||50,rng) : [];
-    let serialsRaw = saved && saved.length && opts.mergeWithSaved ? demo.concat(saved) : (saved&&saved.length ? saved : demo);
-    if(!serialsRaw || !serialsRaw.length){ container.style.display='none'; return; }
+    // --- Load serials ---
+    const saved = Array.isArray(list)
+      ? list
+      : (typeof loadSavedSerials === 'function'
+          ? loadSavedSerials()
+          : JSON.parse(localStorage.getItem('saved_serials_v1') || '[]'));
+    const demo = opts.includeDemo ? generateDemoSerials(opts.demoCount || 50, rng) : [];
+    const serialsRaw =
+      saved && saved.length && opts.mergeWithSaved ? demo.concat(saved) : saved && saved.length ? saved : demo;
+    if (!serialsRaw || !serialsRaw.length) {
+      container.style.display = 'none';
+      return;
+    }
 
-    const oldScrollY = window.scrollY||0;
-    const oldScrolls={};
-    container.querySelectorAll('div[data-genre]').forEach(sec=>{
-      const g=sec.dataset.genre, sc=sec.querySelector('.scroll-wrap'); if(sc) oldScrolls[g]=sc.scrollLeft;
+    // Only clear if container has no children or new serials count differs
+if (container.children.length === 0 || container.children.length !== genresOrder.length) {
+  container.innerHTML = '';
+}
+
+    container.style.display = 'block';
+
+    const genresOrder = ['Action', 'Romance', 'Comedy', 'Fantasy', 'Horror', 'Tragedy', 'Other'];
+    const grouped = {};
+    serialsRaw.forEach(s => {
+      const g = s.genre ? s.genre.trim() : 'Other';
+      if (!grouped[g]) grouped[g] = [];
+      grouped[g].push(s);
     });
-
-    container.innerHTML=''; container.style.display='block';
-    const genresOrder = ["Action","Romance","Comedy","Fantasy","Horror","Tragedy","Other"];
-    const grouped={};
-    serialsRaw.forEach(s=>{ const g=s.genre?s.genre.trim():"Other"; if(!grouped[g]) grouped[g]=[]; grouped[g].push(s); });
 
     const allScored = scoredSerialsWithNormalization(serialsRaw, rng);
-    const scoredMap = new Map(); allScored.forEach(s=>{ const key = s.id ?? s.slug ?? s.title ?? JSON.stringify({title:s.title,createdAt:s.createdAt}); scoredMap.set(key,s); });
-
-    const imagesToWait=[];
-    genresOrder.forEach(genre=>{
-      const rawList = grouped[genre]; if(!rawList||!rawList.length)return;
-      const scoredList = rawList.map(s=>{ const key = s.id ?? s.slug ?? s.title ?? JSON.stringify({title:s.title,createdAt:s.createdAt}); return scoredMap.get(key) || Object.assign({},s,{__score:rng()*0.2}); });
-      const sorted = scoredList.slice().sort((a,b)=>(b.__score||0)-(a.__score||0));
-      const displayCount = Math.min(sorted.length, Math.max(ALGO_CONFIG.cardsPerViewport,Math.ceil(sorted.length)));
-      const explorationCount = Math.ceil(displayCount*ALGO_CONFIG.explorationFraction);
-      const topCandidates = sorted.slice(0,Math.max(0,displayCount-explorationCount));
-      const remaining = sorted.slice(displayCount-explorationCount);
-      const explorationPool = remaining.concat(sorted.slice(displayCount));
-      const explorationPicked = pickExploration(explorationPool,explorationCount,rng);
-      const finalList=[]; const maxLen=Math.max(topCandidates.length,explorationPicked.length);
-      for(let i=0;i<maxLen;i++){ if(i<topCandidates.length) finalList.push(topCandidates[i]); if(i<explorationPicked.length) finalList.push(explorationPicked[i]); }
-      if(finalList.length===0) finalList.push(...sorted.slice(0,displayCount));
-      shuffleArray(finalList,rng);
-
-      const section=document.createElement('div'); section.dataset.genre=genre; section.style.marginBottom='32px';
-      const heading=document.createElement('h3'); heading.textContent=genre; heading.style.margin='6px 12px'; heading.style.textAlign='left'; section.appendChild(heading);
-      const scrollWrap=document.createElement('div'); scrollWrap.className='scroll-wrap'; scrollWrap.style.display='flex'; scrollWrap.style.overflowX='auto'; scrollWrap.style.gap='12px'; scrollWrap.style.padding='12px'; scrollWrap.style.scrollBehavior='smooth'; scrollWrap.style.scrollbarWidth='thin';
-
-      finalList.forEach(s=>{
-        const card=document.createElement('div'); card.className='serial-card'; card.dataset.title=s.title||''; card.style.minWidth='300px'; card.style.height='400px'; card.style.flex='0 0 auto'; card.style.borderRadius='16px'; card.style.boxShadow='0 6px 18px rgba(0,0,0,0.15)'; card.style.padding='16px'; card.style.display='flex'; card.style.flexDirection='column'; card.style.justifyContent='space-between'; card.style.position='relative'; card.style.transition='transform 0.25s ease, box-shadow 0.25s ease'; card.style.overflow='hidden'; card.style.cursor='pointer';
-
-        if(s.cover){ const img=new Image(); img.src=s.cover; img.alt=s.title||'cover'; imagesToWait.push(new Promise(resolve=>{ if(img.complete)return resolve(); img.onload=img.onerror=()=>resolve(); })); card.style.backgroundImage=`linear-gradient(rgba(0,0,0,0.45),rgba(0,0,0,0.45)),url(${s.cover})`; card.style.backgroundSize='cover'; card.style.backgroundPosition='center'; card.style.color='#fff'; } else{ card.style.background='#fff'; card.style.color='#000'; }
-        card.addEventListener('mouseenter',()=>card.style.transform='scale(1.03)'); card.addEventListener('mouseleave',()=>card.style.transform='scale(1)');
-
-        const infoDiv=document.createElement('div'); infoDiv.innerHTML=`<h4 style="margin:0;font-size:17px;text-shadow:1px 1px 3px rgba(0,0,0,0.6)">${s.title||'Untitled Series'}</h4><p style="margin:6px 0 0;font-size:13px;color:inherit;opacity:0.9;overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;line-height:1.4;text-shadow:1px 1px 2px rgba(0,0,0,0.4)">${s.description||''}</p>`;
-
-        if(typeof s.readCount!=='undefined'){ const rc=document.createElement('div'); rc.style.position='absolute'; rc.style.right='12px'; rc.style.top='12px'; rc.style.background='rgba(255,255,255,0.85)'; rc.style.padding='6px 8px'; rc.style.borderRadius='12px'; rc.style.fontSize='12px'; rc.style.color='#222'; rc.textContent=`reads ${Number(s.readCount).toLocaleString()}`; card.appendChild(rc); }
-
-        const bottomDiv=document.createElement('div'); bottomDiv.style.display='flex'; bottomDiv.style.justifyContent='flex-end'; bottomDiv.style.gap='8px'; bottomDiv.style.marginTop='10px';
-        const viewBtn=document.createElement('button'); viewBtn.className='btn btn-secondary view-serial-btn'; viewBtn.textContent='🎬 View'; viewBtn.addEventListener('click',ev=>{ ev.stopPropagation(); openSerialPreview(s.title); });
-        bottomDiv.appendChild(viewBtn);
-        card.appendChild(infoDiv); card.appendChild(bottomDiv); scrollWrap.appendChild(card);
-      });
-
-      section.appendChild(scrollWrap); container.appendChild(section);
-      if(oldScrolls[genre]!==undefined){ const prevBehavior=scrollWrap.style.scrollBehavior; scrollWrap.style.scrollBehavior='auto'; scrollWrap.scrollLeft=oldScrolls[genre]; scrollWrap.style.scrollBehavior=prevBehavior||'smooth'; }
+    const scoredMap = new Map();
+    allScored.forEach(s => {
+      const key = s.id ?? s.slug ?? s.title ?? JSON.stringify({ title: s.title, createdAt: s.createdAt });
+      scoredMap.set(key, s);
     });
 
-    // restore vertical scroll
-    requestAnimationFrame(()=>window.scrollTo({ top: oldScrollY, behavior: 'auto' }));
-    Promise.all(imagesToWait).then(()=>setTimeout(()=>window.scrollTo({ top: oldScrollY, behavior:'auto' }),30));
+    const imagesToWait = [];
 
-  } catch(e){ console.warn(e); }
+    genresOrder.forEach(genre => {
+      const rawList = grouped[genre];
+      if (!rawList || !rawList.length) return;
+
+      const scoredList = rawList.map(s => {
+        const key = s.id ?? s.slug ?? s.title ?? JSON.stringify({ title: s.title, createdAt: s.createdAt });
+        return scoredMap.get(key) || Object.assign({}, s, { __score: rng() * 0.2 });
+      });
+
+      const sorted = scoredList.slice().sort((a, b) => (b.__score || 0) - (a.__score || 0));
+      const displayCount = Math.min(sorted.length, Math.max(ALGO_CONFIG.cardsPerViewport, Math.ceil(sorted.length)));
+      const explorationCount = Math.ceil(displayCount * ALGO_CONFIG.explorationFraction);
+      const topCandidates = sorted.slice(0, Math.max(0, displayCount - explorationCount));
+      const remaining = sorted.slice(displayCount - explorationCount);
+      const explorationPool = remaining.concat(sorted.slice(displayCount));
+      const explorationPicked = pickExploration(explorationPool, explorationCount, rng);
+
+      const finalList = [];
+      const maxLen = Math.max(topCandidates.length, explorationPicked.length);
+      for (let i = 0; i < maxLen; i++) {
+        if (i < topCandidates.length) finalList.push(topCandidates[i]);
+        if (i < explorationPicked.length) finalList.push(explorationPicked[i]);
+      }
+      if (finalList.length === 0) finalList.push(...sorted.slice(0, displayCount));
+      shuffleArray(finalList, rng);
+
+      // --- Section setup ---
+      const section = document.createElement('div');
+      section.dataset.genre = genre;
+      section.style.marginBottom = '32px';
+
+      const heading = document.createElement('h3');
+      heading.textContent = genre;
+      heading.style.margin = '6px 12px';
+      heading.style.textAlign = 'left';
+      section.appendChild(heading);
+
+      const scrollWrap = document.createElement('div');
+      scrollWrap.className = 'scroll-wrap';
+      scrollWrap.style.display = 'flex';
+      scrollWrap.style.overflowX = 'auto';
+      scrollWrap.style.gap = '12px';
+      scrollWrap.style.padding = '12px';
+      scrollWrap.style.scrollBehavior = 'smooth';
+      scrollWrap.style.scrollSnapType = 'x mandatory';
+      scrollWrap.style.scrollbarWidth = 'thin';
+
+      // --- Fix horizontal scrolling with mouse wheel ---
+      scrollWrap.addEventListener(
+        'wheel',
+        e => {
+          if (Math.abs(e.deltaX) < Math.abs(e.deltaY)) {
+            scrollWrap.scrollLeft += e.deltaY;
+            e.preventDefault();
+          }
+        },
+        { passive: false }
+      );
+
+      // --- Cards ---
+      finalList.forEach(s => {
+        const card = document.createElement('div');
+        card.className = 'serial-card';
+        card.dataset.title = s.title || '';
+        card.style.minWidth = '300px';
+        card.style.height = '400px';
+        card.style.flex = '0 0 auto';
+        card.style.borderRadius = '16px';
+        card.style.boxShadow = '0 6px 18px rgba(0,0,0,0.15)';
+        card.style.padding = '16px';
+        card.style.display = 'flex';
+        card.style.flexDirection = 'column';
+        card.style.justifyContent = 'space-between';
+        card.style.position = 'relative';
+        card.style.transition = 'transform 0.25s ease, box-shadow 0.25s ease';
+        card.style.overflow = 'hidden';
+        card.style.cursor = 'pointer';
+        card.style.scrollSnapAlign = 'center';
+
+        if (s.cover) {
+          const img = new Image();
+          img.src = s.cover;
+          img.alt = s.title || 'cover';
+          imagesToWait.push(
+            new Promise(resolve => {
+              if (img.complete) return resolve();
+              img.onload = img.onerror = () => resolve();
+            })
+          );
+          card.style.backgroundImage = `linear-gradient(rgba(0,0,0,0.45),rgba(0,0,0,0.45)),url(${s.cover})`;
+          card.style.backgroundSize = 'cover';
+          card.style.backgroundPosition = 'center';
+          card.style.color = '#fff';
+        } else {
+          card.style.background = '#fff';
+          card.style.color = '#000';
+        }
+
+        // --- Netflix-style hover/touch scale ---
+  card.style.transition = 'transform 0.25s ease, box-shadow 0.25s ease';
+
+const scaleUp = () => {
+  card.style.transform = 'scale(1.08)';
+  card.style.zIndex = '2';
+  card.style.boxShadow = '0 12px 24px rgba(0,0,0,0.3)';
+};
+const scaleDown = () => {
+  card.style.transform = 'scale(1)';
+  card.style.zIndex = '1';
+  card.style.boxShadow = '0 6px 18px rgba(0,0,0,0.15)';
+};
+
+// Desktop hover
+card.addEventListener('mouseenter', scaleUp);
+card.addEventListener('mouseleave', scaleDown);
+
+// Mobile / touch
+card.addEventListener('touchstart', scaleUp);
+card.addEventListener('touchend', scaleDown);
+card.addEventListener('touchcancel', scaleDown);
+
+
+
+        // --- Info + buttons ---
+        const infoDiv = document.createElement('div');
+        infoDiv.innerHTML = `<h4 style="margin:0;font-size:17px;text-shadow:1px 1px 3px rgba(0,0,0,0.6)">${s.title ||
+          'Untitled Series'}</h4>
+        <p style="margin:6px 0 0;font-size:13px;color:inherit;opacity:0.9;overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;line-height:1.4;text-shadow:1px 1px 2px rgba(0,0,0,0.4)">${
+          s.description || ''
+        }</p>`;
+
+        if (typeof s.readCount !== 'undefined') {
+          const rc = document.createElement('div');
+          rc.style.position = 'absolute';
+          rc.style.right = '12px';
+          rc.style.top = '12px';
+          rc.style.background = 'rgba(255,255,255,0.85)';
+          rc.style.padding = '6px 8px';
+          rc.style.borderRadius = '12px';
+          rc.style.fontSize = '12px';
+          rc.style.color = '#222';
+          rc.textContent = `reads ${Number(s.readCount).toLocaleString()}`;
+          card.appendChild(rc);
+        }
+
+        const bottomDiv = document.createElement('div');
+        bottomDiv.style.display = 'flex';
+        bottomDiv.style.justifyContent = 'flex-end';
+        bottomDiv.style.gap = '8px';
+        bottomDiv.style.marginTop = '10px';
+        const viewBtn = document.createElement('button');
+        viewBtn.className = 'btn btn-secondary view-serial-btn';
+        viewBtn.textContent = '🎬 View';
+        viewBtn.addEventListener('click', ev => {
+          ev.stopPropagation();
+          openSerialPreview(s.title);
+        });
+        bottomDiv.appendChild(viewBtn);
+
+        card.appendChild(infoDiv);
+        card.appendChild(bottomDiv);
+        scrollWrap.appendChild(card);
+      });
+
+      section.appendChild(scrollWrap);
+      container.appendChild(section);
+    });
+
+  } catch (e) {
+    console.warn(e);
+  }
 }
 
-// ================= QUICK TEST =================
-function runDemoTest({ demoCount=50, mergeWithSaved=true }={}) {
-  renderBrowseSerials(null,{ includeDemo:true, demoCount, mergeWithSaved });
-  console.log(`Rendered demo test with ${demoCount} demo serials (mergeWithSaved=${mergeWithSaved}).`);
-}
 
 
 // Optional: auto-run demo on DOMContentLoaded (uncomment if desired)

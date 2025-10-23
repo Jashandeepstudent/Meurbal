@@ -1937,7 +1937,6 @@ function showSerialAnalytics(serialOrTitle) {
     updateHeaderVisibility();
   
     // ---------- Browse Stories rendering & Preview/Reader ----------
-// ------------------ CONFIG ------------------
 const STORY_ALGO_CONFIG = {
   popularityWeight: 0.5,      // lower to allow new creators
   recencyWeight: 0.25,        // same as before
@@ -1946,7 +1945,17 @@ const STORY_ALGO_CONFIG = {
   freshDaysBoost: 21,         // recent content boost
   freshBoostMultiplier: 1.4,  // stronger boost for fresh content
   explorationFraction: 0.25,
-  cardsPerViewport: 6
+  cardsPerViewport: 6,
+
+  // trending tuning
+  trending: {
+    addThreshold: 50,   // recentReads >= 50 -> add to trending
+    keepThreshold: 100, // recentReads >= 100 -> definitely keep for that update
+    dropThreshold: 40,  // trending -> remove if recentReads < 40
+    expireDays: 7       // expire entries not updated in this many days
+  },
+
+  recentlyReadLimit: 50
 };
 
 // Session RNG (seeded per page load)
@@ -2001,6 +2010,130 @@ function computeStoryPopularity(s) {
   return Math.log1p(reads) + 1.5*Math.log1p(likes); // log scale like ALGO_CONFIG
 }
 
+// ================= TRENDING & RECENT HELPERS (stories) =================
+function getRecentReadsForStory(s) {
+  const candidates = [
+    s.recentReads,
+    s.readsLast24h,
+    s.readsToday,
+    s.readsLastDay,
+    s.dailyReads
+  ];
+  for (let c of candidates) if (Number.isFinite(c)) return Number(c);
+
+  if (Number.isFinite(s.readCount) && Number.isFinite(s.prevReadCount)) {
+    return Math.max(0, Number(s.readCount) - Number(s.prevReadCount));
+  }
+  return undefined;
+}
+
+function loadTrendingStoriesState() {
+  try {
+    const raw = localStorage.getItem('trending_stories_v1');
+    return raw ? JSON.parse(raw) : { ids: {}, lastUpdated: Date.now() };
+  } catch (e) {
+    return { ids: {}, lastUpdated: Date.now() };
+  }
+}
+function saveTrendingStoriesState(state) {
+  try { localStorage.setItem('trending_stories_v1', JSON.stringify(state)); } catch (e) {}
+}
+
+function updateTrendingStateForStories(stories) {
+  const state = loadTrendingStoriesState();
+  const now = Date.now();
+  const cfg = STORY_ALGO_CONFIG.trending;
+  stories.forEach(s => {
+    const id = s.id ?? s.slug ?? s.title;
+    if (!id) return;
+    const recent = getRecentReadsForStory(s);
+    const currentlyTrending = !!state.ids[id];
+
+    if (Number.isFinite(recent)) {
+      if (recent >= cfg.keepThreshold) {
+        state.ids[id] = { since: state.ids[id]?.since || now, lastSeen: now, recent };
+      } else if (recent >= cfg.addThreshold) {
+        state.ids[id] = { since: state.ids[id]?.since || now, lastSeen: now, recent };
+      } else if (currentlyTrending && recent < cfg.dropThreshold) {
+        delete state.ids[id];
+      } else if (currentlyTrending) {
+        state.ids[id] = { ...state.ids[id], lastSeen: now, recent };
+      }
+    } else {
+      if (currentlyTrending) {
+        const lastSeen = state.ids[id]?.lastSeen || state.ids[id]?.since || now;
+        const daysSinceSeen = Math.floor((now - lastSeen) / (1000 * 60 * 60 * 24));
+        if (cfg.expireDays && daysSinceSeen > cfg.expireDays) {
+          delete state.ids[id];
+        }
+      }
+    }
+  });
+
+  // prune entries not present if expired
+  const presentIds = new Set(stories.map(s => s.id ?? s.slug ?? s.title));
+  Object.keys(state.ids).forEach(id => {
+    if (!presentIds.has(id)) {
+      const lastSeen = state.ids[id]?.lastSeen || state.ids[id]?.since || now;
+      const daysSinceSeen = Math.floor((now - lastSeen) / (1000 * 60 * 60 * 24));
+      if (STORY_ALGO_CONFIG.trending.expireDays && daysSinceSeen > STORY_ALGO_CONFIG.trending.expireDays) {
+        delete state.ids[id];
+      }
+    }
+  });
+
+  state.lastUpdated = now;
+  saveTrendingStoriesState(state);
+  return state;
+}
+
+function getTrendingStoriesFromState(stories, state) {
+  const ids = new Set(Object.keys(state.ids || {}));
+  return stories.filter(s => {
+    const id = s.id ?? s.slug ?? s.title;
+    return id && ids.has(id);
+  });
+}
+
+// Recently read (stories)
+function recordRecentlyReadStory(story) {
+  try {
+    const raw = localStorage.getItem('recently_read_stories_v1');
+    let arr = raw ? JSON.parse(raw) : [];
+    const id = story.id ?? story.slug ?? story.title;
+    const entry = {
+      id,
+      title: story.title || 'Untitled',
+      cover: story.cover || null,
+      genre: story.genre || null,
+      description: story.description || null,
+      at: Date.now()
+    };
+    arr = arr.filter(x => x.id !== id);
+    arr.unshift(entry);
+    const limit = Number.isFinite(STORY_ALGO_CONFIG.recentlyReadLimit) ? STORY_ALGO_CONFIG.recentlyReadLimit : 50;
+    if (arr.length > limit) arr = arr.slice(0, limit);
+    localStorage.setItem('recently_read_stories_v1', JSON.stringify(arr));
+  } catch (e) {}
+}
+function loadRecentlyReadStories() {
+  try {
+    const raw = localStorage.getItem('recently_read_stories_v1');
+    return raw ? JSON.parse(raw) : [];
+  } catch (e) { return []; }
+}
+
+function openStoryPreviewAndRecord(story) {
+  try { recordRecentlyReadStory(story); } catch (e) {}
+  if (typeof openPreviewFullScreen === 'function') {
+    if (story.id) openPreviewFullScreen(story.id);
+    else if (story.slug) openPreviewFullScreen(story.slug);
+    else openPreviewFullScreen(story.title || '');
+  } else {
+    console.warn('openPreviewFullScreen not defined');
+  }
+}
+
 // ================= SCORING =================
 function scoredStories(stories, rng) {
   rng = rng || Math.random;
@@ -2050,8 +2183,8 @@ function pickStoryExploration(candidates, count, rng) {
   return shuffleArray(scored.slice(0, Math.min(count, scored.length)), rng);
 }
 
-// Demo stories generator
-function generateDemoStories(count=50,rng){rng=rng||rngForStoryRender(); 
+// Demo stories generator (kept as-is)
+function generateDemoStories(count=0,rng){rng=rng||rngForStoryRender(); 
   const genres=["Action","Romance","Comedy","Fantasy","Horror","Tragic","Thriller","Adventure","Crime","Historic"]; 
   const covers=[
     "https://picsum.photos/seed/demo1/600/900",
@@ -2074,13 +2207,17 @@ function generateDemoStories(count=50,rng){rng=rng||rngForStoryRender();
   return stories;
 }
 
-// Main render function
-function renderBrowseStories(selectedCategory = 'All', opts = { includeDemo: true, demoCount: 50, mergeWithSaved: true }) {
+// Main render function with Trending + Recently Read integrated
+function renderBrowseStories(selectedCategory = 'All', opts = { includeDemo: true, demoCount: 30, mergeWithSaved: true }) {
   const rng = rngForStoryRender();
+
   try {
     const storiesListDiv = document.getElementById('storiesBrowseList');
     const cards = document.getElementById('storiesCards');
     if (!cards) return;
+
+    // --- Preserve vertical scroll ---
+    const oldScrollY = window.scrollY || document.documentElement.scrollTop;
 
     // Ensure main container is vertical and full-width
     cards.style.display = 'block';
@@ -2093,7 +2230,9 @@ function renderBrowseStories(selectedCategory = 'All', opts = { includeDemo: tru
       : publicStories;
 
     const demoStories = opts.includeDemo ? generateDemoStories(opts.demoCount || 50, rng) : [];
-    let allStories = opts.mergeWithSaved ? demoStories.concat(filteredStories) : demoStories;
+    let allStories = opts.mergeWithSaved
+      ? demoStories.concat(filteredStories)
+      : (demoStories.length ? demoStories : filteredStories);
 
     if (allStories.length === 0) {
       storiesListDiv.style.display = 'none';
@@ -2102,7 +2241,7 @@ function renderBrowseStories(selectedCategory = 'All', opts = { includeDemo: tru
       storiesListDiv.style.display = 'block';
     }
 
-    // Save horizontal scroll positions for each genre
+    // --- Preserve horizontal scroll per genre ---
     const oldScrollX = {};
     cards.querySelectorAll('div[data-genre]').forEach(sec => {
       const g = sec.dataset.genre;
@@ -2118,48 +2257,106 @@ function renderBrowseStories(selectedCategory = 'All', opts = { includeDemo: tru
       grouped[g].push(s);
     });
 
+    // Update trending state BEFORE scoring
+    const trendingState = updateTrendingStateForStories(allStories);
+
     const allScored = scoredStories(allStories, rng);
     const scoredMap = new Map();
     allScored.forEach(s => scoredMap.set(s.id ?? s.title, s));
 
+    // --- Clear or create sections container ---
+    cards.innerHTML = '';
     const imagesToWait = [];
 
+    // --- TRENDING SECTION ---
+    const trendingStories = getTrendingStoriesFromState(allScored, trendingState);
+    if (trendingStories && trendingStories.length) {
+      trendingStories.sort((a, b) => {
+        const ida = a.id ?? a.slug ?? a.title;
+        const idb = b.id ?? b.slug ?? b.title;
+        const sa = (trendingState.ids[ida]?.recent || 0) + (a.__score || 0);
+        const sb = (trendingState.ids[idb]?.recent || 0) + (b.__score || 0);
+        return sb - sa;
+      });
+
+      const trendingSection = document.createElement('div');
+      trendingSection.dataset.genre = 'Trending';
+      trendingSection.style.display = 'block';
+      trendingSection.style.marginBottom = '28px';
+      cards.appendChild(trendingSection);
+
+      const heading = document.createElement('h2');
+      heading.textContent = '🔥 Trending';
+      heading.style.margin = '6px 12px';
+      heading.style.textAlign = 'left';
+      trendingSection.appendChild(heading);
+
+      const scrollWrap = document.createElement('div');
+      scrollWrap.className = 'scroll-wrap trending-wrap';
+      scrollWrap.style.display = 'flex';
+      scrollWrap.style.overflowX = 'auto';
+      scrollWrap.style.gap = '12px';
+      scrollWrap.style.padding = '12px';
+      scrollWrap.style.scrollBehavior = 'smooth';
+      scrollWrap.style.scrollSnapType = 'x mandatory';
+      scrollWrap.style.scrollbarWidth = 'thin';
+
+      // wheel-to-scroll fix
+      scrollWrap.addEventListener(
+        'wheel',
+        e => {
+          if (Math.abs(e.deltaX) < Math.abs(e.deltaY)) {
+            scrollWrap.scrollLeft += e.deltaY;
+            e.preventDefault();
+          }
+        },
+        { passive: false }
+      );
+
+      trendingStories.forEach(s => {
+        const card = createStoryCard(s, imagesToWait);
+        scrollWrap.appendChild(card);
+      });
+
+      trendingSection.appendChild(scrollWrap);
+
+      // restore previous horizontal scroll if any
+      if (oldScrollX['Trending'] !== undefined) {
+        const prevBehavior = scrollWrap.style.scrollBehavior;
+        scrollWrap.style.scrollBehavior = 'auto';
+        scrollWrap.scrollLeft = oldScrollX['Trending'];
+        scrollWrap.style.scrollBehavior = prevBehavior || 'smooth';
+      }
+    }
+
+    // --- GENRE SECTIONS ---
     genresOrder.forEach(genre => {
       const list = grouped[genre];
       if (!list || list.length === 0) return;
 
-      // --- reuse existing section if possible ---
-      let section = cards.querySelector(`div[data-genre="${genre}"]`);
-      if (!section) {
-        section = document.createElement('div');
-        section.dataset.genre = genre;
-        section.style.display = 'block';
-        section.style.marginBottom = '32px';
-        cards.appendChild(section);
+      const section = document.createElement('div');
+      section.dataset.genre = genre;
+      section.style.display = 'block';
+      section.style.marginBottom = '32px';
+      cards.appendChild(section);
 
-        const heading = document.createElement('h3');
-        heading.textContent = genre;
-        heading.style.margin = '6px 12px';
-        heading.style.textAlign = 'left';
-        section.appendChild(heading);
-      }
+      const heading = document.createElement('h3');
+      heading.textContent = genre;
+      heading.style.margin = '6px 12px';
+      heading.style.textAlign = 'left';
+      section.appendChild(heading);
 
-      // --- reuse or create scrollWrap ---
-      let scrollWrap = section.querySelector('.scroll-wrap');
-      if (!scrollWrap) {
-        scrollWrap = document.createElement('div');
-        scrollWrap.className = 'scroll-wrap';
-        scrollWrap.style.display = 'flex';
-        scrollWrap.style.overflowX = 'auto';
-        scrollWrap.style.gap = '12px';
-        scrollWrap.style.padding = '12px';
-        scrollWrap.style.scrollBehavior = 'smooth';
-        scrollWrap.style.scrollbarWidth = 'thin';
-        scrollWrap.style.flexWrap = 'nowrap';
-        section.appendChild(scrollWrap);
-      }
-      // Clear only the cards inside
-      scrollWrap.innerHTML = '';
+      const scrollWrap = document.createElement('div');
+      scrollWrap.className = 'scroll-wrap';
+      scrollWrap.style.display = 'flex';
+      scrollWrap.style.overflowX = 'auto';
+      scrollWrap.style.gap = '12px';
+      scrollWrap.style.padding = '12px';
+      scrollWrap.style.scrollBehavior = 'smooth';
+      scrollWrap.style.scrollSnapType = 'x mandatory';
+      scrollWrap.style.scrollbarWidth = 'thin';
+      scrollWrap.style.flexWrap = 'nowrap';
+      section.appendChild(scrollWrap);
 
       const scoredList = list.map(s => scoredMap.get(s.id ?? s.title) || Object.assign({}, s, { __score: rng() * 0.2 }));
       const sorted = scoredList.slice().sort((a, b) => b.__score - a.__score);
@@ -2180,160 +2377,9 @@ function renderBrowseStories(selectedCategory = 'All', opts = { includeDemo: tru
       if (finalList.length === 0) finalList.push(...sorted.slice(0, displayCount));
       shuffleArray(finalList, rng);
 
-      // --- build cards ---
-finalList.forEach(s => {
-    const card = document.createElement('div');
-    card.className = 'story-card';
-    card.dataset.title = s.title || '';
-    card.style.minWidth = '260px';
-    card.style.flex = '0 0 auto';
-    card.style.borderRadius = '14px';
-    card.style.padding = '14px';
-    card.style.boxShadow = '0 6px 16px rgba(0,0,0,0.1)';
-    card.style.display = 'flex';
-    card.style.flexDirection = 'column';
-    card.style.justifyContent = 'space-between';
-    card.style.cursor = 'pointer';
-    card.style.position = 'relative';
-    card.style.flexShrink = '0';
-    card.style.backfaceVisibility = 'hidden';
-    card.style.transition = 'box-shadow 0.25s ease-out';
-    card.style.willChange = 'transform, box-shadow';
+      finalList.forEach(s => scrollWrap.appendChild(createStoryCard(s, imagesToWait)));
 
-    // Inner wrapper for scaling & lifting
-    const inner = document.createElement('div');
-    inner.style.display = 'flex';
-    inner.style.flexDirection = 'column';
-    inner.style.justifyContent = 'space-between';
-    inner.style.height = '100%';
-    inner.style.transition = 'transform 0.25s ease-out';
-    inner.style.transformOrigin = 'center center';
-    card.appendChild(inner);
-
-    // State
-    let scaled = false;
-
-    const scaleUp = () => {
-        if (!scaled) {
-            inner.style.transform = 'scale(1.15) translateY(-6px)'; // bigger + lift
-            card.style.boxShadow = '0 16px 32px rgba(0,0,0,0.35)'; // stronger shadow
-            scaled = true;
-        }
-    };
-
-    const scaleDown = () => {
-        if (scaled) {
-            inner.style.transform = 'scale(1) translateY(0)';
-            card.style.boxShadow = '0 6px 16px rgba(0,0,0,0.1)';
-            scaled = false;
-        }
-    };
-
-    // Desktop hover
-    card.addEventListener('mouseenter', scaleUp);
-    card.addEventListener('mouseleave', scaleDown);
-
-    // Mobile / touch
-    let touchTimer;
-    card.addEventListener('touchstart', e => {
-        e.stopPropagation();
-        touchTimer = setTimeout(scaleUp, 150);
-    });
-    card.addEventListener('touchend', e => {
-        clearTimeout(touchTimer);
-        scaleDown();
-    });
-    card.addEventListener('touchcancel', scaleDown);
-
-    
-
-
-
-
-        if (s.cover) {
-          const img = new Image();
-          img.src = s.cover;
-          imagesToWait.push(new Promise(resolve => { if (img.complete) return resolve(); img.onload = img.onerror = () => resolve(); }));
-          card.style.backgroundImage = `linear-gradient(rgba(0,0,0,0.4),rgba(0,0,0,0.4)),url(${s.cover})`;
-          card.style.backgroundSize = 'cover';
-          card.style.backgroundPosition = 'center';
-          card.style.color = '#fff';
-        } else {
-          let color;
-          switch ((s.genre || '').toLowerCase()) {
-            case 'action': color = '#ff4b4b'; break;
-            case 'romance': color = '#ff6fa8'; break;
-            case 'comedy': color = '#ffd54f'; break;
-            case 'tragic': color = '#4fc3f7'; break;
-            case 'horror': color = '#000'; break;
-            case 'fantasy': color = '#a78bfa'; break;
-            case 'thriller': color = '#A52A2A'; break;
-            case 'crime': color = '#FF0000'; break;
-            case 'adventure': color = '#FF0000'; break;
-            case 'historic': color = '#C0C0C0'; break;
-            default: color = '#888'; break;
-          }
-          card.style.background = color;
-          card.style.color = color === '#000' ? '#fff' : '#000';
-        }
-
-        const titleEl = document.createElement('h4');
-        titleEl.textContent = s.title || 'Untitled';
-        titleEl.style.margin = '0 0 6px';
-        titleEl.style.fontSize = '17px';
-        titleEl.style.fontWeight = '700';
-        titleEl.style.textShadow = s.cover ? '1px 1px 3px rgba(0,0,0,0.6)' : '';
-
-        const genreEl = document.createElement('p');
-        genreEl.textContent = s.genre || 'Unknown';
-        genreEl.style.margin = '0 0 6px';
-        genreEl.style.fontSize = '13px';
-        genreEl.style.fontWeight = '600';
-        genreEl.style.opacity = '0.9';
-        genreEl.style.textShadow = s.cover ? '1px 1px 2px rgba(0,0,0,0.4)' : '';
-
-        const desc = document.createElement('p');
-        desc.textContent = s.description || '';
-        desc.style.margin = '4px 0 8px';
-        desc.style.fontSize = '14px';
-        desc.style.lineHeight = '1.4';
-        desc.style.overflow = 'hidden';
-        desc.style.display = '-webkit-box';
-        desc.style.webkitLineClamp = '3';
-        desc.style.webkitBoxOrient = 'vertical';
-        desc.style.textShadow = s.cover ? '1px 1px 2px rgba(0,0,0,0.4)' : '';
-
-        const bottomRow = document.createElement('div');
-        bottomRow.style.display = 'flex';
-        bottomRow.style.justifyContent = 'space-between';
-        bottomRow.style.alignItems = 'center';
-        bottomRow.style.marginTop = 'auto';
-
-        const reads = document.createElement('div');
-        reads.textContent = '👁️ ' + (s.reads || 0);
-        reads.style.fontSize = '13px';
-        reads.style.fontWeight = '600';
-
-        const readBtn = document.createElement('button');
-        readBtn.className = 'btn btn-primary';
-        readBtn.textContent = 'Read';
-        readBtn.addEventListener('click', e => {
-          e.stopPropagation();
-          openPreviewFullScreen(s);
-        });
-
-        bottomRow.appendChild(reads);
-        bottomRow.appendChild(readBtn);
-
-        card.appendChild(titleEl);
-        card.appendChild(genreEl);
-        card.appendChild(desc);
-        card.appendChild(bottomRow);
-
-        scrollWrap.appendChild(card);
-      });
-
-      // Restore horizontal scroll
+      // restore previous horizontal scroll if available
       if (oldScrollX[genre] !== undefined) {
         const prevBehavior = scrollWrap.style.scrollBehavior;
         scrollWrap.style.scrollBehavior = 'auto';
@@ -2342,15 +2388,227 @@ finalList.forEach(s => {
       }
     });
 
-    // --- no vertical scroll restoration --- 
+    // --- RECENTLY READ SECTION ---
+    const recentArr = loadRecentlyReadStories();
+    if (recentArr && recentArr.length) {
+      const recentSection = document.createElement('div');
+      recentSection.dataset.section = 'recently-read';
+      recentSection.style.marginTop = '28px';
+      recentSection.style.marginBottom = '36px';
+      cards.appendChild(recentSection);
+
+      const heading = document.createElement('h3');
+      heading.textContent = '📚 Recently Read';
+      heading.style.margin = '6px 12px';
+      heading.style.textAlign = 'left';
+      recentSection.appendChild(heading);
+
+      const wrap = document.createElement('div');
+      wrap.style.display = 'flex';
+      wrap.style.overflowX = 'auto';
+      wrap.style.gap = '12px';
+      wrap.style.padding = '12px';
+      wrap.style.scrollBehavior = 'smooth';
+      recentSection.appendChild(wrap);
+
+      recentArr.forEach(r => {
+        const card = createRecentCard(r, allStories);
+        wrap.appendChild(card);
+      });
+    }
+
+    // --- Restore vertical scroll ---
+    window.scrollTo({ top: oldScrollY, behavior: 'auto' });
+
+    // Optional: await imagesToWait if needed
+    // await Promise.all(imagesToWait);
 
   } catch (err) {
     console.warn(err);
   }
 }
 
-// Run demo
+// ---------- Helper to create a story card ----------
+function createStoryCard(s, imagesToWait) {
+  const card = document.createElement('div');
+  card.className = 'story-card';
+  card.dataset.title = s.title || '';
+  card.style.minWidth = '260px';
+  card.style.flex = '0 0 auto';
+  card.style.borderRadius = '14px';
+  card.style.padding = '14px';
+  card.style.boxShadow = '0 6px 16px rgba(0,0,0,0.1)';
+  card.style.display = 'flex';
+  card.style.flexDirection = 'column';
+  card.style.justifyContent = 'space-between';
+  card.style.cursor = 'pointer';
+  card.style.position = 'relative';
+  card.style.flexShrink = '0';
+  card.style.backfaceVisibility = 'hidden';
+  card.style.transition = 'box-shadow 0.25s ease-out';
+  card.style.willChange = 'transform, box-shadow';
+
+  if (s.cover) {
+    const img = new Image();
+    img.src = s.cover;
+    imagesToWait.push(new Promise(resolve => { if (img.complete) return resolve(); img.onload = img.onerror = () => resolve(); }));
+    card.style.backgroundImage = `linear-gradient(rgba(0,0,0,0.4),rgba(0,0,0,0.4)),url(${s.cover})`;
+    card.style.backgroundSize = 'cover';
+    card.style.backgroundPosition = 'center';
+    card.style.color = '#fff';
+  } else {
+    card.style.background = '#fff';
+    card.style.color = '#000';
+  }
+
+  const titleEl = document.createElement('h4');
+  titleEl.textContent = s.title || 'Untitled';
+  titleEl.style.margin = '0 0 6px';
+  titleEl.style.fontSize = '17px';
+  titleEl.style.fontWeight = '700';
+  titleEl.style.textShadow = s.cover ? '1px 1px 3px rgba(0,0,0,0.6)' : '';
+
+  const genreEl = document.createElement('p');
+  genreEl.textContent = s.genre || 'Unknown';
+  genreEl.style.margin = '0 0 6px';
+  genreEl.style.fontSize = '13px';
+  genreEl.style.fontWeight = '600';
+  genreEl.style.opacity = '0.9';
+  genreEl.style.textShadow = s.cover ? '1px 1px 2px rgba(0,0,0,0.4)' : '';
+
+  const desc = document.createElement('p');
+  desc.textContent = s.description || '';
+  desc.style.margin = '4px 0 8px';
+  desc.style.fontSize = '14px';
+  desc.style.lineHeight = '1.4';
+  desc.style.overflow = 'hidden';
+  desc.style.display = '-webkit-box';
+  desc.style.webkitLineClamp = '3';
+  desc.style.webkitBoxOrient = 'vertical';
+  desc.style.textShadow = s.cover ? '1px 1px 2px rgba(0,0,0,0.4)' : '';
+
+  const bottomRow = document.createElement('div');
+  bottomRow.style.display = 'flex';
+  bottomRow.style.justifyContent = 'space-between';
+  bottomRow.style.alignItems = 'center';
+  bottomRow.style.marginTop = 'auto';
+
+  const reads = document.createElement('div');
+  reads.textContent = '👁️ ' + (s.reads || s.readCount || 0);
+  reads.style.fontSize = '13px';
+  reads.style.fontWeight = '600';
+
+  const readBtn = document.createElement('button');
+  readBtn.className = 'btn btn-primary';
+  readBtn.textContent = 'Read';
+  readBtn.addEventListener('click', e => {
+    e.stopPropagation();
+    openStoryPreviewAndRecord(s);
+  });
+
+  bottomRow.appendChild(reads);
+  bottomRow.appendChild(readBtn);
+
+  card.appendChild(titleEl);
+  card.appendChild(genreEl);
+  card.appendChild(desc);
+  card.appendChild(bottomRow);
+
+  // hover / touch scaling
+  card.addEventListener('mouseenter', () => { card.style.transform = 'scale(1.06)'; card.style.zIndex = 2; card.style.boxShadow = '0 12px 24px rgba(0,0,0,0.2)'; });
+  card.addEventListener('mouseleave', () => { card.style.transform = 'scale(1)'; card.style.zIndex = 1; card.style.boxShadow = '0 6px 16px rgba(0,0,0,0.1)'; });
+
+  return card;
+}
+
+// ---------- Helper to create recently read card ----------
+function createRecentCard(r, allStories) {
+  const card = document.createElement('div');
+  card.className = 'recent-card story-card';
+  card.style.minWidth = '260px';
+  card.style.flex = '0 0 auto';
+  card.style.borderRadius = '14px';
+  card.style.padding = '14px';
+  card.style.boxShadow = '0 6px 16px rgba(0,0,0,0.1)';
+  card.style.display = 'flex';
+  card.style.flexDirection = 'column';
+  card.style.justifyContent = 'space-between';
+  card.style.cursor = 'pointer';
+  card.style.position = 'relative';
+  card.style.flexShrink = '0';
+  card.style.backfaceVisibility = 'hidden';
+
+  if (r.cover) {
+    card.style.backgroundImage = `linear-gradient(rgba(0,0,0,0.4),rgba(0,0,0,0.4)),url(${r.cover})`;
+    card.style.backgroundSize = 'cover';
+    card.style.backgroundPosition = 'center';
+    card.style.color = '#fff';
+  } else {
+    card.style.background = '#fff';
+    card.style.color = '#000';
+  }
+
+  const titleDiv = document.createElement('h4');
+  titleDiv.textContent = r.title || 'Untitled';
+  titleDiv.style.margin = '0 0 6px';
+  titleDiv.style.fontSize = '17px';
+  titleDiv.style.fontWeight = '700';
+  titleDiv.style.textShadow = r.cover ? '1px 1px 3px rgba(0,0,0,0.6)' : '';
+
+  const genreDiv = document.createElement('div');
+  genreDiv.textContent = r.genre || 'Unknown';
+  genreDiv.style.margin = '0 0 6px';
+  genreDiv.style.fontSize = '13px';
+  genreDiv.style.fontWeight = '600';
+  genreDiv.style.opacity = '0.9';
+
+  const descDiv = document.createElement('p');
+  descDiv.textContent = r.description || '';
+  descDiv.style.margin = '4px 0 8px';
+  descDiv.style.fontSize = '14px';
+  descDiv.style.lineHeight = '1.4';
+  descDiv.style.overflow = 'hidden';
+  descDiv.style.display = '-webkit-box';
+  descDiv.style.webkitLineClamp = '3';
+  descDiv.style.webkitBoxOrient = 'vertical';
+
+  const bottomRow = document.createElement('div');
+  bottomRow.style.display = 'flex';
+  bottomRow.style.justifyContent = 'flex-end';
+  bottomRow.style.alignItems = 'center';
+  bottomRow.style.marginTop = 'auto';
+
+  const readBtn = document.createElement('button');
+  readBtn.className = 'btn btn-primary';
+  readBtn.textContent = 'Read';
+  readBtn.addEventListener('click', e => {
+    e.stopPropagation();
+    const found = allStories.find(s => (s.id ?? s.slug ?? s.title) === r.id);
+    if (found) openStoryPreviewAndRecord(found);
+    else if (typeof openPreviewFullScreen === 'function') openPreviewFullScreen(r.title);
+    else console.warn('openPreviewFullScreen not defined');
+  });
+
+  bottomRow.appendChild(readBtn);
+
+  card.appendChild(titleDiv);
+  card.appendChild(genreDiv);
+  card.appendChild(descDiv);
+  card.appendChild(bottomRow);
+
+  // click whole card to open too
+  card.addEventListener('click', () => {
+    const found = allStories.find(s => (s.id ?? s.slug ?? s.title) === r.id);
+    if (found) openStoryPreviewAndRecord(found);
+    else if (typeof openPreviewFullScreen === 'function') openPreviewFullScreen(r.title);
+  });
+
+  return card;
+}
+
+// --- Initial render ---
 renderBrowseStories('All');
+//render
 
 
     // open preview modal for a story object
@@ -3178,7 +3436,18 @@ const ALGO_CONFIG = {
   freshDaysBoost: 21,        // recent content boost
   freshBoostMultiplier: 1.4, // stronger boost
   explorationFraction: 0.25,
-  cardsPerViewport: 6
+  cardsPerViewport: 6,
+
+  // Trending config (moved here for easy tuning)
+  trending: {
+    addThreshold: 50,   // recentReads >= 50 -> add to trending
+    keepThreshold: 100, // recentReads >= 100 -> definitely keep for that update
+    dropThreshold: 40,  // trending -> remove if recentReads < 40
+    expireDays: 7       // optionally expire trending entries not updated for this many days
+  },
+
+  // Recently-read UI config
+  recentlyReadLimit: 50
 };
 
 // ================= SESSION SEED =================
@@ -3235,6 +3504,144 @@ function computePopularityMetric(s) {
   return Math.log1p(reads) + 1.5 * Math.log1p(likes); // log scale for both
 }
 
+// ================= TRENDING & RECENT HELPERS =================
+function getRecentReadsForSerial(s) {
+  // flexible detection of "recent reads"
+  const candidates = [
+    s.recentReads,
+    s.readsLast24h,
+    s.readsToday,
+    s.readsLastDay,
+    s.dailyReads
+  ];
+  for (let c of candidates) if (Number.isFinite(c)) return Number(c);
+
+  // fallback: difference between readCount and prevReadCount (if available)
+  if (Number.isFinite(s.readCount) && Number.isFinite(s.prevReadCount)) {
+    return Math.max(0, Number(s.readCount) - Number(s.prevReadCount));
+  }
+
+  // no data
+  return undefined;
+}
+
+function loadTrendingState() {
+  try {
+    const raw = localStorage.getItem('trending_serials_v1');
+    return raw ? JSON.parse(raw) : { ids: {}, lastUpdated: Date.now() };
+  } catch (e) {
+    return { ids: {}, lastUpdated: Date.now() };
+  }
+}
+function saveTrendingState(state) {
+  try { localStorage.setItem('trending_serials_v1', JSON.stringify(state)); } catch (e) {}
+}
+
+// Update trending membership based on recentReads thresholds (returns new state)
+function updateTrendingStateForSerials(serials) {
+  const state = loadTrendingState();
+  const now = Date.now();
+  const cfg = ALGO_CONFIG.trending;
+  serials.forEach(s => {
+    const id = s.id ?? s.slug ?? s.title;
+    if (!id) return;
+    const recent = getRecentReadsForSerial(s);
+    const currentlyTrending = !!state.ids[id];
+
+    if (Number.isFinite(recent)) {
+      if (recent >= cfg.keepThreshold) {
+        // definitely trending / keep
+        state.ids[id] = { since: state.ids[id]?.since || now, lastSeen: now, recent };
+      } else if (recent >= cfg.addThreshold) {
+        // newly trending candidate or keep
+        state.ids[id] = { since: state.ids[id]?.since || now, lastSeen: now, recent };
+      } else if (currentlyTrending && recent < cfg.dropThreshold) {
+        // drop out if below drop threshold
+        delete state.ids[id];
+      } else if (currentlyTrending) {
+        // update lastSeen when still trending but not dropped
+        state.ids[id] = { ...state.ids[id], lastSeen: now, recent };
+      }
+    } else {
+      // no recent metric — optionally remove if expired
+      if (currentlyTrending) {
+        const lastSeen = state.ids[id]?.lastSeen || state.ids[id]?.since || now;
+        const daysSinceSeen = Math.floor((now - lastSeen) / (1000 * 60 * 60 * 24));
+        if (cfg.expireDays && daysSinceSeen > cfg.expireDays) {
+          delete state.ids[id];
+        }
+      }
+    }
+  });
+
+  // also prune any stale trending entries not present in serial list (optional)
+  const presentIds = new Set(serials.map(s => s.id ?? s.slug ?? s.title));
+  Object.keys(state.ids).forEach(id => {
+    if (!presentIds.has(id)) {
+      const lastSeen = state.ids[id]?.lastSeen || state.ids[id]?.since || now;
+      const daysSinceSeen = Math.floor((now - lastSeen) / (1000 * 60 * 60 * 24));
+      if (ALGO_CONFIG.trending.expireDays && daysSinceSeen > ALGO_CONFIG.trending.expireDays) {
+        delete state.ids[id];
+      }
+    }
+  });
+
+  state.lastUpdated = now;
+  saveTrendingState(state);
+  return state;
+}
+
+function getTrendingSerialsFromState(serials, state) {
+  const ids = new Set(Object.keys(state.ids || {}));
+  return serials.filter(s => {
+    const id = s.id ?? s.slug ?? s.title;
+    return id && ids.has(id);
+  });
+}
+
+// Recently read storage
+function recordRecentlyRead(serial) {
+  try {
+    const raw = localStorage.getItem('recently_read_v1');
+    let arr = raw ? JSON.parse(raw) : [];
+    const id = serial.id ?? serial.slug ?? serial.title;
+    // create minimal entry for display
+    const entry = {
+      id,
+      title: serial.title || 'Untitled',
+      cover: serial.cover || null,
+      genre: serial.genre || null,
+      description: serial.description || null,
+      at: Date.now()
+    };
+    // remove duplicate
+    arr = arr.filter(x => x.id !== id);
+    arr.unshift(entry);
+    const limit = Number.isFinite(ALGO_CONFIG.recentlyReadLimit) ? ALGO_CONFIG.recentlyReadLimit : 50;
+    if (arr.length > limit) arr = arr.slice(0, limit);
+    localStorage.setItem('recently_read_v1', JSON.stringify(arr));
+  } catch (e) {}
+}
+function loadRecentlyRead() {
+  try {
+    const raw = localStorage.getItem('recently_read_v1');
+    return raw ? JSON.parse(raw) : [];
+  } catch (e) { return []; }
+}
+
+// Helper to safely open preview + record recent
+function openSerialPreviewAndRecord(serial) {
+  try { recordRecentlyRead(serial); } catch (e) {}
+  if (typeof openSerialPreview === 'function') {
+    // prefer id/slug/title depending on what the preview expects
+    if (serial.id) openSerialPreview(serial.id);
+    else if (serial.slug) openSerialPreview(serial.slug);
+    else openSerialPreview(serial.title || '');
+  } else {
+    console.warn('openSerialPreview not defined');
+  }
+}
+
 // ================= SCORING & EXPLORATION =================
 function scoredSerialsWithNormalization(serials, rng) {
   rng = rng || Math.random;
@@ -3288,10 +3695,8 @@ function pickExploration(candidates, count, rng) {
   return shuffleArray(scored.slice(0, Math.min(count, scored.length)), rng);
 }
 
-
-
 // ================= DEMO SERIAL GENERATOR =================
-function generateDemoSerials(count = 50, rng) {
+function generateDemoSerials(count = 0, rng) {
   const genres = ["Action","Romance","Comedy","Fantasy","Horror","Tragedy","Tragic","Thriller","Adventure","Crime","Historic"];
   const covers = [
     "https://picsum.photos/seed/demo1/600/900",
@@ -3319,7 +3724,7 @@ function generateDemoSerials(count = 50, rng) {
 }
 
 // ================= MAIN RENDER FUNCTION =================
-function renderBrowseSerials(list = null, opts = { includeDemo: true, demoCount: 50, mergeWithSaved: true }) {
+function renderBrowseSerials(list = null, opts = { includeDemo: true, demoCount: 0, mergeWithSaved: false }) {
   const rng = rngForThisRender();
   try {
     // --- Container setup ---
@@ -3330,7 +3735,6 @@ function renderBrowseSerials(list = null, opts = { includeDemo: true, demoCount:
       container.id = 'serialsBrowseList';
       container.style.maxWidth = '980px';
       container.style.margin = '18px auto';
-      container.style.display = 'none';
       parent.appendChild(container);
     }
 
@@ -3348,11 +3752,8 @@ function renderBrowseSerials(list = null, opts = { includeDemo: true, demoCount:
       return;
     }
 
-    // Only clear if container has no children or new serials count differs
-if (container.children.length === 0 || container.children.length !== genresOrder.length) {
-  container.innerHTML = '';
-}
-
+    // Clear container to avoid stale DOM
+    container.innerHTML = '';
     container.style.display = 'block';
 
     const genresOrder = ['Action', 'Romance', 'Comedy', 'Fantasy', 'Horror', 'Tragic', "Thriller","Adventure","Crime","Historic"];
@@ -3363,6 +3764,9 @@ if (container.children.length === 0 || container.children.length !== genresOrder
       grouped[g].push(s);
     });
 
+    // Update trending state before scoring
+    const trendingState = updateTrendingStateForSerials(serialsRaw);
+
     const allScored = scoredSerialsWithNormalization(serialsRaw, rng);
     const scoredMap = new Map();
     allScored.forEach(s => {
@@ -3372,6 +3776,121 @@ if (container.children.length === 0 || container.children.length !== genresOrder
 
     const imagesToWait = [];
 
+    // --- TRENDING SECTION (top) ---
+    const trendingSerials = getTrendingSerialsFromState(allScored, trendingState);
+    if (trendingSerials && trendingSerials.length) {
+      trendingSerials.sort((a, b) => {
+        const ida = a.id ?? a.slug ?? a.title;
+        const idb = b.id ?? b.slug ?? b.title;
+        const sa = (trendingState.ids[ida]?.recent || 0) + (a.__score || 0);
+        const sb = (trendingState.ids[idb]?.recent || 0) + (b.__score || 0);
+        return sb - sa;
+      });
+
+      const trendingSection = document.createElement('div');
+      trendingSection.dataset.genre = 'Trending';
+      trendingSection.style.marginBottom = '28px';
+
+      const heading = document.createElement('h2');
+      heading.textContent = '🔥 Trending';
+      heading.style.margin = '6px 12px';
+      heading.style.textAlign = 'left';
+      trendingSection.appendChild(heading);
+
+      const scrollWrap = document.createElement('div');
+      scrollWrap.className = 'scroll-wrap trending-wrap';
+      scrollWrap.style.display = 'flex';
+      scrollWrap.style.overflowX = 'auto';
+      scrollWrap.style.gap = '12px';
+      scrollWrap.style.padding = '12px';
+      scrollWrap.style.scrollBehavior = 'smooth';
+      scrollWrap.style.scrollSnapType = 'x mandatory';
+      scrollWrap.style.scrollbarWidth = 'thin';
+
+      // wheel-to-scroll fix
+      scrollWrap.addEventListener(
+        'wheel',
+        e => {
+          if (Math.abs(e.deltaX) < Math.abs(e.deltaY)) {
+            scrollWrap.scrollLeft += e.deltaY;
+            e.preventDefault();
+          }
+        },
+        { passive: false }
+      );
+
+      trendingSerials.forEach(s => {
+        const card = document.createElement('div');
+        card.className = 'serial-card trending-card';
+        // match main serial card size
+        card.style.minWidth = '300px';
+        card.style.height = '400px';
+        card.style.flex = '0 0 auto';
+        card.style.borderRadius = '16px';
+        card.style.padding = '16px';
+        card.style.display = 'flex';
+        card.style.flexDirection = 'column';
+        card.style.justifyContent = 'space-between';
+        card.style.position = 'relative';
+        card.style.cursor = 'pointer';
+        card.style.scrollSnapAlign = 'center';
+        if (s.cover) {
+          card.style.backgroundImage = `linear-gradient(rgba(0,0,0,0.42),rgba(0,0,0,0.42)),url(${s.cover})`;
+          card.style.backgroundSize = 'cover';
+          card.style.backgroundPosition = 'center';
+          card.style.color = '#fff';
+        } else {
+          card.style.background = '#fff';
+          card.style.color = '#000';
+        }
+
+        // Info block (title, genre, description)
+        const infoDiv = document.createElement('div');
+        infoDiv.innerHTML = `<h4 style="margin:0;font-size:17px;text-shadow:1px 1px 3px rgba(0,0,0,0.6)">${s.title || 'Untitled Series'}</h4>
+          <div style="margin-top:6px;font-size:12px;opacity:0.9">${s.genre || 'Genre: Unknown'}</div>
+          <p style="margin:8px 0 0;font-size:13px;color:inherit;opacity:0.95;overflow:hidden;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;line-height:1.35;text-shadow:1px 1px 2px rgba(0,0,0,0.4)">${s.description || ''}</p>`;
+
+        card.appendChild(infoDiv);
+
+        const rc = document.createElement('div');
+        rc.style.position = 'absolute';
+        rc.style.left = '12px';
+        rc.style.top = '12px';
+        rc.style.background = 'rgba(255,255,255,0.85)';
+        rc.style.padding = '6px 8px';
+        rc.style.borderRadius = '12px';
+        rc.style.fontSize = '12px';
+        rc.style.color = '#222';
+        const recent = getRecentReadsForSerial(s);
+        rc.textContent = recent !== undefined ? `+${recent} today` : (s.readCount ? `reads ${Number(s.readCount).toLocaleString()}` : '');
+        card.appendChild(rc);
+
+        const bottomDiv = document.createElement('div');
+        bottomDiv.style.display = 'flex';
+        bottomDiv.style.justifyContent = 'flex-end';
+
+        const viewBtn = document.createElement('button');
+        viewBtn.className = 'btn view-serial-btn';
+        viewBtn.textContent = '🎬 View';
+        viewBtn.addEventListener('click', ev => {
+          ev.stopPropagation();
+          openSerialPreviewAndRecord(s);
+        });
+        bottomDiv.appendChild(viewBtn);
+        card.appendChild(bottomDiv);
+
+        // hover/touch behavior
+        card.addEventListener('mouseenter', () => { card.style.transform = 'scale(1.06)'; card.style.zIndex = 2; });
+        card.addEventListener('mouseleave', () => { card.style.transform = 'scale(1)'; card.style.zIndex = 1; });
+
+        scrollWrap.appendChild(card);
+      });
+
+      trendingSection.appendChild(scrollWrap);
+      container.appendChild(trendingSection);
+    }
+
+    // --- GENRE SECTIONS ---
     genresOrder.forEach(genre => {
       const rawList = grouped[genre];
       if (!rawList || !rawList.length) return;
@@ -3471,34 +3990,33 @@ if (container.children.length === 0 || container.children.length !== genresOrder
         }
 
         // --- Netflix-style hover/touch scale ---
-  card.style.transition = 'transform 0.25s ease, box-shadow 0.25s ease';
+        card.style.transition = 'transform 0.25s ease, box-shadow 0.25s ease';
 
-const scaleUp = () => {
-  card.style.transform = 'scale(1.08)';
-  card.style.zIndex = '2';
-  card.style.boxShadow = '0 12px 24px rgba(0,0,0,0.3)';
-};
-const scaleDown = () => {
-  card.style.transform = 'scale(1)';
-  card.style.zIndex = '1';
-  card.style.boxShadow = '0 6px 18px rgba(0,0,0,0.15)';
-};
+        const scaleUp = () => {
+          card.style.transform = 'scale(1.08)';
+          card.style.zIndex = '2';
+          card.style.boxShadow = '0 12px 24px rgba(0,0,0,0.3)';
+        };
+        const scaleDown = () => {
+          card.style.transform = 'scale(1)';
+          card.style.zIndex = '1';
+          card.style.boxShadow = '0 6px 18px rgba(0,0,0,0.15)';
+        };
 
-// Desktop hover
-card.addEventListener('mouseenter', scaleUp);
-card.addEventListener('mouseleave', scaleDown);
+        // Desktop hover
+        card.addEventListener('mouseenter', scaleUp);
+        card.addEventListener('mouseleave', scaleDown);
 
-// Mobile / touch
-card.addEventListener('touchstart', scaleUp);
-card.addEventListener('touchend', scaleDown);
-card.addEventListener('touchcancel', scaleDown);
-
-
+        // Mobile / touch
+        card.addEventListener('touchstart', scaleUp);
+        card.addEventListener('touchend', scaleDown);
+        card.addEventListener('touchcancel', scaleDown);
 
         // --- Info + buttons ---
         const infoDiv = document.createElement('div');
         infoDiv.innerHTML = `<h4 style="margin:0;font-size:17px;text-shadow:1px 1px 3px rgba(0,0,0,0.6)">${s.title ||
           'Untitled Series'}</h4>
+        <div style="margin-top:6px;font-size:12px;opacity:0.9">${s.genre || 'Genre: Unknown'}</div>
         <p style="margin:6px 0 0;font-size:13px;color:inherit;opacity:0.9;overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;line-height:1.4;text-shadow:1px 1px 2px rgba(0,0,0,0.4)">${
           s.description || ''
         }</p>`;
@@ -3527,7 +4045,7 @@ card.addEventListener('touchcancel', scaleDown);
         viewBtn.textContent = '🎬 View';
         viewBtn.addEventListener('click', ev => {
           ev.stopPropagation();
-          openSerialPreview(s.title);
+          openSerialPreviewAndRecord(s);
         });
         bottomDiv.appendChild(viewBtn);
 
@@ -3540,11 +4058,77 @@ card.addEventListener('touchcancel', scaleDown);
       container.appendChild(section);
     });
 
+    // --- RECENTLY READ SECTION (bottom) ---
+    const recentArr = loadRecentlyRead();
+    if (recentArr && recentArr.length) {
+      const recentSection = document.createElement('div');
+      recentSection.dataset.section = 'recently-read';
+      recentSection.style.marginTop = '28px';
+      recentSection.style.marginBottom = '36px';
+
+      const heading = document.createElement('h3');
+      heading.textContent = '📚 Recently Viewed';
+      heading.style.margin = '6px 12px';
+      heading.style.textAlign = 'left';
+      recentSection.appendChild(heading);
+
+      const wrap = document.createElement('div');
+      wrap.style.display = 'flex';
+      wrap.style.overflowX = 'auto';
+      wrap.style.gap = '12px';
+      wrap.style.padding = '12px';
+
+      recentArr.forEach(r => {
+        const card = document.createElement('div');
+        card.className = 'recent-card serial-card';
+        // match main card size
+        card.style.minWidth = '300px';
+        card.style.height = '400px';
+        card.style.flex = '0 0 auto';
+        card.style.borderRadius = '16px';
+        card.style.padding = '16px';
+        card.style.display = 'flex';
+        card.style.flexDirection = 'column';
+        card.style.justifyContent = 'space-between';
+        card.style.position = 'relative';
+        card.style.cursor = 'pointer';
+        card.style.scrollSnapAlign = 'center';
+
+        if (r.cover) {
+          card.style.backgroundImage = `linear-gradient(rgba(0,0,0,0.2),rgba(0,0,0,0.2)),url(${r.cover})`;
+          card.style.backgroundSize = 'cover';
+          card.style.backgroundPosition = 'center';
+          card.style.color = '#fff';
+        } else {
+          card.style.background = '#fff';
+          card.style.color = '#000';
+        }
+
+        // show title, genre, description (use stored genre/description if available)
+        const titleDiv = document.createElement('div');
+        titleDiv.innerHTML = `<h4 style="margin:0;font-size:17px;text-shadow:1px 1px 3px rgba(0,0,0,0.6)">${r.title || 'Untitled'}</h4>
+          <div style="margin-top:6px;font-size:12px;opacity:0.9">${r.genre || 'Genre: Unknown'}</div>
+          <p style="margin:8px 0 0;font-size:13px;color:inherit;opacity:0.95;overflow:hidden;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;line-height:1.35;text-shadow:1px 1px 2px rgba(0,0,0,0.3)">${r.description || ''}</p>`;
+        card.appendChild(titleDiv);
+
+        card.addEventListener('click', () => {
+          // find serial by id in serialsRaw first, fallback to opening by title if not present
+          const found = serialsRaw.find(s => (s.id ?? s.slug ?? s.title) === r.id);
+          if (found) openSerialPreviewAndRecord(found);
+          else openSerialPreview(r.title);
+        });
+
+        wrap.appendChild(card);
+      });
+
+      recentSection.appendChild(wrap);
+      container.appendChild(recentSection);
+    }
+
   } catch (e) {
     console.warn(e);
   }
 }
-
 
 
 // Optional: auto-run demo on DOMContentLoaded (uncomment if desired)

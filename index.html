@@ -381,7 +381,6 @@
     <label>Name</label><input type="text" id="profileName">
     <label>Age</label><input type="number" id="profileAge">
     <label>Country</label><input type="text" id="profileCountry">
-    <label>State</label><input type="text" id="profileState">
     <label>Favourite Genres</label>
     <div class="genres-container" id="genresContainer">
       <label class="genre-option"><input type="checkbox" value="Horror">Horror</label>
@@ -540,17 +539,19 @@
   </div>
 
   <!-- Dashboard -->
-  <div id="dashboardPage" class="hidden">
-    <div class="dashboard-header">\n      <div style="position:absolute;right:18px;top:24px"><button id="dashboardDownloadBtn" class="btn btn-secondary">Download All</button></div>
-      <h2>Your Content</h2>
-      <div class="row">
-        <button class="btn btn-primary" id="showStoriesBtn">Your Stories</button>
-        <button class="btn btn-secondary" id="showSerialsBtn">Your Serials</button>
-      </div>
+<div id="dashboardPage" class="hidden">
+  <div class="dashboard-header">
+    <h2>Your Content</h2>
+    <div class="row">
+      <button class="btn btn-primary" id="showStoriesBtn">Your Stories</button>
+      <button class="btn btn-secondary" id="showSerialsBtn">Your Serials</button>
     </div>
-    <div id="dashboardList"></div>
-    <button class="back-btn hidden" id="dashboardBackBtn">← Back</button>
   </div>
+
+  <div id="dashboardList"></div>
+  <button class="back-btn hidden" id="dashboardBackBtn">← Back</button>
+</div>
+
 
   <script>
     // ---------- Variables ----------
@@ -572,7 +573,6 @@
     const profileName = document.getElementById('profileName');
     const profileAge = document.getElementById('profileAge');
     const profileCountry = document.getElementById('profileCountry');
-    const profileState = document.getElementById('profileState');
     const welcomePage = document.getElementById('welcomePage');
     const createContentBtn = document.getElementById('createContentBtn');
     const storyFormPage = document.getElementById('storyFormPage');
@@ -731,7 +731,7 @@ function updateProfileUI(profile){
     }
     saveProfileBtn.addEventListener('click', ()=>{
       const genres = Array.from(document.querySelectorAll('#genresContainer input:checked')).map(c=>c.value);
-      const profile = {name:profileName.value,age:profileAge.value,country:profileCountry.value,state:profileState.value,genres};
+      const profile = {name:profileName.value,age:profileAge.value,country:profileCountry.value,genres};
       localStorage.setItem(STORAGE_KEY, JSON.stringify(profile));
       profileExists = true; updateProfileUI(profile);
       profileFormPage.classList.add('hidden'); welcomePage.classList.remove('hidden'); updateHeaderVisibility();

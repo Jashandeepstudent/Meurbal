@@ -297,6 +297,50 @@
 </style>
 </head>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.0/firebase-app.js";
+  import { getDatabase, ref, set, get, child } from "https://www.gstatic.com/firebasejs/10.14.0/firebase-database.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyCgTh6FzKWYCGyRgBmeclvGKxuuFL3L81Y",
+    authDomain: "meurbal.firebaseapp.com",
+    databaseURL: "https://meurbal-default-rtdb.firebaseio.com",
+    projectId: "meurbal",
+    storageBucket: "meurbal.firebasestorage.app",
+    messagingSenderId: "917148598257",
+    appId: "1:917148598257:web:dd42e5d690b56d2ac08e50",
+    measurementId: "G-EHJVB3XC90"
+  };
+
+  // initialize
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+
+  // Status box
+  const statusBox = document.createElement('div');
+  statusBox.id = '__firebase_status_box';
+  statusBox.textContent = "🟡 Firebase: Connecting...";
+  statusBox.style.cssText = "position:fixed;right:12px;bottom:12px;padding:8px 12px;border-radius:10px;background:#fff;font-weight:700;box-shadow:0 8px 30px rgba(0,0,0,0.12);z-index:99999";
+  document.addEventListener('DOMContentLoaded', ()=> document.body.appendChild(statusBox));
+
+  // small helper to set status
+  function setStatus(text, colorBg){
+    try{ statusBox.textContent = text; if(colorBg) statusBox.style.background = colorBg; }catch(e){}
+  }
+
+  // test connectivity by reading root once
+  get(ref(db, '/')).then(()=>{
+    setStatus('🟢 Firebase: Connected', '#dcfce7');
+  }).catch(()=>{
+    setStatus('🔴 Firebase: Offline', '#fee2e2');
+  });
+
+  // expose minimal API for the page to use
+  window._firebase = {
+    app, db, ref, set, get, child
+  };
+</script>
+
 
 <body>
   <header>
@@ -320,6 +364,15 @@
     <div class="categories-header">
       <h2>Browse Stories</h2>
     </div>
+    <div style="max-width:980px;margin:8px auto 0;display:flex;gap:8px;align-items:center;justify-content:space-between">
+      <div style="flex:1">
+        <input id="storiesSearchInput" placeholder="Search your stories..." style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px" />
+      </div>
+      <div style="min-width:140px;text-align:right">
+        <button id="storiesClearSearchBtn" class="btn btn-secondary" style="padding:8px 10px">Clear</button>
+      </div>
+    </div>
+
     <div class="categories-grid" id="categoriesGrid" aria-label="story categories">
       <!-- Stories list shown after selecting a category -->
       </div>
@@ -368,6 +421,18 @@
     <button class="back-btn" id="serialCategoriesBackBtn">← Back</button>
     <div class="categories-header">
       <h2>Browse Serial Categories</h2>
+      <div style="max-width:980px;margin:8px auto 0;display:flex;gap:8px;align-items:center;justify-content:space-between">
+        <div style="flex:1">
+          <input id="serialsSearchInput" placeholder="Search your serials..." style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px" />
+        </div>
+        <div style="min-width:140px;text-align:right">
+          <button id="serialsClearSearchBtn" class="btn btn-secondary" style="padding:8px 10px">Clear</button>
+        </div>
+      </div>
+      <div id="serialSearchResults" style="max-width:980px;margin:12px auto;display:none">
+        <div id="serialsCards" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;padding:12px"></div>
+      </div>
+
       <p class="muted" style="margin:6px 0 12px">Choose a genre to explore serials. Swipe or scroll horizontally to see all categories.</p>
     </div>
     <div class="categories-grid" id="serialCategoriesGrid" aria-label="serial categories">
@@ -845,54 +910,68 @@ document.addEventListener('DOMContentLoaded', function() {
         const meta = slot.unlocked ? (`Episodes: ${ (slot.episodes || []).length }`) : 'Unlock to start';
         div.innerHTML = `<div class="slot-title">${slot.unlocked? (slot.name || ('Slot '+(slot.id+1))) : 'Locked Slot'}</div>
                          <div class="slot-meta">${meta}</div>`;
-        div.addEventListener('click', ()=>{ selectedSlot = slot; if(!slot.unlocked){
-            // first click: ask to name & unlock (do not auto-open editor)
-            slotNameInput.value = slot.name || '';
-            slotNamePopup.dataset.slotIndex = index;
-            // clear any temporary cover selection so new slots don't inherit previous cover
-            window._currentStoryCover = '';
-            window._currentSerialCover = '';
-            if (document.getElementById('storyCoverImg')) { document.getElementById('storyCoverImg').style.display='none'; document.getElementById('storyCoverImg').src=''; }
-            if (document.getElementById('serialCoverImg')) { document.getElementById('serialCoverImg').style.display='none'; document.getElementById('serialCoverImg').src=''; }
-            slotNamePopup.dataset.slotIndex = index;
-            slotNamePopup.classList.remove('hidden');
-        } else {
-          // already unlocked
-          if(currentType==='story') showStoryForm(slot.name || '');
-          else {
-            // SERIALS: auto-open the Serial Create/Edit form prefilled for this slot
-            // If there's an existing serial with this name, prefill with its data (edit flow), otherwise prefill title and open create form
-            const existing = serialsData.find(s=> s.title === slot.name);
-            serialCreatePopup.dataset.slotIndex = index;
-            if(existing){
-              seriesTitleInput.value = existing.title || slot.name || '';
-              seriesGenreInput.value = existing.genre || '';
-              seriesDescInput.value = existing.description || '';
-              // leave episode1 fields empty (user can add a new ep or edit existing eps later)
-              ep1TitleInput.value = '';
-              ep1DescInput.value = '';
-              // load existing cover into preview
-              window._currentSerialCover = existing.cover || '';
-              if (window._currentSerialCover && document.getElementById('serialCoverImg')) {
-                document.getElementById('serialCoverImg').src = window._currentSerialCover;
-                document.getElementById('serialCoverImg').style.display = 'block';
-              } else if (document.getElementById('serialCoverImg')) {
-                document.getElementById('serialCoverImg').style.display = 'none';
-                document.getElementById('serialCoverImg').src = '';
-              }
-            } else {
-              seriesTitleInput.value = slot.name || '';
-              seriesGenreInput.value = '';
-              seriesDescInput.value = '';
-              ep1TitleInput.value = '';
-              ep1DescInput.value = '';
-              // clear any previous serial cover when creating new
-              window._currentSerialCover = '';
-              if (document.getElementById('serialCoverImg')) { document.getElementById('serialCoverImg').style.display='none'; document.getElementById('serialCoverImg').src=''; }
-            }
-            serialCreatePopup.classList.remove('hidden');
-          }
-        }});
+        
+div.addEventListener('click', ()=> {
+  selectedSlot = slot;
+  if (!slot.unlocked) {
+    // first click: ask to name & unlock (do not auto-open editor)
+    slotNameInput.value = slot.name || '';
+    slotNamePopup.dataset.slotIndex = index;
+    // clear any temporary cover selection so new slots don't inherit previous cover
+    window._currentStoryCover = '';
+    window._currentSerialCover = '';
+    if (document.getElementById('storyCoverImg')) { document.getElementById('storyCoverImg').style.display='none'; document.getElementById('storyCoverImg').src=''; }
+    if (document.getElementById('serialCoverImg')) { document.getElementById('serialCoverImg').style.display='none'; document.getElementById('serialCoverImg').src=''; }
+    slotNamePopup.dataset.slotIndex = index;
+    slotNamePopup.classList.remove('hidden');
+  } else {
+    // already unlocked
+    if (currentType === 'story') {
+      // ----- NEW: If a story matching this slot name exists, open the editor in edit mode -----
+      const existingStoryIndex = storiesData.findIndex(s => (s.title || '').trim() === (slot.name || '').trim());
+      if (existingStoryIndex >= 0) {
+        // open editor with isEdit=true so sheets/pages are loaded
+        createEditorPage(storiesData[existingStoryIndex].title, storiesData[existingStoryIndex].genre || '', storiesData[existingStoryIndex].description || '', {
+          isEdit: true,
+          editType: 'story',
+          index: existingStoryIndex
+        });
+      } else {
+        // no saved story for this slot yet — open story creation form prefilled with slot name
+        showStoryForm(slot.name || '');
+      }
+    } else {
+  // SERIALS: If serial exists in this slot, open it directly in edit mode
+  const existingIndex = serialsData.findIndex(s => (s.title || '').trim() === (slot.name || '').trim());
+  if (existingIndex >= 0) {
+    // open editor for first episode if it exists
+    const ser = serialsData[existingIndex];
+    const epIndex = ser.episodes && ser.episodes.length ? 0 : null;
+    createEditorPage(
+      epIndex != null ? ser.episodes[epIndex].title : ser.title,
+      ser.genre,
+      epIndex != null ? ser.episodes[epIndex].description : ser.description,
+      { isEdit: true, editType: 'serial', index: existingIndex, episodeIndex: epIndex }
+    );
+  } else {
+    // if no existing serial, show create form
+    serialCreatePopup.dataset.slotIndex = index;
+    seriesTitleInput.value = slot.name || '';
+    seriesGenreInput.value = '';
+    seriesDescInput.value = '';
+    ep1TitleInput.value = '';
+    ep1DescInput.value = '';
+    window._currentSerialCover = '';
+    if (document.getElementById('serialCoverImg')) {
+      document.getElementById('serialCoverImg').style.display = 'none';
+      document.getElementById('serialCoverImg').src = '';
+    }
+    serialCreatePopup.classList.remove('hidden');
+  }
+}
+  }
+});
+
         slotsContainer.appendChild(div);
       });
       if(currentType==='story') storySlots = slots; else serialSlots = slots;
@@ -1091,20 +1170,21 @@ document.addEventListener('DOMContentLoaded', function() {
         addNewSheet('');
       }
 
-      publishStoryBtn.addEventListener('click', ()=>{
+      publishStoryBtn.addEventListener('click', async ()=>{
         saveActiveSheet(); const payloadSheets = sheets.map(s=>({content: s.content || ''}));
         if(editType === 'story'){
           const payload = { title: title, genre: genre, description: desc, sheets: payloadSheets, status: 'Public', cover: window._currentStoryCover || '' };
-          // --- Attach tags (merge pending tags if present) ---
-          try{
-            const titleKey = title ? title.trim() : '';
-            const pending = (window._pendingTags && Array.isArray(window._pendingTags[titleKey])) ? window._pendingTags[titleKey] : [];
-            const existing = Array.isArray(payload.tags) ? payload.tags : [];
-            payload.tags = Array.from(new Set([...(existing||[]), ...(pending||[])]));
-          }catch(e){ console.warn('tag merge failed', e); }
-;
+          // Save locally first
           if(isEdit){ storiesData[opts.index] = Object.assign({}, storiesData[opts.index], payload); }
           else { storiesData.push(payload); }
+          // Attempt to save to Firebase (overwrite same title key)
+          try{
+            if(window._firebase && window._firebase.set){
+              const { db, ref, set } = window._firebase;
+              await set(ref(db, `stories/${encodeURIComponent(title)}`), payload);
+              console.log('Saved story to Firebase:', title);
+            }
+          }catch(err){ console.warn('Firebase save failed for story', err); }
           editorDiv.remove(); showDashboard('stories');
           return;
         }
@@ -1114,10 +1194,34 @@ document.addEventListener('DOMContentLoaded', function() {
           if(isEdit && opts.episodeIndex!=null){
             ser.episodes[opts.episodeIndex] = Object.assign({}, ser.episodes[opts.episodeIndex], { title: title, description: desc, sheets: payloadSheets, status: 'Public' });
             serialsData[opts.index] = ser;
+          try{
+            if(window._firebase && window._firebase.set){
+              const { db, ref, set } = window._firebase;
+              await set(ref(db, `serials/${encodeURIComponent(ser.title)}`), ser);
+              console.log('Saved serial to Firebase:', ser.title);
+            }
+          }catch(err){ console.warn('Firebase save failed for serial', err); }
+
           } else if(isNewEpisode){
             ser.episodes = ser.episodes || [];
             ser.episodes.push({ title: title || 'Episode', description: desc || '', sheets: payloadSheets, status: 'Public' });
             serialsData[opts.index] = ser;
+            try{
+              if(window._firebase && window._firebase.set){
+                const { db, ref, set } = window._firebase;
+                await set(ref(db, `serials/${encodeURIComponent(ser.title)}`), ser);
+                console.log('Saved new episode (serial) to Firebase:', ser.title);
+              }
+            }catch(err){ console.warn('Firebase save failed for new episode', err); }
+
+          try{
+            if(window._firebase && window._firebase.set){
+              const { db, ref, set } = window._firebase;
+              await set(ref(db, `serials/${encodeURIComponent(ser.title)}`), ser);
+              console.log('Saved serial to Firebase:', ser.title);
+            }
+          }catch(err){ console.warn('Firebase save failed for serial', err); }
+
           } else {
             serialsData[opts.index] = Object.assign({}, ser, { title: title, genre: genre, description: desc });
           }
@@ -1128,12 +1232,19 @@ document.addEventListener('DOMContentLoaded', function() {
         }
       });
 
-      saveDraftBtnLocal.addEventListener('click', ()=>{
+      saveDraftBtnLocal.addEventListener('click', async ()=>{
         saveActiveSheet(); const payloadSheets = sheets.map(s=>({content: s.content || ''}));
         if(editType === 'story'){
           const payload = { title: title, genre: genre, description: desc, sheets: payloadSheets, status: 'Draft', cover: window._currentStoryCover || '' };
           if(isEdit){ storiesData[opts.index] = Object.assign({}, storiesData[opts.index], payload); }
           else { storiesData.push(payload); }
+          try{
+            if(window._firebase && window._firebase.set){
+              const { db, ref, set } = window._firebase;
+              await set(ref(db, `stories/${encodeURIComponent(title)}`), payload);
+              console.log('Saved story draft to Firebase:', title);
+            }
+          }catch(err){ console.warn('Firebase draft save failed', err); }
           editorDiv.remove(); showDashboard('stories');
           return;
         }
@@ -1142,10 +1253,34 @@ document.addEventListener('DOMContentLoaded', function() {
           if(isEdit && opts.episodeIndex!=null){
             ser.episodes[opts.episodeIndex] = Object.assign({}, ser.episodes[opts.episodeIndex], { title: title, description: desc, sheets: payloadSheets, status: 'Draft' });
             serialsData[opts.index] = ser;
+          try{
+            if(window._firebase && window._firebase.set){
+              const { db, ref, set } = window._firebase;
+              await set(ref(db, `serials/${encodeURIComponent(ser.title)}`), ser);
+              console.log('Saved serial to Firebase:', ser.title);
+            }
+          }catch(err){ console.warn('Firebase save failed for serial', err); }
+
           } else if(isNewEpisode){
             ser.episodes = ser.episodes || [];
             ser.episodes.push({ title: title || 'Episode', description: desc || '', sheets: payloadSheets, status: 'Draft' });
             serialsData[opts.index] = ser;
+            try{
+              if(window._firebase && window._firebase.set){
+                const { db, ref, set } = window._firebase;
+                await set(ref(db, `serials/${encodeURIComponent(ser.title)}`), ser);
+                console.log('Saved serial draft to Firebase:', ser.title);
+              }
+            }catch(err){ console.warn('Firebase draft save failed for serial', err); }
+
+          try{
+            if(window._firebase && window._firebase.set){
+              const { db, ref, set } = window._firebase;
+              await set(ref(db, `serials/${encodeURIComponent(ser.title)}`), ser);
+              console.log('Saved serial to Firebase:', ser.title);
+            }
+          }catch(err){ console.warn('Firebase save failed for serial', err); }
+
           } else {
             serialsData[opts.index] = Object.assign({}, ser, { title: title, genre: genre, description: desc });
           }
@@ -1945,17 +2080,7 @@ const STORY_ALGO_CONFIG = {
   freshDaysBoost: 21,         // recent content boost
   freshBoostMultiplier: 1.4,  // stronger boost for fresh content
   explorationFraction: 0.25,
-  cardsPerViewport: 6,
-
-  // trending tuning
-  trending: {
-    addThreshold: 50,   // recentReads >= 50 -> add to trending
-    keepThreshold: 100, // recentReads >= 100 -> definitely keep for that update
-    dropThreshold: 40,  // trending -> remove if recentReads < 40
-    expireDays: 7       // expire entries not updated in this many days
-  },
-
-  recentlyReadLimit: 50
+  cardsPerViewport: 6
 };
 
 // Session RNG (seeded per page load)
@@ -2010,130 +2135,6 @@ function computeStoryPopularity(s) {
   return Math.log1p(reads) + 1.5*Math.log1p(likes); // log scale like ALGO_CONFIG
 }
 
-// ================= TRENDING & RECENT HELPERS (stories) =================
-function getRecentReadsForStory(s) {
-  const candidates = [
-    s.recentReads,
-    s.readsLast24h,
-    s.readsToday,
-    s.readsLastDay,
-    s.dailyReads
-  ];
-  for (let c of candidates) if (Number.isFinite(c)) return Number(c);
-
-  if (Number.isFinite(s.readCount) && Number.isFinite(s.prevReadCount)) {
-    return Math.max(0, Number(s.readCount) - Number(s.prevReadCount));
-  }
-  return undefined;
-}
-
-function loadTrendingStoriesState() {
-  try {
-    const raw = localStorage.getItem('trending_stories_v1');
-    return raw ? JSON.parse(raw) : { ids: {}, lastUpdated: Date.now() };
-  } catch (e) {
-    return { ids: {}, lastUpdated: Date.now() };
-  }
-}
-function saveTrendingStoriesState(state) {
-  try { localStorage.setItem('trending_stories_v1', JSON.stringify(state)); } catch (e) {}
-}
-
-function updateTrendingStateForStories(stories) {
-  const state = loadTrendingStoriesState();
-  const now = Date.now();
-  const cfg = STORY_ALGO_CONFIG.trending;
-  stories.forEach(s => {
-    const id = s.id ?? s.slug ?? s.title;
-    if (!id) return;
-    const recent = getRecentReadsForStory(s);
-    const currentlyTrending = !!state.ids[id];
-
-    if (Number.isFinite(recent)) {
-      if (recent >= cfg.keepThreshold) {
-        state.ids[id] = { since: state.ids[id]?.since || now, lastSeen: now, recent };
-      } else if (recent >= cfg.addThreshold) {
-        state.ids[id] = { since: state.ids[id]?.since || now, lastSeen: now, recent };
-      } else if (currentlyTrending && recent < cfg.dropThreshold) {
-        delete state.ids[id];
-      } else if (currentlyTrending) {
-        state.ids[id] = { ...state.ids[id], lastSeen: now, recent };
-      }
-    } else {
-      if (currentlyTrending) {
-        const lastSeen = state.ids[id]?.lastSeen || state.ids[id]?.since || now;
-        const daysSinceSeen = Math.floor((now - lastSeen) / (1000 * 60 * 60 * 24));
-        if (cfg.expireDays && daysSinceSeen > cfg.expireDays) {
-          delete state.ids[id];
-        }
-      }
-    }
-  });
-
-  // prune entries not present if expired
-  const presentIds = new Set(stories.map(s => s.id ?? s.slug ?? s.title));
-  Object.keys(state.ids).forEach(id => {
-    if (!presentIds.has(id)) {
-      const lastSeen = state.ids[id]?.lastSeen || state.ids[id]?.since || now;
-      const daysSinceSeen = Math.floor((now - lastSeen) / (1000 * 60 * 60 * 24));
-      if (STORY_ALGO_CONFIG.trending.expireDays && daysSinceSeen > STORY_ALGO_CONFIG.trending.expireDays) {
-        delete state.ids[id];
-      }
-    }
-  });
-
-  state.lastUpdated = now;
-  saveTrendingStoriesState(state);
-  return state;
-}
-
-function getTrendingStoriesFromState(stories, state) {
-  const ids = new Set(Object.keys(state.ids || {}));
-  return stories.filter(s => {
-    const id = s.id ?? s.slug ?? s.title;
-    return id && ids.has(id);
-  });
-}
-
-// Recently read (stories)
-function recordRecentlyReadStory(story) {
-  try {
-    const raw = localStorage.getItem('recently_read_stories_v1');
-    let arr = raw ? JSON.parse(raw) : [];
-    const id = story.id ?? story.slug ?? story.title;
-    const entry = {
-      id,
-      title: story.title || 'Untitled',
-      cover: story.cover || null,
-      genre: story.genre || null,
-      description: story.description || null,
-      at: Date.now()
-    };
-    arr = arr.filter(x => x.id !== id);
-    arr.unshift(entry);
-    const limit = Number.isFinite(STORY_ALGO_CONFIG.recentlyReadLimit) ? STORY_ALGO_CONFIG.recentlyReadLimit : 50;
-    if (arr.length > limit) arr = arr.slice(0, limit);
-    localStorage.setItem('recently_read_stories_v1', JSON.stringify(arr));
-  } catch (e) {}
-}
-function loadRecentlyReadStories() {
-  try {
-    const raw = localStorage.getItem('recently_read_stories_v1');
-    return raw ? JSON.parse(raw) : [];
-  } catch (e) { return []; }
-}
-
-function openStoryPreviewAndRecord(story) {
-  try { recordRecentlyReadStory(story); } catch (e) {}
-  if (typeof openPreviewFullScreen === 'function') {
-    if (story.id) openPreviewFullScreen(story.id);
-    else if (story.slug) openPreviewFullScreen(story.slug);
-    else openPreviewFullScreen(story.title || '');
-  } else {
-    console.warn('openPreviewFullScreen not defined');
-  }
-}
-
 // ================= SCORING =================
 function scoredStories(stories, rng) {
   rng = rng || Math.random;
@@ -2183,8 +2184,8 @@ function pickStoryExploration(candidates, count, rng) {
   return shuffleArray(scored.slice(0, Math.min(count, scored.length)), rng);
 }
 
-// Demo stories generator (kept as-is)
-function generateDemoStories(count=0,rng){rng=rng||rngForStoryRender(); 
+// Demo stories generator
+function generateDemoStories(count=50,rng){rng=rng||rngForStoryRender(); 
   const genres=["Action","Romance","Comedy","Fantasy","Horror","Tragic","Thriller","Adventure","Crime","Historic"]; 
   const covers=[
     "https://picsum.photos/seed/demo1/600/900",
@@ -2207,17 +2208,13 @@ function generateDemoStories(count=0,rng){rng=rng||rngForStoryRender();
   return stories;
 }
 
-// Main render function with Trending + Recently Read integrated
-function renderBrowseStories(selectedCategory = 'All', opts = { includeDemo: true, demoCount: 30, mergeWithSaved: true }) {
+// Main render function
+function renderBrowseStories(selectedCategory = 'All', opts = { includeDemo: false, demoCount: 50, mergeWithSaved: false }) {
   const rng = rngForStoryRender();
-
   try {
     const storiesListDiv = document.getElementById('storiesBrowseList');
     const cards = document.getElementById('storiesCards');
     if (!cards) return;
-
-    // --- Preserve vertical scroll ---
-    const oldScrollY = window.scrollY || document.documentElement.scrollTop;
 
     // Ensure main container is vertical and full-width
     cards.style.display = 'block';
@@ -2230,9 +2227,7 @@ function renderBrowseStories(selectedCategory = 'All', opts = { includeDemo: tru
       : publicStories;
 
     const demoStories = opts.includeDemo ? generateDemoStories(opts.demoCount || 50, rng) : [];
-    let allStories = opts.mergeWithSaved
-      ? demoStories.concat(filteredStories)
-      : (demoStories.length ? demoStories : filteredStories);
+    let allStories = opts.mergeWithSaved ? demoStories.concat(filteredStories) : demoStories;
 
     if (allStories.length === 0) {
       storiesListDiv.style.display = 'none';
@@ -2241,7 +2236,7 @@ function renderBrowseStories(selectedCategory = 'All', opts = { includeDemo: tru
       storiesListDiv.style.display = 'block';
     }
 
-    // --- Preserve horizontal scroll per genre ---
+    // Save horizontal scroll positions for each genre
     const oldScrollX = {};
     cards.querySelectorAll('div[data-genre]').forEach(sec => {
       const g = sec.dataset.genre;
@@ -2257,106 +2252,48 @@ function renderBrowseStories(selectedCategory = 'All', opts = { includeDemo: tru
       grouped[g].push(s);
     });
 
-    // Update trending state BEFORE scoring
-    const trendingState = updateTrendingStateForStories(allStories);
-
     const allScored = scoredStories(allStories, rng);
     const scoredMap = new Map();
     allScored.forEach(s => scoredMap.set(s.id ?? s.title, s));
 
-    // --- Clear or create sections container ---
-    cards.innerHTML = '';
     const imagesToWait = [];
 
-    // --- TRENDING SECTION ---
-    const trendingStories = getTrendingStoriesFromState(allScored, trendingState);
-    if (trendingStories && trendingStories.length) {
-      trendingStories.sort((a, b) => {
-        const ida = a.id ?? a.slug ?? a.title;
-        const idb = b.id ?? b.slug ?? b.title;
-        const sa = (trendingState.ids[ida]?.recent || 0) + (a.__score || 0);
-        const sb = (trendingState.ids[idb]?.recent || 0) + (b.__score || 0);
-        return sb - sa;
-      });
-
-      const trendingSection = document.createElement('div');
-      trendingSection.dataset.genre = 'Trending';
-      trendingSection.style.display = 'block';
-      trendingSection.style.marginBottom = '28px';
-      cards.appendChild(trendingSection);
-
-      const heading = document.createElement('h2');
-      heading.textContent = '🔥 Trending';
-      heading.style.margin = '6px 12px';
-      heading.style.textAlign = 'left';
-      trendingSection.appendChild(heading);
-
-      const scrollWrap = document.createElement('div');
-      scrollWrap.className = 'scroll-wrap trending-wrap';
-      scrollWrap.style.display = 'flex';
-      scrollWrap.style.overflowX = 'auto';
-      scrollWrap.style.gap = '12px';
-      scrollWrap.style.padding = '12px';
-      scrollWrap.style.scrollBehavior = 'smooth';
-      scrollWrap.style.scrollSnapType = 'x mandatory';
-      scrollWrap.style.scrollbarWidth = 'thin';
-
-      // wheel-to-scroll fix
-      scrollWrap.addEventListener(
-        'wheel',
-        e => {
-          if (Math.abs(e.deltaX) < Math.abs(e.deltaY)) {
-            scrollWrap.scrollLeft += e.deltaY;
-            e.preventDefault();
-          }
-        },
-        { passive: false }
-      );
-
-      trendingStories.forEach(s => {
-        const card = createStoryCard(s, imagesToWait);
-        scrollWrap.appendChild(card);
-      });
-
-      trendingSection.appendChild(scrollWrap);
-
-      // restore previous horizontal scroll if any
-      if (oldScrollX['Trending'] !== undefined) {
-        const prevBehavior = scrollWrap.style.scrollBehavior;
-        scrollWrap.style.scrollBehavior = 'auto';
-        scrollWrap.scrollLeft = oldScrollX['Trending'];
-        scrollWrap.style.scrollBehavior = prevBehavior || 'smooth';
-      }
-    }
-
-    // --- GENRE SECTIONS ---
     genresOrder.forEach(genre => {
       const list = grouped[genre];
       if (!list || list.length === 0) return;
 
-      const section = document.createElement('div');
-      section.dataset.genre = genre;
-      section.style.display = 'block';
-      section.style.marginBottom = '32px';
-      cards.appendChild(section);
+      // --- reuse existing section if possible ---
+      let section = cards.querySelector(`div[data-genre="${genre}"]`);
+      if (!section) {
+        section = document.createElement('div');
+        section.dataset.genre = genre;
+        section.style.display = 'block';
+        section.style.marginBottom = '32px';
+        cards.appendChild(section);
 
-      const heading = document.createElement('h3');
-      heading.textContent = genre;
-      heading.style.margin = '6px 12px';
-      heading.style.textAlign = 'left';
-      section.appendChild(heading);
+        const heading = document.createElement('h3');
+        heading.textContent = genre;
+        heading.style.margin = '6px 12px';
+        heading.style.textAlign = 'left';
+        section.appendChild(heading);
+      }
 
-      const scrollWrap = document.createElement('div');
-      scrollWrap.className = 'scroll-wrap';
-      scrollWrap.style.display = 'flex';
-      scrollWrap.style.overflowX = 'auto';
-      scrollWrap.style.gap = '12px';
-      scrollWrap.style.padding = '12px';
-      scrollWrap.style.scrollBehavior = 'smooth';
-      scrollWrap.style.scrollSnapType = 'x mandatory';
-      scrollWrap.style.scrollbarWidth = 'thin';
-      scrollWrap.style.flexWrap = 'nowrap';
-      section.appendChild(scrollWrap);
+      // --- reuse or create scrollWrap ---
+      let scrollWrap = section.querySelector('.scroll-wrap');
+      if (!scrollWrap) {
+        scrollWrap = document.createElement('div');
+        scrollWrap.className = 'scroll-wrap';
+        scrollWrap.style.display = 'flex';
+        scrollWrap.style.overflowX = 'auto';
+        scrollWrap.style.gap = '12px';
+        scrollWrap.style.padding = '12px';
+        scrollWrap.style.scrollBehavior = 'smooth';
+        scrollWrap.style.scrollbarWidth = 'thin';
+        scrollWrap.style.flexWrap = 'nowrap';
+        section.appendChild(scrollWrap);
+      }
+      // Clear only the cards inside
+      scrollWrap.innerHTML = '';
 
       const scoredList = list.map(s => scoredMap.get(s.id ?? s.title) || Object.assign({}, s, { __score: rng() * 0.2 }));
       const sorted = scoredList.slice().sort((a, b) => b.__score - a.__score);
@@ -2377,9 +2314,160 @@ function renderBrowseStories(selectedCategory = 'All', opts = { includeDemo: tru
       if (finalList.length === 0) finalList.push(...sorted.slice(0, displayCount));
       shuffleArray(finalList, rng);
 
-      finalList.forEach(s => scrollWrap.appendChild(createStoryCard(s, imagesToWait)));
+      // --- build cards ---
+finalList.forEach(s => {
+    const card = document.createElement('div');
+    card.className = 'story-card';
+    card.dataset.title = s.title || '';
+    card.style.minWidth = '260px';
+    card.style.flex = '0 0 auto';
+    card.style.borderRadius = '14px';
+    card.style.padding = '14px';
+    card.style.boxShadow = '0 6px 16px rgba(0,0,0,0.1)';
+    card.style.display = 'flex';
+    card.style.flexDirection = 'column';
+    card.style.justifyContent = 'space-between';
+    card.style.cursor = 'pointer';
+    card.style.position = 'relative';
+    card.style.flexShrink = '0';
+    card.style.backfaceVisibility = 'hidden';
+    card.style.transition = 'box-shadow 0.25s ease-out';
+    card.style.willChange = 'transform, box-shadow';
 
-      // restore previous horizontal scroll if available
+    // Inner wrapper for scaling & lifting
+    const inner = document.createElement('div');
+    inner.style.display = 'flex';
+    inner.style.flexDirection = 'column';
+    inner.style.justifyContent = 'space-between';
+    inner.style.height = '100%';
+    inner.style.transition = 'transform 0.25s ease-out';
+    inner.style.transformOrigin = 'center center';
+    card.appendChild(inner);
+
+    // State
+    let scaled = false;
+
+    const scaleUp = () => {
+        if (!scaled) {
+            inner.style.transform = 'scale(1.15) translateY(-6px)'; // bigger + lift
+            card.style.boxShadow = '0 16px 32px rgba(0,0,0,0.35)'; // stronger shadow
+            scaled = true;
+        }
+    };
+
+    const scaleDown = () => {
+        if (scaled) {
+            inner.style.transform = 'scale(1) translateY(0)';
+            card.style.boxShadow = '0 6px 16px rgba(0,0,0,0.1)';
+            scaled = false;
+        }
+    };
+
+    // Desktop hover
+    card.addEventListener('mouseenter', scaleUp);
+    card.addEventListener('mouseleave', scaleDown);
+
+    // Mobile / touch
+    let touchTimer;
+    card.addEventListener('touchstart', e => {
+        e.stopPropagation();
+        touchTimer = setTimeout(scaleUp, 150);
+    });
+    card.addEventListener('touchend', e => {
+        clearTimeout(touchTimer);
+        scaleDown();
+    });
+    card.addEventListener('touchcancel', scaleDown);
+
+    
+
+
+
+
+        if (s.cover) {
+          const img = new Image();
+          img.src = s.cover;
+          imagesToWait.push(new Promise(resolve => { if (img.complete) return resolve(); img.onload = img.onerror = () => resolve(); }));
+          card.style.backgroundImage = `linear-gradient(rgba(0,0,0,0.4),rgba(0,0,0,0.4)),url(${s.cover})`;
+          card.style.backgroundSize = 'cover';
+          card.style.backgroundPosition = 'center';
+          card.style.color = '#fff';
+        } else {
+          let color;
+          switch ((s.genre || '').toLowerCase()) {
+            case 'action': color = '#ff4b4b'; break;
+            case 'romance': color = '#ff6fa8'; break;
+            case 'comedy': color = '#ffd54f'; break;
+            case 'tragic': color = '#4fc3f7'; break;
+            case 'horror': color = '#000'; break;
+            case 'fantasy': color = '#a78bfa'; break;
+            case 'thriller': color = '#A52A2A'; break;
+            case 'crime': color = '#FF0000'; break;
+            case 'adventure': color = '#FF0000'; break;
+            case 'historic': color = '#C0C0C0'; break;
+            default: color = '#888'; break;
+          }
+          card.style.background = color;
+          card.style.color = color === '#000' ? '#fff' : '#000';
+        }
+
+        const titleEl = document.createElement('h4');
+        titleEl.textContent = s.title || 'Untitled';
+        titleEl.style.margin = '0 0 6px';
+        titleEl.style.fontSize = '17px';
+        titleEl.style.fontWeight = '700';
+        titleEl.style.textShadow = s.cover ? '1px 1px 3px rgba(0,0,0,0.6)' : '';
+
+        const genreEl = document.createElement('p');
+        genreEl.textContent = s.genre || 'Unknown';
+        genreEl.style.margin = '0 0 6px';
+        genreEl.style.fontSize = '13px';
+        genreEl.style.fontWeight = '600';
+        genreEl.style.opacity = '0.9';
+        genreEl.style.textShadow = s.cover ? '1px 1px 2px rgba(0,0,0,0.4)' : '';
+
+        const desc = document.createElement('p');
+        desc.textContent = s.description || '';
+        desc.style.margin = '4px 0 8px';
+        desc.style.fontSize = '14px';
+        desc.style.lineHeight = '1.4';
+        desc.style.overflow = 'hidden';
+        desc.style.display = '-webkit-box';
+        desc.style.webkitLineClamp = '3';
+        desc.style.webkitBoxOrient = 'vertical';
+        desc.style.textShadow = s.cover ? '1px 1px 2px rgba(0,0,0,0.4)' : '';
+
+        const bottomRow = document.createElement('div');
+        bottomRow.style.display = 'flex';
+        bottomRow.style.justifyContent = 'space-between';
+        bottomRow.style.alignItems = 'center';
+        bottomRow.style.marginTop = 'auto';
+
+        const reads = document.createElement('div');
+        reads.textContent = '👁️ ' + (s.reads || 0);
+        reads.style.fontSize = '13px';
+        reads.style.fontWeight = '600';
+
+        const readBtn = document.createElement('button');
+        readBtn.className = 'btn btn-primary';
+        readBtn.textContent = 'Read';
+        readBtn.addEventListener('click', e => {
+          e.stopPropagation();
+          openPreviewFullScreen(s);
+        });
+
+        bottomRow.appendChild(reads);
+        bottomRow.appendChild(readBtn);
+
+        card.appendChild(titleEl);
+        card.appendChild(genreEl);
+        card.appendChild(desc);
+        card.appendChild(bottomRow);
+
+        scrollWrap.appendChild(card);
+      });
+
+      // Restore horizontal scroll
       if (oldScrollX[genre] !== undefined) {
         const prevBehavior = scrollWrap.style.scrollBehavior;
         scrollWrap.style.scrollBehavior = 'auto';
@@ -2388,227 +2476,16 @@ function renderBrowseStories(selectedCategory = 'All', opts = { includeDemo: tru
       }
     });
 
-    // --- RECENTLY READ SECTION ---
-    const recentArr = loadRecentlyReadStories();
-    if (recentArr && recentArr.length) {
-      const recentSection = document.createElement('div');
-      recentSection.dataset.section = 'recently-read';
-      recentSection.style.marginTop = '28px';
-      recentSection.style.marginBottom = '36px';
-      cards.appendChild(recentSection);
-
-      const heading = document.createElement('h3');
-      heading.textContent = '📚 Recently Read';
-      heading.style.margin = '6px 12px';
-      heading.style.textAlign = 'left';
-      recentSection.appendChild(heading);
-
-      const wrap = document.createElement('div');
-      wrap.style.display = 'flex';
-      wrap.style.overflowX = 'auto';
-      wrap.style.gap = '12px';
-      wrap.style.padding = '12px';
-      wrap.style.scrollBehavior = 'smooth';
-      recentSection.appendChild(wrap);
-
-      recentArr.forEach(r => {
-        const card = createRecentCard(r, allStories);
-        wrap.appendChild(card);
-      });
-    }
-
-    // --- Restore vertical scroll ---
-    window.scrollTo({ top: oldScrollY, behavior: 'auto' });
-
-    // Optional: await imagesToWait if needed
-    // await Promise.all(imagesToWait);
+    // --- no vertical scroll restoration --- 
 
   } catch (err) {
     console.warn(err);
   }
 }
 
-// ---------- Helper to create a story card ----------
-function createStoryCard(s, imagesToWait) {
-  const card = document.createElement('div');
-  card.className = 'story-card';
-  card.dataset.title = s.title || '';
-  card.style.minWidth = '260px';
-  card.style.flex = '0 0 auto';
-  card.style.borderRadius = '14px';
-  card.style.padding = '14px';
-  card.style.boxShadow = '0 6px 16px rgba(0,0,0,0.1)';
-  card.style.display = 'flex';
-  card.style.flexDirection = 'column';
-  card.style.justifyContent = 'space-between';
-  card.style.cursor = 'pointer';
-  card.style.position = 'relative';
-  card.style.flexShrink = '0';
-  card.style.backfaceVisibility = 'hidden';
-  card.style.transition = 'box-shadow 0.25s ease-out';
-  card.style.willChange = 'transform, box-shadow';
-
-  if (s.cover) {
-    const img = new Image();
-    img.src = s.cover;
-    imagesToWait.push(new Promise(resolve => { if (img.complete) return resolve(); img.onload = img.onerror = () => resolve(); }));
-    card.style.backgroundImage = `linear-gradient(rgba(0,0,0,0.4),rgba(0,0,0,0.4)),url(${s.cover})`;
-    card.style.backgroundSize = 'cover';
-    card.style.backgroundPosition = 'center';
-    card.style.color = '#fff';
-  } else {
-    card.style.background = '#fff';
-    card.style.color = '#000';
-  }
-
-  const titleEl = document.createElement('h4');
-  titleEl.textContent = s.title || 'Untitled';
-  titleEl.style.margin = '0 0 6px';
-  titleEl.style.fontSize = '17px';
-  titleEl.style.fontWeight = '700';
-  titleEl.style.textShadow = s.cover ? '1px 1px 3px rgba(0,0,0,0.6)' : '';
-
-  const genreEl = document.createElement('p');
-  genreEl.textContent = s.genre || 'Unknown';
-  genreEl.style.margin = '0 0 6px';
-  genreEl.style.fontSize = '13px';
-  genreEl.style.fontWeight = '600';
-  genreEl.style.opacity = '0.9';
-  genreEl.style.textShadow = s.cover ? '1px 1px 2px rgba(0,0,0,0.4)' : '';
-
-  const desc = document.createElement('p');
-  desc.textContent = s.description || '';
-  desc.style.margin = '4px 0 8px';
-  desc.style.fontSize = '14px';
-  desc.style.lineHeight = '1.4';
-  desc.style.overflow = 'hidden';
-  desc.style.display = '-webkit-box';
-  desc.style.webkitLineClamp = '3';
-  desc.style.webkitBoxOrient = 'vertical';
-  desc.style.textShadow = s.cover ? '1px 1px 2px rgba(0,0,0,0.4)' : '';
-
-  const bottomRow = document.createElement('div');
-  bottomRow.style.display = 'flex';
-  bottomRow.style.justifyContent = 'space-between';
-  bottomRow.style.alignItems = 'center';
-  bottomRow.style.marginTop = 'auto';
-
-  const reads = document.createElement('div');
-  reads.textContent = '👁️ ' + (s.reads || s.readCount || 0);
-  reads.style.fontSize = '13px';
-  reads.style.fontWeight = '600';
-
-  const readBtn = document.createElement('button');
-  readBtn.className = 'btn btn-primary';
-  readBtn.textContent = 'Read';
-  readBtn.addEventListener('click', e => {
-    e.stopPropagation();
-    openStoryPreviewAndRecord(s);
-  });
-
-  bottomRow.appendChild(reads);
-  bottomRow.appendChild(readBtn);
-
-  card.appendChild(titleEl);
-  card.appendChild(genreEl);
-  card.appendChild(desc);
-  card.appendChild(bottomRow);
-
-  // hover / touch scaling
-  card.addEventListener('mouseenter', () => { card.style.transform = 'scale(1.06)'; card.style.zIndex = 2; card.style.boxShadow = '0 12px 24px rgba(0,0,0,0.2)'; });
-  card.addEventListener('mouseleave', () => { card.style.transform = 'scale(1)'; card.style.zIndex = 1; card.style.boxShadow = '0 6px 16px rgba(0,0,0,0.1)'; });
-
-  return card;
-}
-
-// ---------- Helper to create recently read card ----------
-function createRecentCard(r, allStories) {
-  const card = document.createElement('div');
-  card.className = 'recent-card story-card';
-  card.style.minWidth = '260px';
-  card.style.flex = '0 0 auto';
-  card.style.borderRadius = '14px';
-  card.style.padding = '14px';
-  card.style.boxShadow = '0 6px 16px rgba(0,0,0,0.1)';
-  card.style.display = 'flex';
-  card.style.flexDirection = 'column';
-  card.style.justifyContent = 'space-between';
-  card.style.cursor = 'pointer';
-  card.style.position = 'relative';
-  card.style.flexShrink = '0';
-  card.style.backfaceVisibility = 'hidden';
-
-  if (r.cover) {
-    card.style.backgroundImage = `linear-gradient(rgba(0,0,0,0.4),rgba(0,0,0,0.4)),url(${r.cover})`;
-    card.style.backgroundSize = 'cover';
-    card.style.backgroundPosition = 'center';
-    card.style.color = '#fff';
-  } else {
-    card.style.background = '#fff';
-    card.style.color = '#000';
-  }
-
-  const titleDiv = document.createElement('h4');
-  titleDiv.textContent = r.title || 'Untitled';
-  titleDiv.style.margin = '0 0 6px';
-  titleDiv.style.fontSize = '17px';
-  titleDiv.style.fontWeight = '700';
-  titleDiv.style.textShadow = r.cover ? '1px 1px 3px rgba(0,0,0,0.6)' : '';
-
-  const genreDiv = document.createElement('div');
-  genreDiv.textContent = r.genre || 'Unknown';
-  genreDiv.style.margin = '0 0 6px';
-  genreDiv.style.fontSize = '13px';
-  genreDiv.style.fontWeight = '600';
-  genreDiv.style.opacity = '0.9';
-
-  const descDiv = document.createElement('p');
-  descDiv.textContent = r.description || '';
-  descDiv.style.margin = '4px 0 8px';
-  descDiv.style.fontSize = '14px';
-  descDiv.style.lineHeight = '1.4';
-  descDiv.style.overflow = 'hidden';
-  descDiv.style.display = '-webkit-box';
-  descDiv.style.webkitLineClamp = '3';
-  descDiv.style.webkitBoxOrient = 'vertical';
-
-  const bottomRow = document.createElement('div');
-  bottomRow.style.display = 'flex';
-  bottomRow.style.justifyContent = 'flex-end';
-  bottomRow.style.alignItems = 'center';
-  bottomRow.style.marginTop = 'auto';
-
-  const readBtn = document.createElement('button');
-  readBtn.className = 'btn btn-primary';
-  readBtn.textContent = 'Read';
-  readBtn.addEventListener('click', e => {
-    e.stopPropagation();
-    const found = allStories.find(s => (s.id ?? s.slug ?? s.title) === r.id);
-    if (found) openStoryPreviewAndRecord(found);
-    else if (typeof openPreviewFullScreen === 'function') openPreviewFullScreen(r.title);
-    else console.warn('openPreviewFullScreen not defined');
-  });
-
-  bottomRow.appendChild(readBtn);
-
-  card.appendChild(titleDiv);
-  card.appendChild(genreDiv);
-  card.appendChild(descDiv);
-  card.appendChild(bottomRow);
-
-  // click whole card to open too
-  card.addEventListener('click', () => {
-    const found = allStories.find(s => (s.id ?? s.slug ?? s.title) === r.id);
-    if (found) openStoryPreviewAndRecord(found);
-    else if (typeof openPreviewFullScreen === 'function') openPreviewFullScreen(r.title);
-  });
-
-  return card;
-}
-
-// --- Initial render ---
+// Run demo
 renderBrowseStories('All');
-//render
+
 
 
     // open preview modal for a story object
@@ -2747,6 +2624,11 @@ renderBrowseStories('All');
     window.addEventListener('load', ()=>{ setTimeout(()=> renderBrowseStories('All'), 600); });
 
 
+// ======================
+// Updated openPreviewFullScreen
+// - Share & Comments buttons moved below author/date
+// - Deep-link via ?previewStory=<title> (history updated on open/close)
+// ======================
 function openPreviewFullScreen(story){
   const previewFull = document.getElementById('previewFull');
   previewFull.innerHTML = '';
@@ -2757,7 +2639,7 @@ function openPreviewFullScreen(story){
   inner.className = 'panel-inner';
 
   // --- Author & Date ---
-  const profileRaw = localStorage.getItem(STORAGE_KEY);
+  const profileRaw = localStorage.getItem(window.STORAGE_KEY || 'user_profile_v1');
   let author = 'Jashandeep'; // fallback
   if(profileRaw){
     try{
@@ -2777,26 +2659,42 @@ function openPreviewFullScreen(story){
 
   const storyTitle = story.title && story.title.trim() ? story.title : 'GENZ';
 
+  // helper escape
+  function escapeHtml(str){
+    return String(str == null ? '' : str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
   // --- Build inner HTML ---
-  // --- Build inner HTML ---
-inner.innerHTML = `
+  // Note: Share + Comments buttons placed below author/date (as requested)
+  inner.innerHTML = `
   <div class="panel-top" style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start">
     <div style="flex:1;min-width:0">
-      <h1 style="margin:6px 0 4px 0;word-break:break-word">${storyTitle}</h1>
-      <div style="display:flex;align-items:center;gap:12px;font-size:14px;color:var(--muted);margin-bottom:6px">
-  <span>Genre: ${story.genre || '—'}</span>
-<span id="previewReadCount" style="font-weight:600;color:#fff;background:#000000;padding:2px 6px;border-radius:4px;">👁️ ${story.reads || 0} Reads</span>
+      <h1 style="margin:6px 0 4px 0;word-break:break-word">${escapeHtml(storyTitle)}</h1>
 
-</div>
+      <div class="panel-meta" style="word-break:break-word">${escapeHtml(story.description || '')}</div>
+      <div class="panel-meta" style="margin-top:6px">Written by ${escapeHtml(author)} • Written on ${escapeHtml(dateStr)}</div>
 
-      <div class="panel-meta" style="word-break:break-word">${story.description || ''}</div>
-      <div class="panel-meta" style="margin-top:6px">Written by ${author} • Written on ${dateStr}</div>
+      <!-- Share & Comments moved below the author/date -->
+      <div style="display:flex;align-items:center;gap:8px;margin-top:10px">
+        <button id="previewShareBtn" class="share-btn-small" aria-expanded="false">Share</button>
+        <button id="previewCommentsBtn" class="share-btn-small" aria-expanded="false">Comments</button>
+      </div>
+
+      <div style="display:flex;align-items:center;gap:12px;font-size:14px;color:var(--muted);margin-top:8px">
+        <span>Genre: ${escapeHtml(story.genre || '—')}</span>
+        <span id="previewReadCount" style="font-weight:600;color:#fff;background:#000000;padding:2px 6px;border-radius:4px;">👁️ ${story.reads || 0} Reads</span>
+      </div>
     </div>
   </div>
 
   <hr />
 
-  <div style="font-style:italic;color:var(--muted);margin-top:8px;min-height:44px;">${topSnippet}</div>
+  <div style="font-style:italic;color:var(--muted);margin-top:8px;min-height:44px;">${escapeHtml(topSnippet)}</div>
   <div style="margin-top:12px;color:var(--muted);font-size:14px">(Preview shows a few sentences from the story. Click Start Reading to open the full reader.)</div>
 
   <div id="previewFullTags" class="tag-row" style="margin-top:12px"></div>
@@ -2818,12 +2716,21 @@ inner.innerHTML = `
       <span id="previewDislikeCount" class="muted">0</span>
     </div>
   </div>
-`;
-
+  `;
 
   panel.appendChild(inner);
   previewFull.appendChild(panel);
   previewFull.classList.remove('hidden');
+
+  // --- when opening preview, set previewStory param so shared link opens this preview directly ---
+  // Use URL and URLSearchParams to preserve other params
+  try {
+    const urlObj = new URL(window.location.href);
+    urlObj.searchParams.set('previewStory', story.title || '');
+    history.replaceState(null, '', urlObj.toString());
+  } catch (e) {
+    // ignore if URL API fails
+  }
 
   // --- Render Tags ---
   const tagContainer = document.getElementById('previewFullTags');
@@ -2851,13 +2758,6 @@ inner.innerHTML = `
 
   // --- Reads counter ---
   try{
-    let reads = story.reads || 0;
-    const readLabel = document.createElement('div');
-    readLabel.style.textAlign = 'center';
-    readLabel.style.marginTop = '12px';
-    readLabel.style.fontWeight = '600';
-    inner.appendChild(readLabel);
-
     const previewStartBtn = inner.querySelector('#previewStartBtn');
     if(previewStartBtn){
       previewStartBtn.addEventListener('click', function(){
@@ -2867,7 +2767,7 @@ inner.innerHTML = `
     }
   }catch(e){ console.warn('reads init failed', e); }
 
-  // --- Like/Dislike logic ---
+  // --- Like/Dislike logic (kept as you had) ---
   (function setupPreviewVotes(){
     try{
       const keyGlobal = 'global_votes_v1';
@@ -2875,7 +2775,7 @@ inner.innerHTML = `
       const title = (story && (story.title || 'untitled')).toString();
 
       function loadJSON(k){ try{ return JSON.parse(localStorage.getItem(k)||'{}'); }catch(e){ return {}; } }
-      function saveJSON(k,v){ localStorage.setItem(k, JSON.stringify(v)); }
+      function saveJSON(k,v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
 
       const globalVotes = loadJSON(keyGlobal);
       const myVotes = loadJSON(keyMine);
@@ -2943,56 +2843,33 @@ inner.innerHTML = `
     }catch(e){ console.warn('vote setup failed', e); }
   })();
 
-  // --- Share UI: styles (single injection) ---
+  // --- Share UI styles injection (if not already) ---
   if (!document.getElementById('share-ui-style')) {
     const style = document.createElement('style');
     style.id = 'share-ui-style';
     style.textContent = `
-      /* small share button inside panels */
-     .share-btn-small {
-        background: linear-gradient(135deg,#6ea8fe,#8bd3ff);
-        border:none;
-        color:#fff;
-        padding:6px 10px;
-        border-radius:12px;
-        cursor:pointer;
-        font-weight:600;
-        font-size:13px;
-        transition:transform .15s ease,box-shadow .15s ease;
-      }
+      .share-btn-small { background: linear-gradient(135deg,#6ea8fe,#8bd3ff); border:none; color:#fff; padding:6px 10px; border-radius:12px; cursor:pointer; font-weight:600; font-size:13px; transition:transform .15s ease,box-shadow .15s ease; }
       .share-btn-small:hover{ transform:scale(1.03); box-shadow:0 4px 10px rgba(0,0,0,0.12); }
-
-      /* menu */
-      .share-menu {
-        position:absolute;
-        background:#fff;
-        border:1px solid #e6e6e6;
-        border-radius:10px;
-        padding:8px;
-        display:flex;
-        flex-direction:column;
-        gap:8px;
-        min-width:210px;
-        box-shadow:0 8px 24px rgba(15,15,15,0.12);
-        z-index:1400;
-      }
-      .share-option {
-        display:flex;
-        align-items:center;
-        gap:10px;
-        padding:8px;
-        border-radius:8px;
-        border:none;
-        background:#fbfbfb;
-        cursor:pointer;
-        font-weight:500;
-      }
+      .share-menu { position:absolute; background:#fff; border:1px solid #e6e6e6; border-radius:10px; padding:8px; display:flex; flex-direction:column; gap:8px; min-width:210px; box-shadow:0 8px 24px rgba(15,15,15,0.12); z-index:1400; }
+      .share-option { display:flex; align-items:center; gap:10px; padding:8px; border-radius:8px; border:none; background:#fbfbfb; cursor:pointer; font-weight:500; }
       .share-option:hover { background:#fff1e6; }
+      /* Comments panel styles (kept compact) */
+       .comments-panel { position: fixed; inset: 0; background: rgba(255,255,255,0.98); z-index: 1500; display: flex; flex-direction: column; padding: 18px; gap: 12px; overflow: hidden; }
+  .comments-top { display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:1px solid #eee;padding-bottom:12px; }
+  .comments-list { display:flex; flex-direction:column; gap:12px; padding:12px 4px; max-width:900px; width:100%; margin:0 auto; overflow:auto; flex:1 1 auto; padding-bottom:120px; } /* reserve space for sticky input */
+  .comment-card { background:#fff; border:1px solid #eee; border-radius:12px; padding:12px; box-shadow:0 4px 12px rgba(0,0,0,0.03); }
+  .comment-input-wrap { position: sticky; bottom: 12px; display:flex; justify-content:center; width:100%; align-items:center; padding:12px 0 4px; z-index: 1510; pointer-events: auto; }
+  .comment-input-wrapper-bg { width:100%; display:flex; justify-content:center; }
+  .comment-input { width: min(880px, 96%); display:flex; gap:8px; align-items:center; border-radius:999px; padding:8px; border:1px solid #e5e7eb; box-shadow:0 6px 20px rgba(0,0,0,0.03); background:#fff; }
+  .comment-input textarea { flex:1; border:none; outline:none; resize:none; font-size:14px; padding:10px 14px; border-radius:999px; line-height:1.3; background:transparent; color:inherit; }
+  .comment-send { background:linear-gradient(90deg,#7c3aed,#06b6d4); color:#fff; border:none; padding:10px 16px; border-radius:999px; cursor:pointer; font-weight:700; box-shadow:0 8px 24px rgba(124,58,237,0.14); transition: transform .12s ease, box-shadow .12s ease; }
+  .comment-send:hover { transform: translateY(-2px); box-shadow:0 14px 34px rgba(124,58,237,0.18); }
+
     `;
     document.head.appendChild(style);
   }
 
-  // --- Create share menu and logic ---
+  // --- Create share menu (and make it deep-link aware) ---
   const existingMenu = document.getElementById('story-preview-share-menu');
   if (existingMenu) existingMenu.remove();
 
@@ -3003,13 +2880,21 @@ inner.innerHTML = `
   document.body.appendChild(shareMenu);
 
   function getShareLink(platform){
-    const link = `https://meurbal.in?story=${encodeURIComponent(story.title || '')}`;
-    const message = `Title: ${story.title || 'Untitled'}\nGenre: ${story.genre || '—'}\nDescription: ${story.description || ''}\nRead here: ${link}`;
-
-    if(platform === 'WhatsApp') return `https://api.whatsapp.com/send?text=${encodeURIComponent(message)}`;
-    if(platform === 'Facebook') return `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(link)}`;
-    if(platform === 'Twitter') return `https://twitter.com/intent/tweet?text=${encodeURIComponent(message)}`;
-    return link;
+    // deep link that opens the preview directly: preserves origin/path and sets previewStory param
+    try {
+      const u = new URL(window.location.href);
+      u.searchParams.set('previewStory', story.title || '');
+      const link = u.toString();
+      const message = `Title: ${story.title || 'Untitled'}\nGenre: ${story.genre || '—'}\nDescription: ${story.description || ''}\nRead here: ${link}`;
+      if(platform === 'WhatsApp') return `https://api.whatsapp.com/send?text=${encodeURIComponent(message)}`;
+      if(platform === 'Facebook') return `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(link)}`;
+      if(platform === 'Twitter') return `https://twitter.com/intent/tweet?text=${encodeURIComponent(message)}`;
+      return link;
+    } catch (e) {
+      // fallback simple link
+      const link = `${location.origin}${location.pathname}?previewStory=${encodeURIComponent(story.title || '')}`;
+      return link;
+    }
   }
 
   const options = [
@@ -3026,14 +2911,14 @@ inner.innerHTML = `
     btn.innerHTML = `${opt.emoji} ${opt.label}`;
     btn.addEventListener('click', async (ev) => {
       ev.stopPropagation();
+      const link = getShareLink(opt.name);
       if(opt.name === 'Copy'){
-        const link = getShareLink();
         try{
           await navigator.clipboard.writeText(link);
           btn.textContent = '✅ Link Copied!';
           setTimeout(()=> btn.innerHTML = `${opt.emoji} ${opt.label}`, 1400);
         }catch(e){
-          // fallback: select temporary input
+          // fallback copy
           const tmp = document.createElement('input');
           tmp.value = link;
           document.body.appendChild(tmp);
@@ -3043,8 +2928,7 @@ inner.innerHTML = `
           setTimeout(()=> btn.innerHTML = `${opt.emoji} ${opt.label}`, 1400);
         }
       } else {
-        const url = getShareLink(opt.name);
-        window.open(url, '_blank');
+        window.open(link, '_blank');
       }
       shareMenu.style.display = 'none';
       const shareBtn = inner.querySelector('#previewShareBtn');
@@ -3053,22 +2937,19 @@ inner.innerHTML = `
     shareMenu.appendChild(btn);
   });
 
-
   // Position & toggle share menu
   const shareBtn = inner.querySelector('#previewShareBtn');
   if (shareBtn) {
     shareBtn.addEventListener('click', (e) => {
       e.stopPropagation();
       const rect = shareBtn.getBoundingClientRect();
-      // prefer below button; if not enough space, open above
       const spaceBelow = window.innerHeight - rect.bottom;
-      const menuHeightGuess = 200; // safe guess
+      const menuHeightGuess = 200;
       if(spaceBelow > menuHeightGuess) {
         shareMenu.style.top = (rect.bottom + window.scrollY + 8) + 'px';
       } else {
         shareMenu.style.top = Math.max(8, rect.top + window.scrollY - menuHeightGuess - 8) + 'px';
       }
-      // align to right edge of button when possible
       const left = rect.right + window.scrollX - Math.min(shareMenu.offsetWidth || 220, 220);
       shareMenu.style.left = (left > 8 ? left : rect.left + window.scrollX) + 'px';
       shareMenu.style.display = shareMenu.style.display === 'flex' || shareMenu.style.display === 'block' ? 'none' : 'flex';
@@ -3093,29 +2974,401 @@ inner.innerHTML = `
   document.addEventListener('click', closeShareMenuOnClick);
   document.addEventListener('keydown', closeShareMenuOnEsc);
 
-  // --- Close / Start Reading buttons ---
+  // --- Close / Start Reading buttons (and cleanup of previewStory param) ---
   const closeBtn = inner.querySelector('#previewCloseBtn');
   const startBtn = inner.querySelector('#previewStartBtn');
-  if(closeBtn) closeBtn.addEventListener('click', ()=> previewFull.classList.add('hidden'));
+  function cleanupPreviewParam(){
+    try {
+      const u = new URL(window.location.href);
+      u.searchParams.delete('previewStory');
+      history.replaceState(null, '', u.pathname + u.search + u.hash);
+    } catch(e) {}
+  }
+  if(closeBtn) closeBtn.addEventListener('click', ()=>{
+    previewFull.classList.add('hidden');
+    cleanupPreviewParam();
+  });
   if(startBtn) startBtn.addEventListener('click', ()=> {
     previewFull.classList.add('hidden');
-    openReaderFullScreen(story);
+    cleanupPreviewParam();
+    if(typeof openReaderFullScreen === 'function') openReaderFullScreen(story);
   });
 
+  // ============================
+  // COMMENTS: full panel logic (same pattern as serials)
+  // ============================
+  (function integrateComments(){
+    const COMMENTS_KEY = 'comments_v1';
+    const STORAGE_KEY_LOCAL = window.STORAGE_KEY || 'user_profile_v1';
+    const commentsKey = `comments::${story.title || 'untitled'}`;
+
+    function loadStore(k){ try{ return JSON.parse(localStorage.getItem(k) || '{}'); }catch(e){ return {}; } }
+    function saveStore(k,v){ try{ localStorage.setItem(k, JSON.stringify(v || {})); }catch(e){} }
+
+    // ensure structure exists
+    const base = loadStore(COMMENTS_KEY);
+    base[commentsKey] = base[commentsKey] || { comments: [] };
+    saveStore(COMMENTS_KEY, base);
+
+    const commentsBtn = inner.querySelector('#previewCommentsBtn');
+    if (commentsBtn) {
+      commentsBtn.addEventListener('click', (ev) => {
+        ev.stopPropagation();
+        openCommentsPanel();
+      });
+    }
+
+    function getCurrentUserName(){
+      try{
+        const p = JSON.parse(localStorage.getItem(STORAGE_KEY_LOCAL) || '{}');
+        if(p && p.name && p.name.trim()) return p.name.trim();
+      }catch(e){}
+      return 'You';
+    }
+
+    function generateId(){ return 'c_' + Date.now().toString(36) + '_' + Math.floor(Math.random()*1000).toString(36); }
+
+    // state for UI
+    const expandedReplies = new Set();
+    let currentReplyTo = null;
+
+    function loadCommentsObj(){
+      const s = loadStore(COMMENTS_KEY);
+      s[commentsKey] = s[commentsKey] || { comments: [] };
+      return s;
+    }
+    function saveCommentsObj(obj){
+      saveStore(COMMENTS_KEY, obj);
+    }
+
+    function openCommentsPanel(){
+      // remove existing to re-create fresh
+      let cpanel = document.getElementById('previewCommentsFull');
+      if(cpanel) cpanel.remove();
+
+      cpanel = document.createElement('div');
+      cpanel.id = 'previewCommentsFull';
+      cpanel.className = 'comments-panel';
+
+      const top = document.createElement('div');
+      top.className = 'comments-top';
+      top.innerHTML = `
+        <div style="display:flex;align-items:center;gap:12px;flex:1">
+          <div class="comments-title" style="display:flex;gap:12px;align-items:center">
+            <span style="font-size:20px">${escapeHtml(story.title || 'Untitled')}</span>
+            <span class="comments-count-badge" id="previewCommentsCount">${(loadCommentsObj()[commentsKey].comments || []).length} comments</span>
+          </div>
+          <div class="small-muted" style="margin-left:auto">Likes: <strong id="previewSerialLikeBadge">${story.likes || 0}</strong></div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <button id="closePreviewCommentsBtn" class="share-btn-small" style="background:linear-gradient(90deg,#ef4444,#f97316)">Close</button>
+        </div>
+      `;
+      cpanel.appendChild(top);
+
+      const list = document.createElement('div');
+      list.className = 'comments-list';
+      list.id = 'previewCommentsList';
+      cpanel.appendChild(list);
+
+      const inputWrap = document.createElement('div');
+      inputWrap.className = 'comment-input-wrap';
+      inputWrap.innerHTML = `
+        <div id="previewReplyModeIndicatorWrap" style="display:none;"></div>
+        <div class="comment-input">
+          <textarea id="previewCommentTextArea" placeholder="Add a public comment..." rows="2"></textarea>
+          <button id="previewSendCommentBtn" class="comment-send">Send</button>
+        </div>
+      `;
+      cpanel.appendChild(inputWrap);
+
+      document.body.appendChild(cpanel);
+
+      document.getElementById('closePreviewCommentsBtn').addEventListener('click', ()=> cpanel.remove() );
+      document.getElementById('previewSendCommentBtn').addEventListener('click', sendComment);
+      document.getElementById('previewCommentTextArea').addEventListener('keydown', function(e){
+        if(e.key === 'Enter' && !e.shiftKey){ e.preventDefault(); sendComment(); }
+      });
+
+      renderComments();
+    }
+
+    function sendComment(){
+      const ta = document.getElementById('previewCommentTextArea');
+      if(!ta) return;
+      const text = ta.value.trim();
+      if(!text) return;
+      const user = getCurrentUserName();
+      const obj = loadCommentsObj();
+
+      if(currentReplyTo){
+        const parent = (obj[commentsKey].comments || []).find(x => x.id === currentReplyTo);
+        if(!parent){
+          currentReplyTo = null;
+        } else {
+          const newReply = { id: generateId(), author: user, text: text, ts: Date.now(), likes: 0, dislikes: 0 };
+          parent.replies = parent.replies || [];
+          parent.replies.push(newReply);
+          expandedReplies.add(parent.id);
+          saveCommentsObj(obj);
+          ta.value = '';
+          currentReplyTo = null;
+          renderComments();
+          updateReplyModeIndicator();
+          return;
+        }
+      }
+
+      const newComment = { id: generateId(), author: user, text: text, ts: Date.now(), likes: 0, dislikes: 0, replies: [] };
+      obj[commentsKey].comments.unshift(newComment);
+      saveCommentsObj(obj);
+      ta.value = '';
+      renderComments();
+    }
+
+    function updateReplyModeIndicator(){
+      const wrap = document.getElementById('previewReplyModeIndicatorWrap');
+      if(!wrap) return;
+      if(currentReplyTo){
+        const obj = loadCommentsObj();
+        const c = (obj[commentsKey].comments || []).find(x => x.id === currentReplyTo);
+        const name = c ? c.author : '';
+        wrap.style.display = 'block';
+        wrap.innerHTML = `<div class="reply-mode-indicator">Replying to <strong>${escapeHtml(name)}</strong>
+          <button id="previewCancelReplyMode" class="btn-action" style="margin-left:8px">Cancel</button></div>`;
+        const cancel = document.getElementById('previewCancelReplyMode');
+        if(cancel) cancel.addEventListener('click', ()=>{
+          currentReplyTo = null;
+          updateReplyModeIndicator();
+          const ta = document.getElementById('previewCommentTextArea');
+          if(ta) ta.focus();
+        });
+      } else {
+        wrap.style.display = 'none';
+        wrap.innerHTML = '';
+      }
+    }
+
+    function renderComments(){
+      const list = document.getElementById('previewCommentsList');
+      if(!list) return;
+      list.innerHTML = '';
+      const obj = loadCommentsObj();
+      const arr = obj[commentsKey].comments || [];
+      const badge = document.getElementById('previewCommentsCount');
+      if(badge) badge.textContent = `${arr.length} comments`;
+      const likeBadge = document.getElementById('previewSerialLikeBadge');
+      if(likeBadge) likeBadge.textContent = story.likes || 0;
+
+      arr.forEach(comment => {
+        const card = document.createElement('div');
+        card.className = 'comment-card';
+        card.dataset.cid = comment.id;
+
+        const meta = document.createElement('div');
+        meta.className = 'comment-meta';
+
+        const left = document.createElement('div');
+        left.innerHTML = `${escapeHtml(comment.author)} <span class="small-muted" style="font-weight:500;margin-left:8px">${new Date(comment.ts).toLocaleString()}</span>`;
+
+        const right = document.createElement('div');
+
+        if(comment.author === getCurrentUserName()){
+          const delBtn = document.createElement('button');
+          delBtn.className = 'btn-action delete-comment';
+          delBtn.textContent = 'Delete';
+          delBtn.addEventListener('click', ()=>{
+            if(!confirm('Delete this comment?')) return;
+            deleteComment(comment.id);
+          });
+          right.appendChild(delBtn);
+        }
+
+        meta.appendChild(left);
+        meta.appendChild(right);
+        card.appendChild(meta);
+
+        const text = document.createElement('div');
+        text.className = 'comment-text';
+        text.innerHTML = escapeHtml(comment.text);
+        card.appendChild(text);
+
+        const actions = document.createElement('div');
+        actions.className = 'comment-actions';
+        const repliesCount = (comment.replies || []).length;
+        actions.innerHTML = `
+          <button class="btn-action like-comment">👍 <span class="cnt">${comment.likes || 0}</span></button>
+          <button class="btn-action dislike-comment">👎 <span class="cnt">${comment.dislikes || 0}</span></button>
+          <button class="btn-action reply-open">Reply</button>
+          <button class="btn-action replies-toggle">Replies (${repliesCount})</button>
+        `;
+        card.appendChild(actions);
+
+        const replyList = document.createElement('div');
+        replyList.className = 'reply-list';
+        replyList.style.display = expandedReplies.has(comment.id) ? 'flex' : 'none';
+
+        (comment.replies || []).forEach(reply => {
+          const r = document.createElement('div');
+          r.className = 'reply-card';
+          r.dataset.rid = reply.id;
+
+          const topRow = document.createElement('div');
+          topRow.style.display = 'flex';
+          topRow.style.justifyContent = 'space-between';
+          topRow.style.alignItems = 'center';
+
+          const authorDiv = document.createElement('div');
+          authorDiv.style.fontWeight = '600';
+          authorDiv.innerHTML = `${escapeHtml(reply.author)} <span class="small-muted" style="font-weight:500;margin-left:8px">${new Date(reply.ts).toLocaleString()}</span>`;
+
+          const rightTop = document.createElement('div');
+
+          if(reply.author === getCurrentUserName()){
+            const delR = document.createElement('button');
+            delR.className = 'btn-action delete-reply';
+            delR.textContent = 'Delete';
+            delR.addEventListener('click', ()=>{
+              if(!confirm('Delete this reply?')) return;
+              deleteReply(comment.id, reply.id);
+            });
+            rightTop.appendChild(delR);
+          }
+
+          topRow.appendChild(authorDiv);
+          topRow.appendChild(rightTop);
+
+          const replyText = document.createElement('div');
+          replyText.style.marginTop = '6px';
+          replyText.innerHTML = escapeHtml(reply.text);
+
+          const replyActions = document.createElement('div');
+          replyActions.style.marginTop = '8px';
+          replyActions.style.display = 'flex';
+          replyActions.style.gap = '8px';
+          replyActions.innerHTML = `<button class="btn-action like-reply">👍 <span class="cnt">${reply.likes || 0}</span></button>
+                                    <button class="btn-action dislike-reply">👎 <span class="cnt">${reply.dislikes || 0}</span></button>`;
+
+          r.appendChild(topRow);
+          r.appendChild(replyText);
+          r.appendChild(replyActions);
+
+          replyActions.querySelector('.like-reply').addEventListener('click', ()=> toggleReplyVote(comment.id, reply.id, 'like'));
+          replyActions.querySelector('.dislike-reply').addEventListener('click', ()=> toggleReplyVote(comment.id, reply.id, 'dislike'));
+
+          replyList.appendChild(r);
+        });
+
+        card.appendChild(replyList);
+
+        actions.querySelector('.like-comment').addEventListener('click', ()=> toggleCommentVote(comment.id, 'like'));
+        actions.querySelector('.dislike-comment').addEventListener('click', ()=> toggleCommentVote(comment.id, 'dislike'));
+
+        actions.querySelector('.reply-open').addEventListener('click', ()=> {
+          currentReplyTo = comment.id;
+          updateReplyModeIndicator();
+          const ta = document.getElementById('previewCommentTextArea');
+          if(ta) ta.focus();
+        });
+
+        actions.querySelector('.replies-toggle').addEventListener('click', ()=> {
+          if(expandedReplies.has(comment.id)) expandedReplies.delete(comment.id);
+          else expandedReplies.add(comment.id);
+          renderComments();
+        });
+
+        list.appendChild(card);
+      });
+
+      updateReplyModeIndicator();
+    }
+
+    function toggleCommentVote(commentId, mode){
+      const obj = loadCommentsObj();
+      const comments = obj[commentsKey].comments || [];
+      const c = comments.find(x => x.id === commentId);
+      if(!c) return;
+      if(mode === 'like') c.likes = (c.likes || 0) + 1;
+      else c.dislikes = (c.dislikes || 0) + 1;
+      saveCommentsObj(obj);
+      renderComments();
+    }
+
+    function toggleReplyVote(commentId, replyId, mode){
+      const obj = loadCommentsObj();
+      const comments = obj[commentsKey].comments || [];
+      const c = comments.find(x => x.id === commentId);
+      if(!c) return;
+      const r = (c.replies || []).find(rr => rr.id === replyId);
+      if(!r) return;
+      if(mode === 'like') r.likes = (r.likes || 0) + 1;
+      else r.dislikes = (r.dislikes || 0) + 1;
+      saveCommentsObj(obj);
+      renderComments();
+    }
+
+    function deleteComment(commentId){
+      const obj = loadCommentsObj();
+      obj[commentsKey].comments = (obj[commentsKey].comments || []).filter(c => c.id !== commentId);
+      saveCommentsObj(obj);
+      expandedReplies.delete(commentId);
+      renderComments();
+    }
+
+    function deleteReply(commentId, replyId){
+      const obj = loadCommentsObj();
+      const c = (obj[commentsKey].comments || []).find(x => x.id === commentId);
+      if(!c) return;
+      c.replies = (c.replies || []).filter(r => r.id !== replyId);
+      saveCommentsObj(obj);
+      renderComments();
+    }
+  })();
+
   // optional: remove listeners when preview closed to avoid leaks
-  // (lightweight cleanup when previewFull hidden)
   const observer = new MutationObserver((mutations)=>{
     if(previewFull.classList.contains('hidden')){
-      document.removeEventListener('click', closeShareMenuOnClick);
-      document.removeEventListener('keydown', closeShareMenuOnEsc);
-      observer.disconnect();
+      try{
+        document.removeEventListener('click', closeShareMenuOnClick);
+        document.removeEventListener('keydown', closeShareMenuOnEsc);
+      }catch(_){}
       const menu = document.getElementById('story-preview-share-menu');
       if(menu) menu.style.display = 'none';
+      const cp = document.getElementById('previewCommentsFull');
+      if(cp) cp.remove();
+
+      // cleanup previewStory param (in case user closed by other means)
+      try {
+        const u = new URL(window.location.href);
+        u.searchParams.delete('previewStory');
+        history.replaceState(null, '', u.pathname + u.search + u.hash);
+      } catch(e) {}
+      observer.disconnect();
     }
   });
   observer.observe(previewFull, { attributes: true, attributeFilter: ['class'] });
+
+  // small helper declarations used above (ensure they exist in scope for cleanup)
+  function closeShareMenuOnClick(e){ if(!document.getElementById('story-preview-share-menu')) return; const menu = document.getElementById('story-preview-share-menu'); const btn = inner.querySelector('#previewShareBtn'); if(menu && !menu.contains(e.target) && e.target !== btn) { menu.style.display = 'none'; if(btn) btn.setAttribute('aria-expanded', 'false'); } }
+  function closeShareMenuOnEsc(e){ const menu = document.getElementById('story-preview-share-menu'); const btn = inner.querySelector('#previewShareBtn'); if(e.key === 'Escape' && menu) { menu.style.display = 'none'; if(btn) btn.setAttribute('aria-expanded', 'false'); } }
 }
 
+// Auto-open preview if URL contains ?previewStory=...
+(function autoOpenPreviewFromUrl(){
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const t = params.get('previewStory');
+    if (!t) return;
+    // find story by title (case-sensitive match like your other code)
+    if (Array.isArray(storiesData)) {
+      const s = storiesData.find(x => x && x.title === t);
+      if (s && typeof openPreviewFullScreen === 'function') {
+        // small timeout to ensure UI is ready
+        setTimeout(()=> openPreviewFullScreen(s), 80);
+      }
+    }
+  } catch(e) { /* ignore */ }
+})();
 	
     // ---------- Fullscreen Reader ----------
 function openReaderFullScreen(story) {
@@ -3429,28 +3682,29 @@ try{
 // Tunable parameters
 // ------------------ CONFIG ------------------
 const ALGO_CONFIG = {
-  popularityWeight: 0.5,     // slightly lower to allow novelty
+  popularityWeight: 0.5,
   recencyWeight: 0.25,
-  noveltyWeight: 0.25,       // increased to give new serials more chance
-  randomWeight: 0.1,         // slightly higher for exploration
-  freshDaysBoost: 21,        // recent content boost
-  freshBoostMultiplier: 1.4, // stronger boost
+  noveltyWeight: 0.25,
+  randomWeight: 0.1,
+  freshDaysBoost: 21,
+  freshBoostMultiplier: 1.4,
   explorationFraction: 0.25,
   cardsPerViewport: 6,
-
-  // Trending config (moved here for easy tuning)
   trending: {
-    addThreshold: 50,   // recentReads >= 50 -> add to trending
-    keepThreshold: 100, // recentReads >= 100 -> definitely keep for that update
-    dropThreshold: 40,  // trending -> remove if recentReads < 40
-    expireDays: 7       // optionally expire trending entries not updated for this many days
+    addThreshold: 50,
+    keepThreshold: 100,
+    dropThreshold: 40,
+    expireDays: 7
   },
-
-  // Recently-read UI config
   recentlyReadLimit: 50
 };
 
-// ================= SESSION SEED =================
+// LocalStorage keys
+const SERIAL_READS_KEY = 'serial_reads_v1';
+const TRENDING_STATE_KEY = 'trending_serials_v1';
+const RECENTLY_READ_KEY = 'recently_read_v1';
+
+// ---------------- SESSION SEED / PRNG ----------------
 (function initSessionSeed() {
   if (window.__SERIALS_RENDER_SEED) return;
   let extra = 0;
@@ -3464,7 +3718,6 @@ const ALGO_CONFIG = {
   window.__SERIALS_RENDER_SEED = ((Date.now() & 0xffffffff) ^ extra) >>> 0;
 })();
 
-// small deterministic PRNG
 function mulberry32(seed) {
   let t = seed >>> 0;
   return function() {
@@ -3474,11 +3727,9 @@ function mulberry32(seed) {
     return ((r ^ (r >>> 14)) >>> 0) / 4294967296;
   };
 }
-function rngForThisRender() {
-  return mulberry32(window.__SERIALS_RENDER_SEED);
-}
+function rngForThisRender() { return mulberry32(window.__SERIALS_RENDER_SEED); }
 
-// ================= UTILITIES =================
+// ---------------- UTILITIES ----------------
 function daysSince(dateString) {
   if (!dateString) return Number.MAX_SAFE_INTEGER;
   const d = new Date(dateString);
@@ -3501,43 +3752,29 @@ function shuffleArray(arr, rng = Math.random) {
 function computePopularityMetric(s) {
   const reads = Number(s.reads ?? s.readCount ?? 0);
   const likes = Number(s.likes ?? 0);
-  return Math.log1p(reads) + 1.5 * Math.log1p(likes); // log scale for both
+  return Math.log1p(reads) + 1.5 * Math.log1p(likes);
 }
 
-// ================= TRENDING & RECENT HELPERS =================
-function getRecentReadsForSerial(s) {
-  // flexible detection of "recent reads"
-  const candidates = [
-    s.recentReads,
-    s.readsLast24h,
-    s.readsToday,
-    s.readsLastDay,
-    s.dailyReads
-  ];
-  for (let c of candidates) if (Number.isFinite(c)) return Number(c);
+// ---------------- TRENDING state helpers ----------------
+function loadTrendingState() {
+  try {
+    const raw = localStorage.getItem(TRENDING_STATE_KEY);
+    return raw ? JSON.parse(raw) : { ids: {}, lastUpdated: Date.now() };
+  } catch (e) { return { ids: {}, lastUpdated: Date.now() }; }
+}
+function saveTrendingState(state) {
+  try { localStorage.setItem(TRENDING_STATE_KEY, JSON.stringify(state)); } catch (e) {}
+}
 
-  // fallback: difference between readCount and prevReadCount (if available)
+function getRecentReadsForSerial(s) {
+  const candidates = [ s.recentReads, s.readsLast24h, s.readsToday, s.readsLastDay, s.dailyReads ];
+  for (let c of candidates) if (Number.isFinite(c)) return Number(c);
   if (Number.isFinite(s.readCount) && Number.isFinite(s.prevReadCount)) {
     return Math.max(0, Number(s.readCount) - Number(s.prevReadCount));
   }
-
-  // no data
   return undefined;
 }
 
-function loadTrendingState() {
-  try {
-    const raw = localStorage.getItem('trending_serials_v1');
-    return raw ? JSON.parse(raw) : { ids: {}, lastUpdated: Date.now() };
-  } catch (e) {
-    return { ids: {}, lastUpdated: Date.now() };
-  }
-}
-function saveTrendingState(state) {
-  try { localStorage.setItem('trending_serials_v1', JSON.stringify(state)); } catch (e) {}
-}
-
-// Update trending membership based on recentReads thresholds (returns new state)
 function updateTrendingStateForSerials(serials) {
   const state = loadTrendingState();
   const now = Date.now();
@@ -3550,31 +3787,24 @@ function updateTrendingStateForSerials(serials) {
 
     if (Number.isFinite(recent)) {
       if (recent >= cfg.keepThreshold) {
-        // definitely trending / keep
         state.ids[id] = { since: state.ids[id]?.since || now, lastSeen: now, recent };
       } else if (recent >= cfg.addThreshold) {
-        // newly trending candidate or keep
         state.ids[id] = { since: state.ids[id]?.since || now, lastSeen: now, recent };
       } else if (currentlyTrending && recent < cfg.dropThreshold) {
-        // drop out if below drop threshold
         delete state.ids[id];
       } else if (currentlyTrending) {
-        // update lastSeen when still trending but not dropped
         state.ids[id] = { ...state.ids[id], lastSeen: now, recent };
       }
     } else {
-      // no recent metric — optionally remove if expired
       if (currentlyTrending) {
         const lastSeen = state.ids[id]?.lastSeen || state.ids[id]?.since || now;
         const daysSinceSeen = Math.floor((now - lastSeen) / (1000 * 60 * 60 * 24));
-        if (cfg.expireDays && daysSinceSeen > cfg.expireDays) {
-          delete state.ids[id];
-        }
+        if (cfg.expireDays && daysSinceSeen > cfg.expireDays) delete state.ids[id];
       }
     }
   });
 
-  // also prune any stale trending entries not present in serial list (optional)
+  // prune stale ids not in current list if expired
   const presentIds = new Set(serials.map(s => s.id ?? s.slug ?? s.title));
   Object.keys(state.ids).forEach(id => {
     if (!presentIds.has(id)) {
@@ -3590,7 +3820,6 @@ function updateTrendingStateForSerials(serials) {
   saveTrendingState(state);
   return state;
 }
-
 function getTrendingSerialsFromState(serials, state) {
   const ids = new Set(Object.keys(state.ids || {}));
   return serials.filter(s => {
@@ -3599,13 +3828,12 @@ function getTrendingSerialsFromState(serials, state) {
   });
 }
 
-// Recently read storage
+// ---------------- RECENTLY READ helpers ----------------
 function recordRecentlyRead(serial) {
   try {
-    const raw = localStorage.getItem('recently_read_v1');
+    const raw = localStorage.getItem(RECENTLY_READ_KEY);
     let arr = raw ? JSON.parse(raw) : [];
     const id = serial.id ?? serial.slug ?? serial.title;
-    // create minimal entry for display
     const entry = {
       id,
       title: serial.title || 'Untitled',
@@ -3614,26 +3842,24 @@ function recordRecentlyRead(serial) {
       description: serial.description || null,
       at: Date.now()
     };
-    // remove duplicate
     arr = arr.filter(x => x.id !== id);
     arr.unshift(entry);
     const limit = Number.isFinite(ALGO_CONFIG.recentlyReadLimit) ? ALGO_CONFIG.recentlyReadLimit : 50;
     if (arr.length > limit) arr = arr.slice(0, limit);
-    localStorage.setItem('recently_read_v1', JSON.stringify(arr));
+    localStorage.setItem(RECENTLY_READ_KEY, JSON.stringify(arr));
   } catch (e) {}
 }
 function loadRecentlyRead() {
   try {
-    const raw = localStorage.getItem('recently_read_v1');
+    const raw = localStorage.getItem(RECENTLY_READ_KEY);
     return raw ? JSON.parse(raw) : [];
   } catch (e) { return []; }
 }
 
-// Helper to safely open preview + record recent
+// Safe open + record
 function openSerialPreviewAndRecord(serial) {
   try { recordRecentlyRead(serial); } catch (e) {}
   if (typeof openSerialPreview === 'function') {
-    // prefer id/slug/title depending on what the preview expects
     if (serial.id) openSerialPreview(serial.id);
     else if (serial.slug) openSerialPreview(serial.slug);
     else openSerialPreview(serial.title || '');
@@ -3642,61 +3868,47 @@ function openSerialPreviewAndRecord(serial) {
   }
 }
 
-// ================= SCORING & EXPLORATION =================
+// ---------------- SCORING / EXPLORATION ----------------
 function scoredSerialsWithNormalization(serials, rng) {
   rng = rng || Math.random;
-
   const popArr = serials.map(computePopularityMetric);
   const ageArr = serials.map(s => {
     const ds = daysSince(s.published || s.createdAt || s.date || s.uploadedAt);
     return Math.max(0, 365 - Math.min(ds, 365));
   });
-
   const popNorm = normalizeArray(popArr);
   const recNorm = normalizeArray(ageArr);
 
-  return serials.map((s,i) => {
+  return serials.map((s, i) => {
     const pop = popNorm[i];
     const rec = recNorm[i];
-
-    // novelty: higher for less popular, but minimum 0.2
     const novelty = Math.max(0.2, 1 - pop);
-
-    // small random noise for exploration
     const randomEps = (rng ? rng() : Math.random()) * ALGO_CONFIG.randomWeight;
-
-    // combined score
     let score = ALGO_CONFIG.popularityWeight * pop
               + ALGO_CONFIG.recencyWeight * rec
               + ALGO_CONFIG.noveltyWeight * novelty
               + randomEps;
-
     const ageDays = daysSince(s.published || s.createdAt || s.date || s.uploadedAt);
-
-    // fresh boost for recent content
     if (ageDays <= ALGO_CONFIG.freshDaysBoost) score *= ALGO_CONFIG.freshBoostMultiplier;
-
     return Object.assign({}, s, { __score: score, __popNorm: pop, __recNorm: rec, __novelty: novelty, __ageDays: ageDays });
   });
 }
 
-// pick exploration serials (optional)
 function pickExploration(candidates, count, rng) {
   if (!candidates || candidates.length === 0 || count <= 0) return [];
   rng = rng || Math.random;
-
   const scored = candidates.map(s => {
     const novelty = s.__novelty ?? 0.5;
     const recency = s.__recNorm ?? 0.5;
     return Object.assign({}, s, { __exploreScore: novelty*0.6 + recency*0.4 + (rng ? rng() : Math.random())*0.1 });
   });
-
   scored.sort((a,b) => b.__exploreScore - a.__exploreScore);
   return shuffleArray(scored.slice(0, Math.min(count, scored.length)), rng);
 }
 
-// ================= DEMO SERIAL GENERATOR =================
+// ---------------- DEMO generator ----------------
 function generateDemoSerials(count = 0, rng) {
+  rng = rng || rngForThisRender();
   const genres = ["Action","Romance","Comedy","Fantasy","Horror","Tragedy","Tragic","Thriller","Adventure","Crime","Historic"];
   const covers = [
     "https://picsum.photos/seed/demo1/600/900",
@@ -3717,17 +3929,189 @@ function generateDemoSerials(count = 0, rng) {
     serials.push({
       id:`demo-${i+1}`,
       title, genre, description:`Demo ${genre.toLowerCase()} serial — random readCount ${readCount}.`,
-      cover: covers[i % covers.length], readCount, likes, createdAt: date
+      cover: covers[i % covers.length], readCount, reads: readCount, likes, createdAt: date
     });
   }
   return serials;
 }
 
-// ================= MAIN RENDER FUNCTION =================
-function renderBrowseSerials(list = null, opts = { includeDemo: true, demoCount: 0, mergeWithSaved: false }) {
+// ---------------- RENDER HELPERS (card creators) ----------------
+function createSerialCard(s, imagesToWait, allSerials) {
+  const card = document.createElement('div');
+  card.className = 'serial-card';
+  card.dataset.title = s.title || '';
+  card.style.minWidth = '300px';
+  card.style.height = '400px';
+  card.style.flex = '0 0 auto';
+  card.style.borderRadius = '16px';
+  card.style.boxShadow = '0 6px 18px rgba(0,0,0,0.15)';
+  card.style.padding = '16px';
+  card.style.display = 'flex';
+  card.style.flexDirection = 'column';
+  card.style.justifyContent = 'space-between';
+  card.style.position = 'relative';
+  card.style.transition = 'transform 0.25s ease, box-shadow 0.25s ease';
+  card.style.overflow = 'hidden';
+  card.style.cursor = 'pointer';
+  card.style.scrollSnapAlign = 'center';
+
+  if (s.cover) {
+    const img = new Image();
+    img.src = s.cover;
+    img.alt = s.title || 'cover';
+    imagesToWait.push(new Promise(resolve => {
+      if (img.complete) return resolve();
+      img.onload = img.onerror = () => resolve();
+    }));
+    card.style.backgroundImage = `linear-gradient(rgba(0,0,0,0.45),rgba(0,0,0,0.45)),url(${s.cover})`;
+    card.style.backgroundSize = 'cover';
+    card.style.backgroundPosition = 'center';
+    card.style.color = '#fff';
+  } else {
+    card.style.background = '#fff';
+    card.style.color = '#000';
+  }
+
+  // Hover / touch scale
+  const scaleUp = () => { card.style.transform = 'scale(1.08)'; card.style.zIndex = '2'; card.style.boxShadow = '0 12px 24px rgba(0,0,0,0.3)'; };
+  const scaleDown = () => { card.style.transform = 'scale(1)'; card.style.zIndex = '1'; card.style.boxShadow = '0 6px 18px rgba(0,0,0,0.15)'; };
+  card.addEventListener('mouseenter', scaleUp);
+  card.addEventListener('mouseleave', scaleDown);
+  card.addEventListener('touchstart', scaleUp);
+  card.addEventListener('touchend', scaleDown);
+  card.addEventListener('touchcancel', scaleDown);
+
+  // Info
+  const infoDiv = document.createElement('div');
+  infoDiv.innerHTML = `<h4 style="margin:0;font-size:17px;text-shadow:1px 1px 3px rgba(0,0,0,0.6)">${s.title || 'Untitled Series'}</h4>
+    <p style="margin:6px 0 0;font-size:13px;color:inherit;opacity:0.9;overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;line-height:1.4;text-shadow:1px 1px 2px rgba(0,0,0,0.4)">${s.description || ''}</p>`;
+
+  // readCount badge
+  if (typeof s.readCount !== 'undefined' || typeof s.reads !== 'undefined') {
+    const rc = document.createElement('div');
+    rc.style.position = 'absolute';
+    rc.style.right = '12px';
+    rc.style.top = '12px';
+    rc.style.background = 'rgba(255,255,255,0.85)';
+    rc.style.padding = '6px 8px';
+    rc.style.borderRadius = '12px';
+    rc.style.fontSize = '12px';
+    rc.style.color = '#222';
+    rc.textContent = `reads ${Number(s.readCount ?? s.reads ?? 0).toLocaleString()}`;
+    card.appendChild(rc);
+  }
+
+  // Buttons
+  const bottomDiv = document.createElement('div');
+  bottomDiv.style.display = 'flex';
+  bottomDiv.style.justifyContent = 'flex-end';
+  bottomDiv.style.gap = '8px';
+  bottomDiv.style.marginTop = '10px';
+  const viewBtn = document.createElement('button');
+  viewBtn.className = 'btn btn-secondary view-serial-btn';
+  viewBtn.textContent = '🎬 View';
+  viewBtn.addEventListener('click', ev => {
+    ev.stopPropagation();
+    // prefer full object open
+    openSerialPreviewAndRecord(s);
+  });
+  bottomDiv.appendChild(viewBtn);
+
+  // Click on card opens preview too
+  card.addEventListener('click', () => openSerialPreviewAndRecord(s));
+
+  card.appendChild(infoDiv);
+  card.appendChild(bottomDiv);
+  return card;
+}
+
+function createRecentCard(r, allSerials) {
+  const card = document.createElement('div');
+  card.className = 'recent-card serial-card';
+  card.style.minWidth = '260px';
+  card.style.flex = '0 0 auto';
+  card.style.borderRadius = '14px';
+  card.style.padding = '14px';
+  card.style.boxShadow = '0 6px 16px rgba(0,0,0,0.1)';
+  card.style.display = 'flex';
+  card.style.flexDirection = 'column';
+  card.style.justifyContent = 'space-between';
+  card.style.cursor = 'pointer';
+  card.style.position = 'relative';
+  card.style.flexShrink = '0';
+  card.style.backfaceVisibility = 'hidden';
+
+  if (r.cover) {
+    card.style.backgroundImage = `linear-gradient(rgba(0,0,0,0.4),rgba(0,0,0,0.4)),url(${r.cover})`;
+    card.style.backgroundSize = 'cover';
+    card.style.backgroundPosition = 'center';
+    card.style.color = '#fff';
+  } else {
+    card.style.background = '#fff';
+    card.style.color = '#000';
+  }
+
+  const titleDiv = document.createElement('h4');
+  titleDiv.textContent = r.title || 'Untitled';
+  titleDiv.style.margin = '0 0 6px';
+  titleDiv.style.fontSize = '17px';
+  titleDiv.style.fontWeight = '700';
+  titleDiv.style.textShadow = r.cover ? '1px 1px 3px rgba(0,0,0,0.6)' : '';
+
+  const genreDiv = document.createElement('div');
+  genreDiv.textContent = r.genre || 'Unknown';
+  genreDiv.style.margin = '0 0 6px';
+  genreDiv.style.fontSize = '13px';
+  genreDiv.style.fontWeight = '600';
+  genreDiv.style.opacity = '0.9';
+
+  const descDiv = document.createElement('p');
+  descDiv.textContent = r.description || '';
+  descDiv.style.margin = '4px 0 8px';
+  descDiv.style.fontSize = '14px';
+  descDiv.style.lineHeight = '1.4';
+  descDiv.style.overflow = 'hidden';
+  descDiv.style.display = '-webkit-box';
+  descDiv.style.webkitLineClamp = '3';
+  descDiv.style.webkitBoxOrient = 'vertical';
+
+  const bottomRow = document.createElement('div');
+  bottomRow.style.display = 'flex';
+  bottomRow.style.justifyContent = 'flex-end';
+  bottomRow.style.alignItems = 'center';
+  bottomRow.style.marginTop = 'auto';
+
+  const readBtn = document.createElement('button');
+  readBtn.className = 'btn btn-primary';
+  readBtn.textContent = 'Read';
+  readBtn.addEventListener('click', e => {
+    e.stopPropagation();
+    // try find in list
+    const found = allSerials.find(s => (s.id ?? s.slug ?? s.title) === r.id);
+    if (found) openSerialPreviewAndRecord(found);
+    else if (typeof openSerialPreview === 'function') openSerialPreview(r.title);
+  });
+
+  bottomRow.appendChild(readBtn);
+  card.appendChild(titleDiv);
+  card.appendChild(genreDiv);
+  card.appendChild(descDiv);
+  card.appendChild(bottomRow);
+
+  card.addEventListener('click', () => {
+    const found = allSerials.find(s => (s.id ?? s.slug ?? s.title) === r.id);
+    if (found) openSerialPreviewAndRecord(found);
+    else if (typeof openSerialPreview === 'function') openSerialPreview(r.title);
+  });
+
+  return card;
+}
+
+// ---------------- MAIN renderBrowseSerials (Full integration) ----------------
+function renderBrowseSerials(list = null, opts = { includeDemo: true, demoCount: 50, mergeWithSaved: true }) {
   const rng = rngForThisRender();
   try {
-    // --- Container setup ---
+    // container
     let container = document.getElementById('serialsBrowseList');
     if (!container) {
       const parent = document.getElementById('serialCategoriesPage') || document.body;
@@ -3735,28 +4119,38 @@ function renderBrowseSerials(list = null, opts = { includeDemo: true, demoCount:
       container.id = 'serialsBrowseList';
       container.style.maxWidth = '980px';
       container.style.margin = '18px auto';
+      container.style.display = 'none';
       parent.appendChild(container);
     }
 
-    // --- Load serials ---
+    // load serials (saved or passed in)
     const saved = Array.isArray(list)
       ? list
       : (typeof loadSavedSerials === 'function'
           ? loadSavedSerials()
           : JSON.parse(localStorage.getItem('saved_serials_v1') || '[]'));
     const demo = opts.includeDemo ? generateDemoSerials(opts.demoCount || 50, rng) : [];
-    const serialsRaw =
-      saved && saved.length && opts.mergeWithSaved ? demo.concat(saved) : saved && saved.length ? saved : demo;
+    const serialsRaw = saved && saved.length && opts.mergeWithSaved ? demo.concat(saved) : saved && saved.length ? saved : demo;
     if (!serialsRaw || !serialsRaw.length) {
       container.style.display = 'none';
       return;
     }
 
-    // Clear container to avoid stale DOM
-    container.innerHTML = '';
-    container.style.display = 'block';
+    // preserve vertical scroll
+    const oldScrollY = window.scrollY || document.documentElement.scrollTop;
 
-    const genresOrder = ['Action', 'Romance', 'Comedy', 'Fantasy', 'Horror', 'Tragic', "Thriller","Adventure","Crime","Historic"];
+    // preserve horizontal per-genre scrolls
+    const oldScrollX = {};
+    container.querySelectorAll('div[data-genre]').forEach(sec => {
+      const g = sec.dataset.genre;
+      const sc = sec.querySelector('.scroll-wrap');
+      if (sc) oldScrollX[g] = sc.scrollLeft;
+    });
+    // also trending scroll
+    const oldTrendingScroll = (container.querySelector('.trending-wrap') || {}).scrollLeft;
+
+    // grouping
+    const genresOrder = ['Action','Romance','Comedy','Fantasy','Horror','Tragic','Thriller','Adventure','Crime','Historic'];
     const grouped = {};
     serialsRaw.forEach(s => {
       const g = s.genre ? s.genre.trim() : 'Other';
@@ -3764,9 +4158,10 @@ function renderBrowseSerials(list = null, opts = { includeDemo: true, demoCount:
       grouped[g].push(s);
     });
 
-    // Update trending state before scoring
+    // trending update before scoring
     const trendingState = updateTrendingStateForSerials(serialsRaw);
 
+    // scoring
     const allScored = scoredSerialsWithNormalization(serialsRaw, rng);
     const scoredMap = new Map();
     allScored.forEach(s => {
@@ -3774,389 +4169,269 @@ function renderBrowseSerials(list = null, opts = { includeDemo: true, demoCount:
       scoredMap.set(key, s);
     });
 
+    // Clear container
+    container.innerHTML = '';
+    container.style.display = 'block';
     const imagesToWait = [];
 
-    // --- TRENDING SECTION (top) ---
-    const trendingSerials = getTrendingSerialsFromState(allScored, trendingState);
-    if (trendingSerials && trendingSerials.length) {
-      trendingSerials.sort((a, b) => {
-        const ida = a.id ?? a.slug ?? a.title;
-        const idb = b.id ?? b.slug ?? b.title;
-        const sa = (trendingState.ids[ida]?.recent || 0) + (a.__score || 0);
-        const sb = (trendingState.ids[idb]?.recent || 0) + (b.__score || 0);
-        return sb - sa;
-      });
+    // ---- TRENDING SECTION (above genres) ----
+// ---- TRENDING SECTION (top) ----
+const trendingSerials = getTrendingSerialsFromState(allScored, trendingState);
+if (trendingSerials && trendingSerials.length) {
+  trendingSerials.sort((a,b) => {
+    const ida = a.id ?? a.slug ?? a.title;
+    const idb = b.id ?? b.slug ?? b.title;
+    const ra = (trendingState.ids[ida]?.recent || 0) + (a.__score || 0);
+    const rb = (trendingState.ids[idb]?.recent || 0) + (b.__score || 0);
+    return rb - ra;
+  });
 
-      const trendingSection = document.createElement('div');
-      trendingSection.dataset.genre = 'Trending';
-      trendingSection.style.marginBottom = '28px';
+  const trendingSection = document.createElement('div');
+  trendingSection.dataset.genre = 'Trending';
+  trendingSection.style.display = 'block';
+  trendingSection.style.marginBottom = '28px';
+  container.appendChild(trendingSection);
 
-      const heading = document.createElement('h2');
-      heading.textContent = '🔥 Trending';
-      heading.style.margin = '6px 12px';
-      heading.style.textAlign = 'left';
-      trendingSection.appendChild(heading);
+  const heading = document.createElement('h2');
+  heading.textContent = '🔥 Trending';
+  heading.style.margin = '6px 12px';
+  heading.style.textAlign = 'left';
+  trendingSection.appendChild(heading);
 
-      const scrollWrap = document.createElement('div');
-      scrollWrap.className = 'scroll-wrap trending-wrap';
-      scrollWrap.style.display = 'flex';
-      scrollWrap.style.overflowX = 'auto';
-      scrollWrap.style.gap = '12px';
-      scrollWrap.style.padding = '12px';
-      scrollWrap.style.scrollBehavior = 'smooth';
-      scrollWrap.style.scrollSnapType = 'x mandatory';
-      scrollWrap.style.scrollbarWidth = 'thin';
+  const scrollWrap = document.createElement('div');
+  scrollWrap.className = 'scroll-wrap trending-wrap';
+  scrollWrap.style.display = 'flex';
+  scrollWrap.style.overflowX = 'auto';
+  scrollWrap.style.gap = '12px';
+  scrollWrap.style.padding = '12px';
+  scrollWrap.style.scrollBehavior = 'smooth';
+  scrollWrap.style.scrollSnapType = 'x mandatory';
+  scrollWrap.style.scrollbarWidth = 'thin';
 
-      // wheel-to-scroll fix
-      scrollWrap.addEventListener(
-        'wheel',
-        e => {
-          if (Math.abs(e.deltaX) < Math.abs(e.deltaY)) {
-            scrollWrap.scrollLeft += e.deltaY;
-            e.preventDefault();
-          }
-        },
-        { passive: false }
-      );
-
-      trendingSerials.forEach(s => {
-        const card = document.createElement('div');
-        card.className = 'serial-card trending-card';
-        // match main serial card size
-        card.style.minWidth = '300px';
-        card.style.height = '400px';
-        card.style.flex = '0 0 auto';
-        card.style.borderRadius = '16px';
-        card.style.padding = '16px';
-        card.style.display = 'flex';
-        card.style.flexDirection = 'column';
-        card.style.justifyContent = 'space-between';
-        card.style.position = 'relative';
-        card.style.cursor = 'pointer';
-        card.style.scrollSnapAlign = 'center';
-        if (s.cover) {
-          card.style.backgroundImage = `linear-gradient(rgba(0,0,0,0.42),rgba(0,0,0,0.42)),url(${s.cover})`;
-          card.style.backgroundSize = 'cover';
-          card.style.backgroundPosition = 'center';
-          card.style.color = '#fff';
-        } else {
-          card.style.background = '#fff';
-          card.style.color = '#000';
-        }
-
-        // Info block (title, genre, description)
-        const infoDiv = document.createElement('div');
-        infoDiv.innerHTML = `<h4 style="margin:0;font-size:17px;text-shadow:1px 1px 3px rgba(0,0,0,0.6)">${s.title || 'Untitled Series'}</h4>
-          <div style="margin-top:6px;font-size:12px;opacity:0.9">${s.genre || 'Genre: Unknown'}</div>
-          <p style="margin:8px 0 0;font-size:13px;color:inherit;opacity:0.95;overflow:hidden;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;line-height:1.35;text-shadow:1px 1px 2px rgba(0,0,0,0.4)">${s.description || ''}</p>`;
-
-        card.appendChild(infoDiv);
-
-        const rc = document.createElement('div');
-        rc.style.position = 'absolute';
-        rc.style.left = '12px';
-        rc.style.top = '12px';
-        rc.style.background = 'rgba(255,255,255,0.85)';
-        rc.style.padding = '6px 8px';
-        rc.style.borderRadius = '12px';
-        rc.style.fontSize = '12px';
-        rc.style.color = '#222';
-        const recent = getRecentReadsForSerial(s);
-        rc.textContent = recent !== undefined ? `+${recent} today` : (s.readCount ? `reads ${Number(s.readCount).toLocaleString()}` : '');
-        card.appendChild(rc);
-
-        const bottomDiv = document.createElement('div');
-        bottomDiv.style.display = 'flex';
-        bottomDiv.style.justifyContent = 'flex-end';
-
-        const viewBtn = document.createElement('button');
-        viewBtn.className = 'btn view-serial-btn';
-        viewBtn.textContent = '🎬 View';
-        viewBtn.addEventListener('click', ev => {
-          ev.stopPropagation();
-          openSerialPreviewAndRecord(s);
-        });
-        bottomDiv.appendChild(viewBtn);
-        card.appendChild(bottomDiv);
-
-        // hover/touch behavior
-        card.addEventListener('mouseenter', () => { card.style.transform = 'scale(1.06)'; card.style.zIndex = 2; });
-        card.addEventListener('mouseleave', () => { card.style.transform = 'scale(1)'; card.style.zIndex = 1; });
-
-        scrollWrap.appendChild(card);
-      });
-
-      trendingSection.appendChild(scrollWrap);
-      container.appendChild(trendingSection);
+  scrollWrap.addEventListener('wheel', e => {
+    if (Math.abs(e.deltaX) < Math.abs(e.deltaY)) {
+      scrollWrap.scrollLeft += e.deltaY;
+      e.preventDefault();
     }
+  }, { passive: false });
 
-    // --- GENRE SECTIONS ---
-    genresOrder.forEach(genre => {
-      const rawList = grouped[genre];
-      if (!rawList || !rawList.length) return;
+  const trendingIds = new Set(trendingSerials.map(s => s.id ?? s.slug ?? s.title));
 
-      const scoredList = rawList.map(s => {
-        const key = s.id ?? s.slug ?? s.title ?? JSON.stringify({ title: s.title, createdAt: s.createdAt });
-        return scoredMap.get(key) || Object.assign({}, s, { __score: rng() * 0.2 });
-      });
+  trendingSerials.forEach(s => {
+    const card = createSerialCard(s, imagesToWait, serialsRaw);
+    card.style.minWidth = '300px';
+    card.style.height = '400px';
+    scrollWrap.appendChild(card);
+  });
 
-      const sorted = scoredList.slice().sort((a, b) => (b.__score || 0) - (a.__score || 0));
-      const displayCount = Math.min(sorted.length, Math.max(ALGO_CONFIG.cardsPerViewport, Math.ceil(sorted.length)));
-      const explorationCount = Math.ceil(displayCount * ALGO_CONFIG.explorationFraction);
-      const topCandidates = sorted.slice(0, Math.max(0, displayCount - explorationCount));
-      const remaining = sorted.slice(displayCount - explorationCount);
-      const explorationPool = remaining.concat(sorted.slice(displayCount));
-      const explorationPicked = pickExploration(explorationPool, explorationCount, rng);
+  trendingSection.appendChild(scrollWrap);
 
-      const finalList = [];
-      const maxLen = Math.max(topCandidates.length, explorationPicked.length);
-      for (let i = 0; i < maxLen; i++) {
-        if (i < topCandidates.length) finalList.push(topCandidates[i]);
-        if (i < explorationPicked.length) finalList.push(explorationPicked[i]);
+  if (oldTrendingScroll !== undefined) {
+    const prevBehavior = scrollWrap.style.scrollBehavior;
+    scrollWrap.style.scrollBehavior = 'auto';
+    scrollWrap.scrollLeft = oldTrendingScroll;
+    scrollWrap.style.scrollBehavior = prevBehavior || 'smooth';
+  }
+
+  container.__trendingIds = trendingIds;
+} else {
+  container.__trendingIds = new Set();
+}
+
+// ---- GENRE SECTIONS (middle) ----
+// ... your existing genre section code here ...
+
+// ---- RECENTLY READ (bottom) ----
+// ---- GENRE SECTIONS ----
+genresOrder.forEach(genre => {
+  const rawList = grouped[genre];
+  if (!rawList || !rawList.length) return;
+
+  // filter out anything already in trending (dedupe)
+  const trendingIds = container.__trendingIds || new Set();
+  const filtered = rawList.filter(s => !trendingIds.has(s.id ?? s.slug ?? s.title));
+
+  if (!filtered.length) return;
+
+  const scoredList = filtered.map(s => {
+    const key = s.id ?? s.slug ?? s.title ?? JSON.stringify({ title: s.title, createdAt: s.createdAt });
+    return scoredMap.get(key) || Object.assign({}, s, { __score: rng() * 0.2 });
+  });
+
+  const sorted = scoredList.slice().sort((a,b) => (b.__score || 0) - (a.__score || 0));
+
+  const displayCount = Math.min(sorted.length, Math.max(ALGO_CONFIG.cardsPerViewport, Math.ceil(sorted.length)));
+  const explorationCount = Math.ceil(displayCount * ALGO_CONFIG.explorationFraction);
+  const topCandidates = sorted.slice(0, Math.max(0, displayCount - explorationCount));
+  const remaining = sorted.slice(displayCount - explorationCount);
+  const explorationPool = remaining.concat(sorted.slice(displayCount));
+  const explorationPicked = pickExploration(explorationPool, explorationCount, rng);
+
+  const finalList = [];
+  const maxLen = Math.max(topCandidates.length, explorationPicked.length);
+  for (let i = 0; i < maxLen; i++) {
+    if (i < topCandidates.length) finalList.push(topCandidates[i]);
+    if (i < explorationPicked.length) finalList.push(explorationPicked[i]);
+  }
+  if (finalList.length === 0) finalList.push(...sorted.slice(0, displayCount));
+  shuffleArray(finalList, rng);
+
+  const section = document.createElement('div');
+  section.dataset.genre = genre;
+  section.style.marginBottom = '32px';
+
+  const heading = document.createElement('h3');
+  heading.textContent = genre;
+  heading.style.margin = '6px 12px';
+  heading.style.textAlign = 'left';
+  section.appendChild(heading);
+
+  const scrollWrap = document.createElement('div');
+  scrollWrap.className = 'scroll-wrap';
+  scrollWrap.style.display = 'flex';
+  scrollWrap.style.overflowX = 'auto';
+  scrollWrap.style.gap = '12px';
+  scrollWrap.style.padding = '12px';
+  scrollWrap.style.scrollBehavior = 'smooth';
+  scrollWrap.style.scrollSnapType = 'x mandatory';
+  scrollWrap.style.scrollbarWidth = 'thin';
+
+  scrollWrap.addEventListener('wheel', e => {
+    if (Math.abs(e.deltaX) < Math.abs(e.deltaY)) {
+      scrollWrap.scrollLeft += e.deltaY;
+      e.preventDefault();
+    }
+  }, { passive: false });
+
+  finalList.forEach(s => {
+    const card = createSerialCard(s, imagesToWait, serialsRaw);
+    scrollWrap.appendChild(card);
+  });
+
+  section.appendChild(scrollWrap);
+  container.appendChild(section);
+
+  // restore scroll if any
+  if (oldScrollX[genre] !== undefined) {
+    const prevBehavior = scrollWrap.style.scrollBehavior;
+    scrollWrap.style.scrollBehavior = 'auto';
+    scrollWrap.scrollLeft = oldScrollX[genre];
+    scrollWrap.style.scrollBehavior = prevBehavior || 'smooth';
+  }
+});
+
+const recentArr = loadRecentlyRead();
+if (recentArr && recentArr.length) {
+  let recentSection = container.querySelector('[data-section="recently-read"]');
+  if (!recentSection) {
+    recentSection = document.createElement('div');
+    recentSection.dataset.section = 'recently-read';
+    recentSection.style.marginTop = '18px';
+    recentSection.style.marginBottom = '28px';
+    container.appendChild(recentSection);
+
+    const heading = document.createElement('h3');
+    heading.textContent = '📚 Recently Read';
+    heading.style.margin = '6px 12px';
+    heading.style.textAlign = 'left';
+    recentSection.appendChild(heading);
+
+    const wrap = document.createElement('div');
+    wrap.className = 'recent-wrap';
+    wrap.style.display = 'flex';
+    wrap.style.flexWrap = 'nowrap';
+    wrap.style.overflowX = 'auto';
+    wrap.style.overflowY = 'hidden';
+    wrap.style.gap = '12px';
+    wrap.style.padding = '12px';
+    wrap.style.webkitOverflowScrolling = 'touch';
+    wrap.style.scrollSnapType = 'x mandatory';
+    wrap.style.scrollbarWidth = 'thin';
+
+    wrap.addEventListener('wheel', e => {
+      if (Math.abs(e.deltaX) < Math.abs(e.deltaY)) {
+        wrap.scrollLeft += e.deltaY;
+        e.preventDefault();
       }
-      if (finalList.length === 0) finalList.push(...sorted.slice(0, displayCount));
-      shuffleArray(finalList, rng);
+    }, { passive: false });
 
-      // --- Section setup ---
-      const section = document.createElement('div');
-      section.dataset.genre = genre;
-      section.style.marginBottom = '32px';
-
-      const heading = document.createElement('h3');
-      heading.textContent = genre;
-      heading.style.margin = '6px 12px';
-      heading.style.textAlign = 'left';
-      section.appendChild(heading);
-
-      const scrollWrap = document.createElement('div');
-      scrollWrap.className = 'scroll-wrap';
-      scrollWrap.style.display = 'flex';
-      scrollWrap.style.overflowX = 'auto';
-      scrollWrap.style.gap = '12px';
-      scrollWrap.style.padding = '12px';
-      scrollWrap.style.scrollBehavior = 'smooth';
-      scrollWrap.style.scrollSnapType = 'x mandatory';
-      scrollWrap.style.scrollbarWidth = 'thin';
-
-      // --- Fix horizontal scrolling with mouse wheel ---
-      scrollWrap.addEventListener(
-        'wheel',
-        e => {
-          if (Math.abs(e.deltaX) < Math.abs(e.deltaY)) {
-            scrollWrap.scrollLeft += e.deltaY;
-            e.preventDefault();
-          }
-        },
-        { passive: false }
-      );
-
-      // --- Cards ---
-      finalList.forEach(s => {
-        const card = document.createElement('div');
-        card.className = 'serial-card';
-        card.dataset.title = s.title || '';
-        card.style.minWidth = '300px';
-        card.style.height = '400px';
-        card.style.flex = '0 0 auto';
-        card.style.borderRadius = '16px';
-        card.style.boxShadow = '0 6px 18px rgba(0,0,0,0.15)';
-        card.style.padding = '16px';
-        card.style.display = 'flex';
-        card.style.flexDirection = 'column';
-        card.style.justifyContent = 'space-between';
-        card.style.position = 'relative';
-        card.style.transition = 'transform 0.25s ease, box-shadow 0.25s ease';
-        card.style.overflow = 'hidden';
-        card.style.cursor = 'pointer';
-        card.style.scrollSnapAlign = 'center';
-
-        if (s.cover) {
-          const img = new Image();
-          img.src = s.cover;
-          img.alt = s.title || 'cover';
-          imagesToWait.push(
-            new Promise(resolve => {
-              if (img.complete) return resolve();
-              img.onload = img.onerror = () => resolve();
-            })
-          );
-          card.style.backgroundImage = `linear-gradient(rgba(0,0,0,0.45),rgba(0,0,0,0.45)),url(${s.cover})`;
-          card.style.backgroundSize = 'cover';
-          card.style.backgroundPosition = 'center';
-          card.style.color = '#fff';
-        } else {
-          card.style.background = '#fff';
-          card.style.color = '#000';
-        }
-
-        // --- Netflix-style hover/touch scale ---
-        card.style.transition = 'transform 0.25s ease, box-shadow 0.25s ease';
-
-        const scaleUp = () => {
-          card.style.transform = 'scale(1.08)';
-          card.style.zIndex = '2';
-          card.style.boxShadow = '0 12px 24px rgba(0,0,0,0.3)';
-        };
-        const scaleDown = () => {
-          card.style.transform = 'scale(1)';
-          card.style.zIndex = '1';
-          card.style.boxShadow = '0 6px 18px rgba(0,0,0,0.15)';
-        };
-
-        // Desktop hover
-        card.addEventListener('mouseenter', scaleUp);
-        card.addEventListener('mouseleave', scaleDown);
-
-        // Mobile / touch
-        card.addEventListener('touchstart', scaleUp);
-        card.addEventListener('touchend', scaleDown);
-        card.addEventListener('touchcancel', scaleDown);
-
-        // --- Info + buttons ---
-        const infoDiv = document.createElement('div');
-        infoDiv.innerHTML = `<h4 style="margin:0;font-size:17px;text-shadow:1px 1px 3px rgba(0,0,0,0.6)">${s.title ||
-          'Untitled Series'}</h4>
-        <div style="margin-top:6px;font-size:12px;opacity:0.9">${s.genre || 'Genre: Unknown'}</div>
-        <p style="margin:6px 0 0;font-size:13px;color:inherit;opacity:0.9;overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;line-height:1.4;text-shadow:1px 1px 2px rgba(0,0,0,0.4)">${
-          s.description || ''
-        }</p>`;
-
-        if (typeof s.readCount !== 'undefined') {
-          const rc = document.createElement('div');
-          rc.style.position = 'absolute';
-          rc.style.right = '12px';
-          rc.style.top = '12px';
-          rc.style.background = 'rgba(255,255,255,0.85)';
-          rc.style.padding = '6px 8px';
-          rc.style.borderRadius = '12px';
-          rc.style.fontSize = '12px';
-          rc.style.color = '#222';
-          rc.textContent = `reads ${Number(s.readCount).toLocaleString()}`;
-          card.appendChild(rc);
-        }
-
-        const bottomDiv = document.createElement('div');
-        bottomDiv.style.display = 'flex';
-        bottomDiv.style.justifyContent = 'flex-end';
-        bottomDiv.style.gap = '8px';
-        bottomDiv.style.marginTop = '10px';
-        const viewBtn = document.createElement('button');
-        viewBtn.className = 'btn btn-secondary view-serial-btn';
-        viewBtn.textContent = '🎬 View';
-        viewBtn.addEventListener('click', ev => {
-          ev.stopPropagation();
-          openSerialPreviewAndRecord(s);
-        });
-        bottomDiv.appendChild(viewBtn);
-
-        card.appendChild(infoDiv);
-        card.appendChild(bottomDiv);
-        scrollWrap.appendChild(card);
-      });
-
-      section.appendChild(scrollWrap);
-      container.appendChild(section);
+    // Save scroll continuously
+    wrap.addEventListener('scroll', () => {
+      localStorage.setItem('recentlyReadScrollX', wrap.scrollLeft);
     });
 
-    // --- RECENTLY READ SECTION (bottom) ---
-    const recentArr = loadRecentlyRead();
-    if (recentArr && recentArr.length) {
-      const recentSection = document.createElement('div');
-      recentSection.dataset.section = 'recently-read';
-      recentSection.style.marginTop = '28px';
-      recentSection.style.marginBottom = '36px';
+    recentSection.appendChild(wrap);
+  }
 
-      const heading = document.createElement('h3');
-      heading.textContent = '📚 Recently Viewed';
-      heading.style.margin = '6px 12px';
-      heading.style.textAlign = 'left';
-      recentSection.appendChild(heading);
+  const wrap = recentSection.querySelector('.recent-wrap');
 
-      const wrap = document.createElement('div');
-      wrap.style.display = 'flex';
-      wrap.style.overflowX = 'auto';
-      wrap.style.gap = '12px';
-      wrap.style.padding = '12px';
+  // Add missing cards only
+  recentArr.forEach(r => {
+    if (![...wrap.children].some(c => c.dataset.title === r.title)) {
+      const card = createSerialCard(r, imagesToWait, serialsRaw);
+      card.style.minWidth = '300px';
+      card.style.height = '400px';
+      card.style.flex = '0 0 auto';
 
-      recentArr.forEach(r => {
-        const card = document.createElement('div');
-        card.className = 'recent-card serial-card';
-        // match main card size
-        card.style.minWidth = '300px';
-        card.style.height = '400px';
-        card.style.flex = '0 0 auto';
-        card.style.borderRadius = '16px';
-        card.style.padding = '16px';
-        card.style.display = 'flex';
-        card.style.flexDirection = 'column';
-        card.style.justifyContent = 'space-between';
-        card.style.position = 'relative';
-        card.style.cursor = 'pointer';
-        card.style.scrollSnapAlign = 'center';
-
-        if (r.cover) {
-          card.style.backgroundImage = `linear-gradient(rgba(0,0,0,0.2),rgba(0,0,0,0.2)),url(${r.cover})`;
-          card.style.backgroundSize = 'cover';
-          card.style.backgroundPosition = 'center';
-          card.style.color = '#fff';
-        } else {
-          card.style.background = '#fff';
-          card.style.color = '#000';
-        }
-
-        // show title, genre, description (use stored genre/description if available)
-        const titleDiv = document.createElement('div');
-        titleDiv.innerHTML = `<h4 style="margin:0;font-size:17px;text-shadow:1px 1px 3px rgba(0,0,0,0.6)">${r.title || 'Untitled'}</h4>
-          <div style="margin-top:6px;font-size:12px;opacity:0.9">${r.genre || 'Genre: Unknown'}</div>
-          <p style="margin:8px 0 0;font-size:13px;color:inherit;opacity:0.95;overflow:hidden;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;line-height:1.35;text-shadow:1px 1px 2px rgba(0,0,0,0.3)">${r.description || ''}</p>`;
-        card.appendChild(titleDiv);
-
-        card.addEventListener('click', () => {
-          // find serial by id in serialsRaw first, fallback to opening by title if not present
-          const found = serialsRaw.find(s => (s.id ?? s.slug ?? s.title) === r.id);
-          if (found) openSerialPreviewAndRecord(found);
-          else openSerialPreview(r.title);
-        });
-
-        wrap.appendChild(card);
+      card.querySelectorAll('img').forEach(img => {
+        img.style.width = '100%';
+        img.style.height = '100%';
+        img.style.objectFit = 'cover';
       });
 
-      recentSection.appendChild(wrap);
-      container.appendChild(recentSection);
+      wrap.appendChild(card);
     }
+  });
 
+  // Restore scroll instantly (no auto or smooth)
+  const savedScroll = parseFloat(localStorage.getItem('recentlyReadScrollX') || '0');
+  requestAnimationFrame(() => {
+    wrap.scrollLeft = savedScroll; // <-- instant jump
+  });
+}
+
+
+    // restore vertical scroll
+    window.scrollTo({ top: oldScrollY, behavior: 'auto' });
+
+    // optional: wait for images to settle (not awaited here, but we tracked imagesToWait if you want)
+    // Promise.all(imagesToWait).then(()=>{/* images loaded */}).catch(()=>{});
   } catch (e) {
     console.warn(e);
   }
 }
 
-
-// Optional: auto-run demo on DOMContentLoaded (uncomment if desired)
-// document.addEventListener('DOMContentLoaded', () => runDemoTest({ demoCount: 50, mergeWithSaved: true }));
+// ---------------- INITIAL CALL ----------------
+// Auto-run like your previous code (keeps demo on by default)
+renderBrowseSerials(null, { includeDemo: false, demoCount: 50, mergeWithSaved: false });
 
 function openSerialPreview(title) {
   try {
     const VOTES_STORE_KEY = 'global_votes_v1';
     const USER_VOTES_KEY = 'user_votes_v1';
     const READS_KEY = 'serial_reads_v1';
+    const COMMENTS_KEY = 'comments_v1'; // new storage for comments
+    const STORAGE_KEY = window.STORAGE_KEY || 'user_profile_v1';
 
     let saved = [];
-    try { 
-      saved = typeof loadSavedSerials === 'function' ? loadSavedSerials() : (JSON.parse(localStorage.getItem('saved_serials_v1')||'[]')); 
-    } catch(e) { saved = []; }
+    try {
+      saved = typeof loadSavedSerials === 'function' ? loadSavedSerials() : (JSON.parse(localStorage.getItem('saved_serials_v1') || '[]'));
+    } catch (e) { saved = []; }
 
     const serial = (saved || []).find(s => s.title === title) || (serialsData || []).find(s => s.title === title);
     if (!serial) { alert('Serial not found'); return; }
 
     const voteKey = `serial::${serial.title || 'untitled'}`;
     const readKey = `serial::${serial.title || 'untitled'}`;
+    const commentsKey = voteKey; // reuse same serial identifier for comments store nesting
 
-    function loadStore(key) { try { return JSON.parse(localStorage.getItem(key) || '{}'); } catch(e) { return {}; } }
-    function saveStore(key, obj) { try { localStorage.setItem(key, JSON.stringify(obj || {})); } catch(e) {} }
+    function loadStore(key) { try { return JSON.parse(localStorage.getItem(key) || '{}'); } catch (e) { return {}; } }
+    function saveStore(key, obj) { try { localStorage.setItem(key, JSON.stringify(obj || {})); } catch (e) {} }
 
     const votesStore = loadStore(VOTES_STORE_KEY);
     const userStore = loadStore(USER_VOTES_KEY);
     const readsStore = loadStore(READS_KEY);
+    const commentsStore = loadStore(COMMENTS_KEY);
 
     const storedVotes = votesStore[voteKey] || { likes: Number(serial.likes || 0), dislikes: Number(serial.dislikes || 0) };
     serial.likes = Number(storedVotes.likes || 0);
@@ -4167,6 +4442,14 @@ function openSerialPreview(title) {
     const storedReads = readsStore[readKey] || { total: 0, episodes: {} };
     readsStore[readKey] = storedReads;
     saveStore(READS_KEY, readsStore);
+
+    // ensure comments structure exists
+    commentsStore[commentsKey] = commentsStore[commentsKey] || { comments: [] };
+    saveStore(COMMENTS_KEY, commentsStore);
+
+    // local UI state
+    const expandedReplies = new Set(); // which comment IDs currently showing replies
+    let currentReplyTo = null; // if set, sending uses addReply instead of addComment
 
     let panel = document.getElementById('serialPreviewFull');
     if (!panel) {
@@ -4182,7 +4465,7 @@ function openSerialPreview(title) {
     const inner = document.createElement('div');
     inner.className = 'panel-inner';
 
-    function esc(str) { return String(str == null ? '' : str).replace(/</g,'&lt;'); }
+    function esc(str) { return String(str == null ? '' : str).replace(/</g, '&lt;'); }
     function formatDateVal(raw) {
       if (!raw && raw !== 0) return '—';
       let d = null;
@@ -4199,7 +4482,7 @@ function openSerialPreview(title) {
         try {
           const p = JSON.parse(profileRaw);
           if (p.name && p.name.trim()) author = p.name.trim();
-        } catch(e) {}
+        } catch (e) {}
       }
     }
     author = author || 'Unknown';
@@ -4208,11 +4491,11 @@ function openSerialPreview(title) {
     if (!rawPublished) {
       rawPublished = new Date().toISOString();
       serial.publishedOn = rawPublished;
-      try { if (typeof saveSerials === 'function') saveSerials(); } catch(e){}
+      try { if (typeof saveSerials === 'function') saveSerials(); } catch (e) {}
     }
     const dateStr = formatDateVal(rawPublished);
 
-    // Header (with genre div for share button)
+    // Header (with genre div for share & comments buttons)
     const header = document.createElement('div');
     header.className = 'panel-top';
     header.innerHTML = `
@@ -4227,7 +4510,7 @@ function openSerialPreview(title) {
     `;
     inner.appendChild(header);
 
-    // SHARE BUTTON
+    // SHARE + COMMENTS BUTTONS
     const genreDiv = header.querySelector('.serial-genre');
     if (genreDiv) {
       const shareBtn = document.createElement('button');
@@ -4235,23 +4518,31 @@ function openSerialPreview(title) {
       shareBtn.textContent = 'Share';
       genreDiv.appendChild(shareBtn);
 
+      const commentsBtn = document.createElement('button');
+      commentsBtn.className = 'comments-btn';
+      commentsBtn.textContent = 'Comments';
+      commentsBtn.style.marginLeft = '8px';
+      genreDiv.appendChild(commentsBtn);
+
       if (!document.getElementById('share-ui-style')) {
         const style = document.createElement('style');
         style.id = 'share-ui-style';
         style.textContent = `
-          .share-btn {
+          .share-btn, .comments-btn {
             background: linear-gradient(135deg, #ff5f6d, #ffc371);
             border: none;
             color: white;
-            padding: 8px 16px;
+            padding: 8px 14px;
             border-radius: 20px;
             cursor: pointer;
             font-weight: 600;
-            transition: all 0.3s ease;
+            transition: all 0.25s ease;
+            font-size: 14px;
           }
-          .share-btn:hover {
-            transform: scale(1.05);
-            box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+          .comments-btn { background: linear-gradient(135deg, #6ee7b7, #3b82f6); }
+          .share-btn:hover, .comments-btn:hover {
+            transform: translateY(-2px) scale(1.02);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.12);
           }
           .share-menu {
             position: absolute;
@@ -4276,15 +4567,63 @@ function openSerialPreview(title) {
             border-radius: 8px;
             background: #f9f9f9;
             cursor: pointer;
-            transition: all 0.2s ease;
+            transition: all 0.15s ease;
             font-weight: 500;
           }
-          .share-option:hover {
-            background: #ffe9d6;
-          }
+          .share-option:hover { background: #ffe9d6; }
           @keyframes fadeIn {
             from {opacity:0; transform:translateY(-5px);}
             to {opacity:1; transform:translateY(0);}
+          }
+
+          /* Comments panel */
+          .comments-panel {
+            position: fixed;
+            inset: 0;
+            background: rgba(255,255,255,0.98);
+            z-index: 1300;
+            display: flex;
+            flex-direction: column;
+            padding: 18px;
+            gap: 12px;
+            overflow: auto;
+          }
+          .comments-top {
+            display:flex;
+            align-items:center;
+            justify-content:space-between;
+            gap:12px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 12px;
+          }
+          .comments-title { font-size:18px; font-weight:700; display:flex; gap:12px; align-items:center; }
+          .comments-count-badge {
+            background:#f3f4f6; border-radius:999px; padding:6px 10px; font-weight:600;
+          }
+          .comments-list { display:flex; flex-direction:column; gap:12px; padding:12px 4px; max-width:900px; width:100%; margin:0 auto; }
+          .comment-card {
+            background:#fff; border:1px solid #eee; border-radius:12px; padding:12px; box-shadow:0 4px 12px rgba(0,0,0,0.03);
+          }
+          .comment-meta { display:flex; justify-content:space-between; gap:12px; align-items:center; margin-bottom:8px; color:#374151; font-weight:600; }
+          .comment-text { color:#111827; white-space:pre-wrap; margin-bottom:8px; }
+          .comment-actions { display:flex; gap:8px; align-items:center; font-size:13px; color:#374151; }
+          .btn-action { background:transparent; border:none; cursor:pointer; padding:6px 8px; border-radius:8px; transition:background 0.12s; }
+          .btn-action:hover { background:#f3f4f6; }
+          .reply-list { margin-top:8px; display:flex; flex-direction:column; gap:8px; margin-left:12px; }
+          .reply-card { background:#fafafa; border:1px solid #f0f0f0; padding:8px; border-radius:8px; }
+          .comment-input-wrap {
+            position: sticky; bottom:0; background:transparent; padding:12px 0; border-top:1px solid #eee; display:flex; justify-content:center;
+          }
+          .comment-input {
+            display:flex; gap:px; align-items:center; width:100%; max-width:900px; background:#fff; border:1px solid #e5e7eb; border-radius:999px; padding:10px;
+            box-shadow:0 6px 20px rgba(0,0,0,0.03);
+          }
+          .comment-input textarea { border:0; outline:0; resize:none; width:100%; padding:6px 8px; font-size:14px; }
+          .comment-send { background:linear-gradient(90deg,#7c3aed,#06b6d4); color:#fff; border:none; padding:8px 14px; border-radius:999px; cursor:pointer; font-weight:700; }
+          .small-muted { color:#6b7280; font-size:13px; }
+          .reply-mode-indicator {
+            display:flex; align-items:center; gap:8px; background:#fff8; border-radius:999px; padding:6px 10px; border:1px dashed #e5e7eb; margin-bottom:6px;
+            max-width:900px; margin-left:auto; margin-right:auto;
           }
         `;
         document.head.appendChild(style);
@@ -4342,70 +4681,401 @@ function openSerialPreview(title) {
           shareMenu.style.display = 'none';
         }
       });
-    }
+
+      // COMMENTS PANEL logic
+      commentsBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        openCommentsPanel();
+      });
+
+      function openCommentsPanel() {
+        // create panel if not exists
+        let cpanel = document.getElementById('serialCommentsFull');
+        if (cpanel) cpanel.remove(); // recreate to ensure fresh state
+        cpanel = document.createElement('div');
+        cpanel.id = 'serialCommentsFull';
+        cpanel.className = 'comments-panel';
+
+        // top area: title + close + like count
+        const top = document.createElement('div');
+        top.className = 'comments-top';
+        top.innerHTML = `
+          <div style="display:flex;align-items:center;gap:12px">
+            <div class="comments-title">
+              <span style="font-size:20px">${esc(serial.title || 'Untitled')}</span>
+              <span class="comments-count-badge" id="commentsCountBadge">${(commentsStore[commentsKey].comments || []).length} comments</span>
+            </div>
+            <div class="small-muted">Likes: <strong id="serialLikeBadge">${serial.likes}</strong></div>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <button id="closeCommentsBtn" class="share-btn" style="background:linear-gradient(90deg,#ef4444,#f97316)">Close</button>
+          </div>
+        `;
+        cpanel.appendChild(top);
+
+        // main list container
+        const list = document.createElement('div');
+        list.className = 'comments-list';
+        list.id = 'commentsList';
+        cpanel.appendChild(list);
+
+        // bottom input area (sticky)
+        const inputWrap = document.createElement('div');
+        inputWrap.className = 'comment-input-wrap';
+        inputWrap.innerHTML = `
+          <div id="replyModeIndicatorWrap" style="display:none;"></div>
+          <div class="comment-input">
+            <textarea id="commentTextArea" placeholder="Add a public comment..." rows="2"></textarea>
+            <button id="sendCommentBtn" class="comment-send">Send</button>
+          </div>
+        `;
+        cpanel.appendChild(inputWrap);
+
+        document.body.appendChild(cpanel);
+        renderComments();
+
+        document.getElementById('closeCommentsBtn').addEventListener('click', () => cpanel.remove());
+        document.getElementById('sendCommentBtn').addEventListener('click', sendComment);
+        document.getElementById('commentTextArea').addEventListener('keydown', function (e) {
+          if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendComment(); }
+        });
+      }
+
+      // helper: get current user name (from STORAGE_KEY) or "You"
+      function getCurrentUserName() {
+        try {
+          const p = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+          if (p && p.name && p.name.trim()) return p.name.trim();
+        } catch (e) { }
+        return 'You';
+      }
+
+      function generateId() { return 'c_' + Date.now().toString(36) + '_' + Math.floor(Math.random() * 1000).toString(36); }
+
+      // Comments manipulation functions
+      function loadCommentsObj() {
+        const s = loadStore(COMMENTS_KEY);
+        s[commentsKey] = s[commentsKey] || { comments: [] };
+        return s;
+      }
+      function saveCommentsObj(obj) {
+        saveStore(COMMENTS_KEY, obj);
+      }
+
+      function sendComment() {
+        const ta = document.getElementById('commentTextArea');
+        if (!ta) return;
+        const text = ta.value.trim();
+        if (!text) return;
+        const user = getCurrentUserName();
+        const commentsObj = loadCommentsObj();
+
+        if (currentReplyTo) {
+          // post as reply to currentReplyTo
+          const c = (commentsObj[commentsKey].comments || []).find(x => x.id === currentReplyTo);
+          if (!c) {
+            // fallback to normal comment
+            currentReplyTo = null;
+          } else {
+            const newReply = {
+              id: generateId(),
+              author: user,
+              text: text,
+              ts: Date.now(),
+              likes: 0,
+              dislikes: 0
+            };
+            c.replies = c.replies || [];
+            c.replies.push(newReply);
+            // ensure replies panel shows after adding
+            expandedReplies.add(c.id);
+            saveCommentsObj(commentsObj);
+            ta.value = '';
+            currentReplyTo = null;
+            renderComments();
+            updateReplyModeIndicator();
+            return;
+          }
+        }
+
+        // normal comment
+        const newComment = {
+          id: generateId(),
+          author: user,
+          text: text,
+          ts: Date.now(),
+          likes: 0,
+          dislikes: 0,
+          replies: []
+        };
+        commentsObj[commentsKey].comments.unshift(newComment); // newest first
+        saveCommentsObj(commentsObj);
+        ta.value = '';
+        renderComments();
+      }
+
+      function updateReplyModeIndicator() {
+        const wrap = document.getElementById('replyModeIndicatorWrap');
+        if (!wrap) return;
+        if (currentReplyTo) {
+          const obj = loadCommentsObj();
+          const c = (obj[commentsKey].comments || []).find(x => x.id === currentReplyTo);
+          const name = c ? c.author : '';
+          wrap.style.display = 'block';
+          wrap.innerHTML = `<div class="reply-mode-indicator">Replying to <strong>${esc(name)}</strong>
+            <button id="cancelReplyMode" class="btn-action" style="margin-left:8px">Cancel</button></div>`;
+          document.getElementById('cancelReplyMode').addEventListener('click', () => {
+            currentReplyTo = null;
+            updateReplyModeIndicator();
+            document.getElementById('commentTextArea').focus();
+          });
+        } else {
+          wrap.style.display = 'none';
+          wrap.innerHTML = '';
+        }
+      }
+
+      function renderComments() {
+        const list = document.getElementById('commentsList');
+        if (!list) return;
+        list.innerHTML = '';
+        const commentsObj = loadCommentsObj();
+        const commentsArr = commentsObj[commentsKey].comments || [];
+        const badge = document.getElementById('commentsCountBadge');
+        if (badge) badge.textContent = `${commentsArr.length} comments`;
+        const likeBadge = document.getElementById('serialLikeBadge');
+        if (likeBadge) likeBadge.textContent = serial.likes;
+
+        commentsArr.forEach(comment => {
+          const card = document.createElement('div');
+          card.className = 'comment-card';
+          card.dataset.cid = comment.id;
+
+          const meta = document.createElement('div');
+          meta.className = 'comment-meta';
+
+          // left: author + timestamp
+          const left = document.createElement('div');
+          left.innerHTML = `${esc(comment.author)} <span class="small-muted" style="font-weight:500;margin-left:8px">${new Date(comment.ts).toLocaleString()}</span>`;
+
+          // right: delete only if same author
+          const right = document.createElement('div');
+
+          if (comment.author === getCurrentUserName()) {
+            const delBtn = document.createElement('button');
+            delBtn.className = 'btn-action delete-comment';
+            delBtn.textContent = 'Delete';
+            delBtn.addEventListener('click', () => {
+              if (!confirm('Delete this comment?')) return;
+              deleteComment(comment.id);
+            });
+            right.appendChild(delBtn);
+          }
+
+          meta.appendChild(left);
+          meta.appendChild(right);
+          card.appendChild(meta);
+
+          const text = document.createElement('div');
+          text.className = 'comment-text';
+          text.innerHTML = esc(comment.text);
+          card.appendChild(text);
+
+          const actions = document.createElement('div');
+          actions.className = 'comment-actions';
+          // reply toggle text shows replies count and toggles visibility
+          const repliesCount = (comment.replies || []).length;
+          actions.innerHTML = `
+            <button class="btn-action like-comment">👍 <span class="cnt">${comment.likes || 0}</span></button>
+            <button class="btn-action dislike-comment">👎 <span class="cnt">${comment.dislikes || 0}</span></button>
+            <button class="btn-action reply-open">Reply</button>
+            <button class="btn-action replies-toggle">Replies (${repliesCount})</button>
+          `;
+          card.appendChild(actions);
+
+          // reply list (hidden by default)
+          const replyList = document.createElement('div');
+          replyList.className = 'reply-list';
+          replyList.style.display = expandedReplies.has(comment.id) ? 'flex' : 'none';
+
+          (comment.replies || []).forEach(reply => {
+            const r = document.createElement('div');
+            r.className = 'reply-card';
+            r.dataset.rid = reply.id;
+            r.innerHTML = `
+              <div style="display:flex;justify-content:space-between;align-items:center">
+                <div style="font-weight:600">${esc(reply.author)} <span class="small-muted" style="font-weight:500;margin-left:8px">${new Date(reply.ts).toLocaleString()}</span></div>
+                <div></div>
+              </div>
+              <div style="margin-top:6px">${esc(reply.text)}</div>
+              <div style="margin-top:8px;display:flex;gap:8px">
+                <button class="btn-action like-reply">👍 <span class="cnt">${reply.likes || 0}</span></button>
+                <button class="btn-action dislike-reply">👎 <span class="cnt">${reply.dislikes || 0}</span></button>
+              </div>
+            `;
+            // delete reply only visible to reply author
+            const rightContainer = r.querySelector('div > div:last-child');
+            if (reply.author === getCurrentUserName()) {
+              const delR = document.createElement('button');
+              delR.className = 'btn-action delete-reply';
+              delR.textContent = 'Delete';
+              delR.addEventListener('click', () => {
+                if (!confirm('Delete this reply?')) return;
+                deleteReply(comment.id, reply.id);
+              });
+              // append delete to the top-right container
+              r.querySelector('div').querySelector('div').appendChild(delR);
+            }
+
+            // attach reply-level like/dislike
+            r.querySelector('.like-reply').addEventListener('click', () => toggleReplyVote(comment.id, reply.id, 'like'));
+            r.querySelector('.dislike-reply').addEventListener('click', () => toggleReplyVote(comment.id, reply.id, 'dislike'));
+
+            replyList.appendChild(r);
+          });
+
+          card.appendChild(replyList);
+
+          // attach comment-level handlers
+          actions.querySelector('.like-comment').addEventListener('click', () => toggleCommentVote(comment.id, 'like'));
+          actions.querySelector('.dislike-comment').addEventListener('click', () => toggleCommentVote(comment.id, 'dislike'));
+
+          // Reply button: set the bottom bar to reply mode for this comment
+          actions.querySelector('.reply-open').addEventListener('click', () => {
+            currentReplyTo = comment.id;
+            updateReplyModeIndicator();
+            const ta = document.getElementById('commentTextArea');
+            if (ta) {
+              ta.focus();
+              // prefill with @author optionally (but keep typed text separate)
+              // ta.value = `@${comment.author} `;
+            }
+          });
+
+          // Replies toggle: show/hide replies for this comment
+          actions.querySelector('.replies-toggle').addEventListener('click', () => {
+            if (expandedReplies.has(comment.id)) expandedReplies.delete(comment.id);
+            else expandedReplies.add(comment.id);
+            renderComments();
+          });
+
+          list.appendChild(card);
+        });
+
+        updateReplyModeIndicator();
+      }
+
+      function toggleCommentVote(commentId, mode) {
+        const obj = loadCommentsObj();
+        const comments = obj[commentsKey].comments || [];
+        const c = comments.find(x => x.id === commentId);
+        if (!c) return;
+        if (mode === 'like') {
+          c.likes = (c.likes || 0) + 1;
+        } else {
+          c.dislikes = (c.dislikes || 0) + 1;
+        }
+        saveCommentsObj(obj);
+        renderComments();
+      }
+
+      function toggleReplyVote(commentId, replyId, mode) {
+        const obj = loadCommentsObj();
+        const comments = obj[commentsKey].comments || [];
+        const c = comments.find(x => x.id === commentId);
+        if (!c) return;
+        const r = (c.replies || []).find(rr => rr.id === replyId);
+        if (!r) return;
+        if (mode === 'like') r.likes = (r.likes || 0) + 1;
+        else r.dislikes = (r.dislikes || 0) + 1;
+        saveCommentsObj(obj);
+        renderComments();
+      }
+
+      function deleteComment(commentId) {
+        const obj = loadCommentsObj();
+        obj[commentsKey].comments = (obj[commentsKey].comments || []).filter(c => c.id !== commentId);
+        saveCommentsObj(obj);
+        // remove from expandedReplies set
+        expandedReplies.delete(commentId);
+        renderComments();
+      }
+
+      function deleteReply(commentId, replyId) {
+        const obj = loadCommentsObj();
+        const c = (obj[commentsKey].comments || []).find(x => x.id === commentId);
+        if (!c) return;
+        c.replies = (c.replies || []).filter(r => r.id !== replyId);
+        saveCommentsObj(obj);
+        renderComments();
+      }
+
+      // end of genreDiv handling
+    } // end if genreDiv
 
     // CONTROL WRAPPER (close + likes/dislikes + reads)
-// --- CONTROL WRAPPER (close + likes/dislikes + reads) ---
-// NOTE: removed the separate "countDisplay" element to avoid duplication.
-// Like/dislike counts are shown inside the buttons (.cnt spans).
-const controlWrapper = document.createElement('div');
-controlWrapper.style.display = 'flex';
-controlWrapper.style.alignItems = 'center';
-controlWrapper.style.gap = '12px';
-controlWrapper.style.margin = '12px 0';
+    // --- CONTROL WRAPPER (close + likes/dislikes + reads) ---
+    // NOTE: removed the separate "countDisplay" element to avoid duplication.
+    // Like/dislike counts are shown inside the buttons (.cnt spans).
+    const controlWrapper = document.createElement('div');
+    controlWrapper.style.display = 'flex';
+    controlWrapper.style.alignItems = 'center';
+    controlWrapper.style.gap = '12px';
+    controlWrapper.style.margin = '12px 0';
 
-const closeBtn = document.createElement('button');
-closeBtn.className = 'jelly-btn';
-closeBtn.id = 'closeSerialPreviewBtn';
-closeBtn.textContent = 'Close';
-controlWrapper.appendChild(closeBtn);
+    const closeBtn = document.createElement('button');
+    closeBtn.className = 'jelly-btn';
+    closeBtn.id = 'closeSerialPreviewBtn';
+    closeBtn.textContent = 'Close';
+    controlWrapper.appendChild(closeBtn);
 
-const likeBtn = document.createElement('button');
-likeBtn.className = 'jelly-btn';
-likeBtn.innerHTML = '👍 <span class="cnt">0</span>';
-likeBtn.dataset.state = 'none';
-controlWrapper.appendChild(likeBtn);
+    const likeBtn = document.createElement('button');
+    likeBtn.className = 'jelly-btn';
+    likeBtn.innerHTML = '👍 <span class="cnt">0</span>';
+    likeBtn.dataset.state = 'none';
+    controlWrapper.appendChild(likeBtn);
 
-const dislikeBtn = document.createElement('button');
-dislikeBtn.className = 'jelly-btn dislike-btn';
-dislikeBtn.innerHTML = '👎 <span class="cnt">0</span>';
-dislikeBtn.dataset.state = 'none';
-controlWrapper.appendChild(dislikeBtn);
+    const dislikeBtn = document.createElement('button');
+    dislikeBtn.className = 'jelly-btn dislike-btn';
+    dislikeBtn.innerHTML = '👎 <span class="cnt">0</span>';
+    dislikeBtn.dataset.state = 'none';
+    controlWrapper.appendChild(dislikeBtn);
 
-// --- keep reads display as single label ---
-// remove any existing duplicate reads element (safe-guard)
-const existingReadEl = document.getElementById('readCountDisplay');
-if (existingReadEl) existingReadEl.remove();
+    // --- keep reads display as single label ---
+    // remove any existing duplicate reads element (safe-guard)
+    const existingReadEl = document.getElementById('readCountDisplay');
+    if (existingReadEl) existingReadEl.remove();
 
-// --- keep reads display as single label ---
+    inner.appendChild(controlWrapper);
 
+    // --- refreshUI (update only button counts and reads) ---
+    function refreshUI() {
+      serial.likes = Math.max(0, Number(serial.likes || 0));
+      serial.dislikes = Math.max(0, Number(serial.dislikes || 0));
 
-inner.appendChild(controlWrapper);
+      // update counts inside the buttons
+      const likeCnt = likeBtn.querySelector('.cnt');
+      const dislikeCnt = dislikeBtn.querySelector('.cnt');
+      if (likeCnt) likeCnt.textContent = serial.likes;
+      if (dislikeCnt) dislikeCnt.textContent = serial.dislikes;
 
-// --- refreshUI (update only button counts and reads) ---
-function refreshUI() {
-  serial.likes = Math.max(0, Number(serial.likes || 0));
-  serial.dislikes = Math.max(0, Number(serial.dislikes || 0));
+      // update button visual states
+      const userChoice = (loadStore(USER_VOTES_KEY)[voteKey]) || 'none';
+      likeBtn.dataset.state = (userChoice === 'liked') ? 'liked' : 'none';
+      dislikeBtn.dataset.state = (userChoice === 'disliked') ? 'disliked' : 'none';
+      likeBtn.style.backgroundColor = likeBtn.dataset.state === 'liked' ? '#dbeafe' : '';
+      dislikeBtn.style.backgroundColor = dislikeBtn.dataset.state === 'disliked' ? '#fee2e2' : '';
 
-  // update counts inside the buttons
-  const likeCnt = likeBtn.querySelector('.cnt');
-  const dislikeCnt = dislikeBtn.querySelector('.cnt');
-  if (likeCnt) likeCnt.textContent = serial.likes;
-  if (dislikeCnt) dislikeCnt.textContent = serial.dislikes;
+      // update reads
+      const readsNow = (loadStore(READS_KEY)[readKey] || { total: 0 }).total;
+      const rDisplay = document.getElementById('readCountDisplay');
+      if (rDisplay) rDisplay.textContent = `Reads = ${readsNow}`;
 
-  // update button visual states
-  const userChoice = (loadStore(USER_VOTES_KEY)[voteKey]) || 'none';
-  likeBtn.dataset.state = (userChoice === 'liked') ? 'liked' : 'none';
-  dislikeBtn.dataset.state = (userChoice === 'disliked') ? 'disliked' : 'none';
-  likeBtn.style.backgroundColor = likeBtn.dataset.state === 'liked' ? '#dbeafe' : '';
-  dislikeBtn.style.backgroundColor = dislikeBtn.dataset.state === 'disliked' ? '#fee2e2' : '';
-
-  // update reads
-  const readsNow = (loadStore(READS_KEY)[readKey] || { total: 0 }).total;
-  const rDisplay = document.getElementById('readCountDisplay');
-  if (rDisplay) rDisplay.textContent = `Reads = ${readsNow}`;
-}
-
+      // update comments count badge if open
+      const badge = document.getElementById('commentsCountBadge');
+      const commentsObj = loadStore(COMMENTS_KEY);
+      if (badge && commentsObj[commentsKey]) badge.textContent = `${(commentsObj[commentsKey].comments || []).length} comments`;
+    }
 
     function incrementReadCount(epIndex) {
       const reads = loadStore(READS_KEY);
@@ -4422,11 +5092,11 @@ function refreshUI() {
       votes[voteKey] = votes[voteKey] || { likes: 0, dislikes: 0 };
       const prev = user[voteKey] || 'none';
 
-      if (prev === 'liked') votes[voteKey].likes = Math.max(0, (votes[voteKey].likes||1) - 1);
-      if (prev === 'disliked') votes[voteKey].dislikes = Math.max(0, (votes[voteKey].dislikes||1) - 1);
+      if (prev === 'liked') votes[voteKey].likes = Math.max(0, (votes[voteKey].likes || 1) - 1);
+      if (prev === 'disliked') votes[voteKey].dislikes = Math.max(0, (votes[voteKey].dislikes || 1) - 1);
 
-      if (newChoice === 'liked') votes[voteKey].likes = (votes[voteKey].likes||0) + 1;
-      if (newChoice === 'disliked') votes[voteKey].dislikes = (votes[voteKey].dislikes||0) + 1;
+      if (newChoice === 'liked') votes[voteKey].likes = (votes[voteKey].likes || 0) + 1;
+      if (newChoice === 'disliked') votes[voteKey].dislikes = (votes[voteKey].dislikes || 0) + 1;
 
       user[voteKey] = (newChoice === 'none') ? 'none' : newChoice;
 
@@ -4436,7 +5106,7 @@ function refreshUI() {
       serial.likes = votes[voteKey].likes;
       serial.dislikes = votes[voteKey].dislikes;
       refreshUI();
-      try { if (typeof saveSerials === 'function') saveSerials(); } catch(e) {}
+      try { if (typeof saveSerials === 'function') saveSerials(); } catch (e) { }
     }
 
     likeBtn.addEventListener('click', function () {
@@ -4464,14 +5134,14 @@ function refreshUI() {
       epCard.style.alignItems = 'center';
       epCard.innerHTML = `
         <div style="max-width:72%">
-          <strong>${i+1}. ${(ep.title||('Episode '+(i+1))).replace(/</g,'&lt;')}</strong>
-          <div style="font-size:13px;color:var(--muted)">${(ep.description || '').replace(/</g,'&lt;')}</div>
+          <strong>${i + 1}. ${(ep.title || ('Episode ' + (i + 1))).replace(/</g, '&lt;')}</strong>
+          <div style="font-size:13px;color:var(--muted)">${(ep.description || '').replace(/</g, '&lt;')}</div>
         </div>
         <div style="display:flex;gap:8px">
           <button class="btn btn-primary read-episode-btn">Read Episode</button>
         </div>
       `;
-      epCard.querySelector('.read-episode-btn').addEventListener('click', ()=> {
+      epCard.querySelector('.read-episode-btn').addEventListener('click', () => {
         incrementReadCount(i);
         openSerialReader(serial.title, i);
       });
@@ -4481,10 +5151,10 @@ function refreshUI() {
     inner.appendChild(epsWrap);
     panel.appendChild(inner);
 
-    closeBtn.addEventListener('click', ()=> panel.remove());
+    closeBtn.addEventListener('click', () => panel.remove());
 
     refreshUI();
-    window.scrollTo(0,0);
+    window.scrollTo(0, 0);
 
   } catch (err) {
     console.error('openSerialPreview error', err);
@@ -5398,8 +6068,311 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 </script>
+
+<script>
+// --- Real Search (no demo/fake stories) ---
+function initRealSearch(){
+  // helper
+  function escapeHtml(str){return String(str??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+  function debounce(fn,wait=220){let t;return(...a)=>{clearTimeout(t);t=setTimeout(()=>fn(...a),wait)};}
+
+  // -------- STORIES SEARCH ----------
+  const storiesInput=document.getElementById('storiesSearchInput');
+  const storiesClear=document.getElementById('storiesClearSearchBtn');
+  const storiesCards=document.getElementById('storiesCards');
+  function searchStories(q){
+    const query=(q||'').trim().toLowerCase();
+    if(!storiesCards)return;
+    let pool=[];
+    try{pool=(window.storiesData||[]).slice();}catch(e){}
+    try{
+      const saved=JSON.parse(localStorage.getItem('savedStories_v1')||'[]');
+      if(Array.isArray(saved))pool=pool.concat(saved);
+    }catch(e){}
+    if(!query){
+      storiesCards.innerHTML='';
+      return;
+    }
+    const seen=new Map();
+    pool.forEach(s=>{if(s&&s.title&&!seen.has(s.title))seen.set(s.title,s)});
+    const matches=Array.from(seen.values()).filter(s=>(s.title||'').toLowerCase().includes(query));
+    storiesCards.innerHTML='';
+    matches.forEach(story=>{
+      const card=document.createElement('div');
+      card.className='story-card';
+      card.style.minHeight='220px';
+      card.innerHTML=`<h3>${escapeHtml(story.title||'Untitled')}</h3><p>${escapeHtml(story.genre||'')}</p>`;
+      if(story.cover)card.style.backgroundImage=`linear-gradient(rgba(0,0,0,0.25),rgba(0,0,0,0.25)),url(${story.cover})`;
+      card.addEventListener('click',()=>{try{openPreviewFullScreen(story);}catch(e){}});
+      storiesCards.appendChild(card);
+    });
+  }
+  if(storiesInput)storiesInput.addEventListener('input',debounce(e=>searchStories(e.target.value),200));
+  if(storiesClear)storiesClear.addEventListener('click',()=>{storiesInput.value='';searchStories('');});
+
+  // -------- SERIALS SEARCH ----------
+  const serialsInput=document.getElementById('serialsSearchInput');
+  const serialsClear=document.getElementById('serialsClearSearchBtn');
+  const serialsWrap=document.getElementById('serialSearchResults');
+  const serialsCards=document.getElementById('serialsCards');
+  function searchSerials(q){
+    const query=(q||'').trim().toLowerCase();
+    let pool=[];
+    try{pool=(window.serialsData||[]).slice();}catch(e){}
+    try{
+      const saved=JSON.parse(localStorage.getItem('savedSerials_v1')||'[]');
+      if(Array.isArray(saved))pool=pool.concat(saved);
+    }catch(e){}
+    if(!serialsCards)return;
+    if(!query){
+      serialsCards.innerHTML='';
+      if(serialsWrap)serialsWrap.style.display='none';
+      return;
+    }
+    const seen=new Map();
+    pool.forEach(s=>{if(s&&s.title&&!seen.has(s.title))seen.set(s.title,s)});
+    const matches=Array.from(seen.values()).filter(s=>(s.title||'').toLowerCase().includes(query));
+    serialsCards.innerHTML='';
+    matches.forEach(s=>{
+      const card=document.createElement('div');
+      card.className='story-card serial-card';
+      card.style.minHeight='220px';
+      card.innerHTML=`<h3>${escapeHtml(s.title||'Untitled')}</h3><p>${escapeHtml(s.genre||'')}</p>`;
+      if(s.cover)card.style.backgroundImage=`linear-gradient(rgba(0,0,0,0.25),rgba(0,0,0,0.25)),url(${s.cover})`;
+      card.addEventListener('click',()=>{try{openSerialPreview(s.id||s.title);}catch(e){}});
+      serialsCards.appendChild(card);
+    });
+    if(serialsWrap)serialsWrap.style.display=matches.length?'block':'none';
+  }
+  if(serialsInput)serialsInput.addEventListener('input',debounce(e=>searchSerials(e.target.value),200));
+  if(serialsClear)serialsClear.addEventListener('click',()=>{serialsInput.value='';searchSerials('');});
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',initRealSearch);
+else initRealSearch();
+</script>
+
+
+<script>
+document.addEventListener('DOMContentLoaded', async ()=>{
+  // load from firebase if available
+  try{
+    if(window._firebase && window._firebase.get){
+      const { db, ref, get, child } = window._firebase;
+      // load stories
+      try{
+        const snap = await get(child(ref(db), 'stories'));
+        if(snap && snap.exists && snap.exists()){
+          const val = snap.val();
+          // val may be an object of keyed stories; map to array
+          window.storiesData = Object.values(val || {});
+          console.log('Loaded stories from Firebase:', window.storiesData.length);
+        } else { console.log('No stories in Firebase'); }
+      }catch(e){ console.warn('Failed to load stories from Firebase', e); }
+
+      // load serials
+      try{
+        const snap2 = await get(child(ref(db), 'serials'));
+        if(snap2 && snap2.exists && snap2.exists()){
+          const val2 = snap2.val();
+          window.serialsData = Object.values(val2 || {});
+          console.log('Loaded serials from Firebase:', window.serialsData.length);
+        } else { console.log('No serials in Firebase'); }
+      }catch(e){ console.warn('Failed to load serials from Firebase', e); }
+    }
+  }catch(e){ console.warn('Firebase loader error', e); }
+});
+</script>
+
 </body>
 </html>
+
+
+<script>
+// --- Real Search (no demo/fake stories) ---
+function initRealSearch(){
+  // helper
+  function escapeHtml(str){return String(str??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+  function debounce(fn,wait=220){let t;return(...a)=>{clearTimeout(t);t=setTimeout(()=>fn(...a),wait)};}
+
+  // -------- STORIES SEARCH ----------
+  const storiesInput=document.getElementById('storiesSearchInput');
+  const storiesClear=document.getElementById('storiesClearSearchBtn');
+  const storiesCards=document.getElementById('storiesCards');
+  function searchStories(q){
+    const query=(q||'').trim().toLowerCase();
+    if(!storiesCards)return;
+    let pool=[];
+    try{pool=(window.storiesData||[]).slice();}catch(e){}
+    try{
+      const saved=JSON.parse(localStorage.getItem('savedStories_v1')||'[]');
+      if(Array.isArray(saved))pool=pool.concat(saved);
+    }catch(e){}
+    if(!query){
+      storiesCards.innerHTML='';
+      return;
+    }
+    const seen=new Map();
+    pool.forEach(s=>{if(s&&s.title&&!seen.has(s.title))seen.set(s.title,s)});
+    const matches=Array.from(seen.values()).filter(s=>(s.title||'').toLowerCase().includes(query));
+    storiesCards.innerHTML='';
+    matches.forEach(story=>{
+      const card=document.createElement('div');
+      card.className='story-card';
+      card.style.minHeight='220px';
+      card.innerHTML=`<h3>${escapeHtml(story.title||'Untitled')}</h3><p>${escapeHtml(story.genre||'')}</p>`;
+      if(story.cover)card.style.backgroundImage=`linear-gradient(rgba(0,0,0,0.25),rgba(0,0,0,0.25)),url(${story.cover})`;
+      card.addEventListener('click',()=>{try{openPreviewFullScreen(story);}catch(e){}});
+      storiesCards.appendChild(card);
+    });
+  }
+  if(storiesInput)storiesInput.addEventListener('input',debounce(e=>searchStories(e.target.value),200));
+  if(storiesClear)storiesClear.addEventListener('click',()=>{storiesInput.value='';searchStories('');});
+
+  // -------- SERIALS SEARCH ----------
+  const serialsInput=document.getElementById('serialsSearchInput');
+  const serialsClear=document.getElementById('serialsClearSearchBtn');
+  const serialsWrap=document.getElementById('serialSearchResults');
+  const serialsCards=document.getElementById('serialsCards');
+  function searchSerials(q){
+    const query=(q||'').trim().toLowerCase();
+    let pool=[];
+    try{pool=(window.serialsData||[]).slice();}catch(e){}
+    try{
+      const saved=JSON.parse(localStorage.getItem('savedSerials_v1')||'[]');
+      if(Array.isArray(saved))pool=pool.concat(saved);
+    }catch(e){}
+    if(!serialsCards)return;
+    if(!query){
+      serialsCards.innerHTML='';
+      if(serialsWrap)serialsWrap.style.display='none';
+      return;
+    }
+    const seen=new Map();
+    pool.forEach(s=>{if(s&&s.title&&!seen.has(s.title))seen.set(s.title,s)});
+    const matches=Array.from(seen.values()).filter(s=>(s.title||'').toLowerCase().includes(query));
+    serialsCards.innerHTML='';
+    matches.forEach(s=>{
+      const card=document.createElement('div');
+      card.className='story-card serial-card';
+      card.style.minHeight='220px';
+      card.innerHTML=`<h3>${escapeHtml(s.title||'Untitled')}</h3><p>${escapeHtml(s.genre||'')}</p>`;
+      if(s.cover)card.style.backgroundImage=`linear-gradient(rgba(0,0,0,0.25),rgba(0,0,0,0.25)),url(${s.cover})`;
+      card.addEventListener('click',()=>{try{openSerialPreview(s.id||s.title);}catch(e){}});
+      serialsCards.appendChild(card);
+    });
+    if(serialsWrap)serialsWrap.style.display=matches.length?'block':'none';
+  }
+  if(serialsInput)serialsInput.addEventListener('input',debounce(e=>searchSerials(e.target.value),200));
+  if(serialsClear)serialsClear.addEventListener('click',()=>{serialsInput.value='';searchSerials('');});
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',initRealSearch);
+else initRealSearch();
+</script>
+<!-- ===== START: Firebase sync + bottom status box (paste before </body>) ===== -->
+<script>
+/* FIREBASE SYNC INTEGRATION
+   - Paste this just before </body>
+   - Uses your provided firebaseConfig (Realtime Database)
+   - Will: init Firebase, load on start, sync periodically and on key events,
+     and show a black status box at bottom with saving/loading states.
+*/
+
+/* ======= 1) Firebase config (use exactly what you provided) ======= */
+<!-- ===== FULL FIXED FIREBASE SYNC BLOCK ===== -->
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyCgTh6FzKWYCGyRgBmeclvGKxuuFL3L81Y",
+  authDomain: "meurbal.firebaseapp.com",
+  databaseURL: "https://meurbal-default-rtdb.firebaseio.com",
+  projectId: "meurbal",
+  storageBucket: "meurbal.firebasestorage.app",
+  messagingSenderId: "917148598257",
+  appId: "1:917148598257:web:dd42e5d690b56d2ac08e50",
+  measurementId: "G-EHJVB3XC90"
+};
+
+// ---- Create status box ----
+(function(){
+  if(document.getElementById('firebaseStatusBox')) return;
+  const box=document.createElement('div');
+  box.id='firebaseStatusBox';
+  box.style='position:fixed;bottom:10px;left:10px;right:10px;padding:8px 12px;background:#000;color:#fff;font:13px/1.4 sans-serif;border-radius:10px;z-index:99999;display:flex;justify-content:space-between;align-items:center';
+  box.innerHTML=`<div id="fbStatusText">Connecting…</div>
+  <div>
+    <button id="fbLoadBtn" style="background:#111;color:#fff;border:none;padding:4px 10px;border-radius:8px;cursor:pointer">Load</button>
+  </div>`;
+  document.body.appendChild(box);
+  document.getElementById('fbLoadBtn').onclick=()=>{ if(window.loadFromFirebase) loadFromFirebase(true); };
+})();
+function fbSetStatus(t){ const el=document.getElementById('fbStatusText'); if(el) el.textContent=t; }
+
+function ensureFirebase(cb){
+  if(window.firebase && window.firebase.database) return cb();
+  const s1=document.createElement('script'); s1.src='https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js';
+  s1.onload=()=>{ const s2=document.createElement('script'); s2.src='https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js'; s2.onload=cb; document.head.appendChild(s2); };
+  document.head.appendChild(s1);
+}
+
+ensureFirebase(async ()=>{
+  try{
+    if(!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+  }catch(e){ fbSetStatus('Firebase init error'); console.error(e); return; }
+  const db=firebase.database();
+  fbSetStatus('Connected');
+
+  async function saveToFirebase(){
+    try{
+      fbSetStatus('Saving…');
+      await db.ref('meurbal_v1/stories').set(window.storiesData||[]);
+      await db.ref('meurbal_v1/serials').set(window.serialsData||[]);
+      fbSetStatus('Saved ✓');
+    }catch(e){ console.error(e); fbSetStatus('Save error'); }
+  }
+
+  async function loadFromFirebase(force){
+    try{
+      fbSetStatus('Loading…');
+      const [stSnap,seSnap]=await Promise.all([
+        db.ref('meurbal_v1/stories').once('value'),
+        db.ref('meurbal_v1/serials').once('value')
+      ]);
+      const stories=stSnap.val()||[], serials=seSnap.val()||[];
+      if(force || !(window.storiesData&&window.storiesData.length)){
+        window.storiesData=stories;
+      }
+      if(force || !(window.serialsData&&window.serialsData.length)){
+        window.serialsData=serials;
+      }
+      fbSetStatus('Loaded ✓');
+      if(typeof renderBrowseStories==='function') renderBrowseStories('All');
+      if(typeof renderBrowseSerials==='function') renderBrowseSerials(serials);
+    }catch(e){ console.error(e); fbSetStatus('Load error'); }
+  }
+  window.loadFromFirebase=loadFromFirebase;
+
+  // ---- Auto load when app ready ----
+  const wait=setInterval(()=>{
+    if(window.storiesData&&window.serialsData){
+      clearInterval(wait);
+      loadFromFirebase();
+    }
+  },700);
+
+  // ---- Auto save triggers ----
+  document.addEventListener('click',e=>{
+    const id=e.target&&e.target.id;
+    if(['publishStoryBtn','saveDraftBtn','serialCreateConfirmBtn','addEpConfirmBtn'].includes(id)){
+      setTimeout(saveToFirebase,600);
+    }
+  });
+
+  // periodic auto save
+  setInterval(saveToFirebase,20000);
+});
+</script>
+<!-- ===== END FIXED BLOCK ===== -->
+
+<!-- ===== END: Firebase sync + bottom status box ===== -->
 
 </body>
 </html>

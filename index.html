@@ -6,6 +6,18 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1.0" />
   <title>Meurbal - Where Dream.Write.Live</title>
+<!-- Favicon setup for Meurbal -->
+<link rel="icon" type="image/png" sizes="96x96" href="melogo.png">
+<link rel="icon" type="image/png" sizes="192x192" href="melogo.png">
+<link rel="icon" type="image/png" sizes="512x512" href="melogo.png">
+<link rel="icon" type="image/svg+xml" href="melogo.svg">
+<link rel="shortcut icon" href="melogo.ico">
+<link rel="apple-touch-icon" sizes="180x180" href="melogo.png">
+
+<meta name="apple-mobile-web-app-title" content="Meurbal">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#00bcd4">
+
 
   <style>
     :root{ --bg:#f9fafb;--accent:#4f46e5;--muted:#6b7280; --shadow:0 4px 14px rgba(0,0,0,0.08);--border:#e5e7eb; }
@@ -691,7 +703,8 @@ async function saveSerialToFirebase(ser) {
 </div>
 
 
-<div id="bottomNav" style="position: fixed; bottom: 12px; left: 0; width: 100%; background: #ffffff; border-top: 1px solid #ddd; display: flex; justify-content: space-around; padding: 10px 0; z-index: 9999; box-shadow: 0 -4px 20px rgba(0,0,0,0.08); border-radius: 18px 18px 0 0;">
+<div id="bottomNav" style="position: fixed; bottom: 12px; left: 0; width: 100%; background: #ffffff; border-top: 1px solid #ddd; display: none; justify-content: space-around; padding: 10px 0; z-index: 9999; box-shadow: 0 -4px 20px rgba(0,0,0,0.08); border-radius: 18px 18px 0 0;">
+
   <button id="homeBtn" style="background:none;border:none;font-size:26px;">🏠</button>
   <button id="writerBtn" style="background:none;border:none;font-size:26px;">✏️</button>
 </div>
@@ -704,13 +717,16 @@ function showHomePage(){
   const slidesPage = document.getElementById('slidesPage');
   const categoriesPage = document.getElementById('categoriesPage');
   const serialCategoriesPage = document.getElementById('serialCategoriesPage');
+  const writerGatePage = document.getElementById('writerGatePage'); // ✅ added
+
+  // Show only home
   if(welcomePage) welcomePage.classList.remove('hidden');
-  if(dashboardPage) dashboardPage.classList.add('hidden');
-  if(profileFormPage) profileFormPage.classList.add('hidden');
-  if(slidesPage) slidesPage.classList.add('hidden');
-  if(categoriesPage) categoriesPage.classList.add('hidden');
-  if(serialCategoriesPage) serialCategoriesPage.classList.add('hidden');
+
+  // Hide everything else
+  [dashboardPage, profileFormPage, slidesPage, categoriesPage, serialCategoriesPage, writerGatePage]
+    .forEach(p => { if(p) p.classList.add('hidden'); });
 }
+
 
 document.getElementById('homeBtn').addEventListener('click', ()=>{ showHomePage(); });
 
@@ -1419,7 +1435,7 @@ function renderSlots() {
         if (currentType === 'story') {
           alert('This slot already has a published story. You can edit it from your Writer Dashboard.');
         } else {
-          alert('This slot already has a published serial. You can add or edit episodes from your Writer Dashboard.');
+          alert('This slot already has a published serial. You can add or View Analytics from your Writer Dashboard.');
         }
         console.log('⚠️ Slot click blocked (persisted blocked flag):', slot.name);
         return;
@@ -1430,7 +1446,7 @@ function renderSlots() {
         if (currentType === 'story') {
           const existingStory = (window.storiesData || []).find(s => (s.title || '').trim() === (slot.name || '').trim());
           if (existingStory && existingStory.sheets && existingStory.sheets.length > 0 && existingStory.sheets.some(sh => (sh.content || '').trim() !== '')) {
-            alert('This slot already has a published story. You can edit it from your Writer Dashboard.');
+            alert('This slot already has a published story. You can View Analytics from your Writer Dashboard.');
             let slotsArr = currentType==='story' ? storySlots : serialSlots;
             // Identify the correct slot by index from the rendering loop
             const slotIndex = index;
@@ -1794,6 +1810,142 @@ aiCloseBtn.addEventListener('click', () => toggleAIPopup(false));  // ✅ CLOSE
   `;
   document.head.appendChild(style);
 })();
+// 📝 Creation Workspace Reminder with glassmorphic card
+(function showCreationNotePopup() {
+  const popupKey = 'creationNoteCounter';
+  const firstTimeKey = 'creationNoteShownOnce';
+  const showAfter = 5; // show after 5 editor opens
+
+  const shownOnce = localStorage.getItem(firstTimeKey) === 'true';
+  let counter = parseInt(localStorage.getItem(popupKey) || '0', 10);
+
+  if (!shownOnce) {
+    localStorage.setItem(firstTimeKey, 'true');
+  } else {
+    counter++;
+    if (counter < showAfter) {
+      localStorage.setItem(popupKey, counter);
+      return;
+    }
+    counter = 0; // reset after showing
+    localStorage.setItem(popupKey, counter);
+  }
+
+  const existingNote = document.getElementById('editor_creation_note');
+  if (existingNote) return;
+
+  const notePopup = document.createElement('div');
+  notePopup.id = 'editor_creation_note';
+  notePopup.style.cssText = `
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1250;
+    background: rgba(0,0,0,0.55);
+    backdrop-filter: blur(6px);
+    font-family: 'Inter', 'Poppins', sans-serif;
+    opacity: 0;
+    animation: fadeSlideIn 0.5s forwards;
+  `;
+
+  const inner = document.createElement('div');
+  inner.style.cssText = `
+    background: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(14px) saturate(180%);
+    border-radius: 24px;
+    padding: 36px 42px;
+    max-width: 520px;
+    text-align: left;
+    box-shadow: 0 12px 36px rgba(0,0,0,0.25);
+    border: 1px solid rgba(255,255,255,0.3);
+    transform: translateY(30px);
+    position: relative;
+  `;
+
+  inner.innerHTML = `
+    <!-- Friendly icon -->
+    <div style="text-align:center;margin-bottom:20px;">
+      <img src="https://img.icons8.com/emoji/48/000000/light-bulb-emoji.png" alt="Note Icon" style="width:48px;height:48px;">
+    </div>
+    <h2 style="margin:0 0 16px; font-size:1.6rem; color:#fff; font-weight:800; line-height:1.3; text-shadow:0 2px 6px rgba(0,0,0,0.5);">
+      💡 Reminder
+    </h2>
+    <p style="font-size:1.05rem; color:#eee; line-height:1.7;">
+      To save your progress safely:
+    </p>
+    <ul style="font-size:1rem; color:#ddd; line-height:1.6; margin:10px 0 0 20px;">
+      <li>Type your Episodes or Stories in the <strong>Creation Workspace</strong> first.</li>
+      <li>Save your work there before copying it into this Editor.</li>
+      <li>Then you can publish your Episode or Story from here safely.</li>
+    </ul>
+    <p style="margin-top:14px; font-size:0.95rem; color:#ccc; line-height:1.5;">
+      The <strong>Creation Workspace</strong> is available in the Writer Section .
+    </p>
+    <button id="closeCreationNoteBtn" disabled style="
+      margin-top:24px;
+      background: linear-gradient(135deg,#4facfe,#00f2fe);
+      color:white;
+      font-weight:700;
+      font-size:15px;
+      border:none;
+      border-radius:14px;
+      padding:12px 26px;
+      cursor:not-allowed;
+      box-shadow:0 6px 20px rgba(0,242,254,0.5);
+      transition: all 0.3s ease;
+      display:block;
+      margin-left:auto;
+      margin-right:auto;
+    ">Got it! (5)</button>
+  `;
+
+  notePopup.appendChild(inner);
+  document.body.appendChild(notePopup);
+
+  const closeBtn = notePopup.querySelector('#closeCreationNoteBtn');
+
+  // Countdown logic
+  let countdown = 5;
+  const countdownInterval = setInterval(() => {
+    countdown--;
+    closeBtn.textContent = `Got it! (${countdown})`;
+    if (countdown <= 0) {
+      clearInterval(countdownInterval);
+      closeBtn.textContent = 'Got it!';
+      closeBtn.disabled = false;
+      closeBtn.style.cursor = 'pointer';
+    }
+  }, 1000);
+
+  closeBtn.addEventListener('click', () => notePopup.remove());
+
+  notePopup.addEventListener('click', e => {
+    if (e.target === notePopup) notePopup.remove();
+  });
+
+  document.addEventListener('keydown', function escListener(e) {
+    if (e.key === 'Escape') {
+      notePopup.remove();
+      document.removeEventListener('keydown', escListener);
+    }
+  });
+
+  const style = document.createElement('style');
+  style.textContent = `
+    @keyframes fadeSlideIn {
+      0% { opacity: 0; transform: translateY(30px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+    #closeCreationNoteBtn:hover:enabled {
+      transform: scale(1.05);
+      box-shadow:0 8px 24px rgba(0,242,254,0.6);
+    }
+  `;
+  document.head.appendChild(style);
+})();
+
   // 🧭 Close button logic
   closeEditorBtn.addEventListener('click', () => {
     saveActiveSheet();
@@ -2170,7 +2322,7 @@ console.log('Saved serial to Firebase:', ser.title);
         }
       });
 
-      closeEditorBtn.addEventListener('click', ()=>{ if(confirm('Close editor? Unsaved changes will be lost.')) editorDiv.remove(); });
+      closeEditorBtn.addEventListener('click', ()=>{ if(confirm('Close editor? Your Progress will not be saved .')) editorDiv.remove(); });
     }
 // ---------- Dashboard UI ----------
 // ---------- Show Dashboard ----------
@@ -7716,13 +7868,16 @@ function showHomePage(){
   const slidesPage = document.getElementById('slidesPage');
   const categoriesPage = document.getElementById('categoriesPage');
   const serialCategoriesPage = document.getElementById('serialCategoriesPage');
+  const writerGatePage = document.getElementById('writerGatePage'); // ✅ added
+
+  // Show only home
   if(welcomePage) welcomePage.classList.remove('hidden');
-  if(dashboardPage) dashboardPage.classList.add('hidden');
-  if(profileFormPage) profileFormPage.classList.add('hidden');
-  if(slidesPage) slidesPage.classList.add('hidden');
-  if(categoriesPage) categoriesPage.classList.add('hidden');
-  if(serialCategoriesPage) serialCategoriesPage.classList.add('hidden');
+
+  // Hide everything else
+  [dashboardPage, profileFormPage, slidesPage, categoriesPage, serialCategoriesPage, writerGatePage]
+    .forEach(p => { if(p) p.classList.add('hidden'); });
 }
+
 
 document.getElementById('homeBtn').addEventListener('click', ()=>{ showHomePage(); });
 
@@ -9756,12 +9911,14 @@ function showHomePage(){
   const slidesPage = document.getElementById('slidesPage');
   const categoriesPage = document.getElementById('categoriesPage');
   const serialCategoriesPage = document.getElementById('serialCategoriesPage');
+  const writerGatePage = document.getElementById('writerGatePage'); // ✅ added
+
+  // Show only home
   if(welcomePage) welcomePage.classList.remove('hidden');
-  if(dashboardPage) dashboardPage.classList.add('hidden');
-  if(profileFormPage) profileFormPage.classList.add('hidden');
-  if(slidesPage) slidesPage.classList.add('hidden');
-  if(categoriesPage) categoriesPage.classList.add('hidden');
-  if(serialCategoriesPage) serialCategoriesPage.classList.add('hidden');
+
+  // Hide everything else
+  [dashboardPage, profileFormPage, slidesPage, categoriesPage, serialCategoriesPage, writerGatePage]
+    .forEach(p => { if(p) p.classList.add('hidden'); });
 }
 
 document.getElementById('homeBtn').addEventListener('click', ()=>{ showHomePage(); });
@@ -10758,13 +10915,16 @@ function showHomePage(){
   const slidesPage = document.getElementById('slidesPage');
   const categoriesPage = document.getElementById('categoriesPage');
   const serialCategoriesPage = document.getElementById('serialCategoriesPage');
+  const writerGatePage = document.getElementById('writerGatePage'); // ✅ added
+
+  // Show only home
   if(welcomePage) welcomePage.classList.remove('hidden');
-  if(dashboardPage) dashboardPage.classList.add('hidden');
-  if(profileFormPage) profileFormPage.classList.add('hidden');
-  if(slidesPage) slidesPage.classList.add('hidden');
-  if(categoriesPage) categoriesPage.classList.add('hidden');
-  if(serialCategoriesPage) serialCategoriesPage.classList.add('hidden');
+
+  // Hide everything else
+  [dashboardPage, profileFormPage, slidesPage, categoriesPage, serialCategoriesPage, writerGatePage]
+    .forEach(p => { if(p) p.classList.add('hidden'); });
 }
+
 
 document.getElementById('homeBtn').addEventListener('click', ()=>{ showHomePage(); });
 
@@ -11837,12 +11997,14 @@ function showHomePage(){
   const slidesPage = document.getElementById('slidesPage');
   const categoriesPage = document.getElementById('categoriesPage');
   const serialCategoriesPage = document.getElementById('serialCategoriesPage');
+  const writerGatePage = document.getElementById('writerGatePage'); // ✅ added
+
+  // Show only home
   if(welcomePage) welcomePage.classList.remove('hidden');
-  if(dashboardPage) dashboardPage.classList.add('hidden');
-  if(profileFormPage) profileFormPage.classList.add('hidden');
-  if(slidesPage) slidesPage.classList.add('hidden');
-  if(categoriesPage) categoriesPage.classList.add('hidden');
-  if(serialCategoriesPage) serialCategoriesPage.classList.add('hidden');
+
+  // Hide everything else
+  [dashboardPage, profileFormPage, slidesPage, categoriesPage, serialCategoriesPage, writerGatePage]
+    .forEach(p => { if(p) p.classList.add('hidden'); });
 }
 
 document.getElementById('homeBtn').addEventListener('click', ()=>{ showHomePage(); });
@@ -11885,6 +12047,41 @@ document.getElementById('writerBtn').addEventListener('click', () => {
   }
 });
 
+
+</div> <!-- bottomNav ends -->
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const splash = document.getElementById("appSplash");
+  const bottomNav = document.getElementById("bottomNav");
+  const logo = document.getElementById("splashLogo");
+  const text = document.getElementById("splashText");
+  const bar = document.getElementById("splashBar");
+  const loading = document.getElementById("splashLoading");
+
+  // Animate splash
+  setTimeout(() => { logo.style.opacity = 1; logo.style.transform = "scale(1)"; }, 300);
+  setTimeout(() => { text.style.opacity = 1; }, 800);
+  setTimeout(() => { loading.style.opacity = 1; }, 1200);
+
+  // Progress bar animation
+  let progress = 0;
+  const interval = setInterval(() => {
+    progress += 4;
+    bar.style.width = progress + "%";
+    if (progress >= 100) {
+      clearInterval(interval);
+      // Fade out splash
+      setTimeout(() => {
+        splash.style.opacity = 0;
+        setTimeout(() => {
+          splash.style.display = "none";
+          bottomNav.style.display = "flex"; // ✅ show navigation after splash
+        }, 600);
+      }, 300);
+    }
+  }, 80);
+});
 
 
 // land on home

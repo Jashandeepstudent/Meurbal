@@ -2421,9 +2421,10 @@ function showDashboard(type = 'stories', genreFilter = 'All') {
   slidesPage.classList.add('hidden');
   dashboardPage.classList.remove('hidden');
   dashboardBackBtn.classList.remove('hidden');
+  bottomNav.classList.remove('hidden');
   dashboardList.innerHTML = '';
   updateHeaderVisibility();
-
+  updateBottomNavVisibility();
   let hadCards = false;
 
   // Load saved cards first
@@ -2570,7 +2571,7 @@ function showDashboard(type = 'stories', genreFilter = 'All') {
   if (!hadCards) loadDashboardCards(type);
 }
 
-
+if (bottomNav) bottomNav.style.display = 'none';
 // ---------- Save Dashboard Cards ----------
 // ---------- Save Dashboard Cards ----------
 function saveDashboardCards(type = 'stories') {
@@ -9061,13 +9062,13 @@ function updateBottomNavVisibility() {
   if (!bottomNav) return;
 
   const homeVisible = !document.getElementById('welcomePage')?.classList.contains('hidden');
-  const dashboardVisible = !document.getElementById('dashboardPage')?.classList.contains('hidden');
   const writerGateVisible = !document.getElementById('writerGatePage')?.classList.contains('hidden');
 
-  if (homeVisible || dashboardVisible || writerGateVisible) {
+  // Show bottom nav only on home or writer gate
+  if (homeVisible || writerGateVisible) {
     bottomNav.style.display = 'flex';
   } else {
-    bottomNav.style.display = 'none';
+    bottomNav.style.display = 'none'; // dashboard and other pages are hidden
   }
 }
 
@@ -10322,13 +10323,13 @@ function updateBottomNavVisibility() {
   if (!bottomNav) return;
 
   const homeVisible = !document.getElementById('welcomePage')?.classList.contains('hidden');
-  const dashboardVisible = !document.getElementById('dashboardPage')?.classList.contains('hidden');
   const writerGateVisible = !document.getElementById('writerGatePage')?.classList.contains('hidden');
 
-  if (homeVisible || dashboardVisible || writerGateVisible) {
+  // Show bottom nav only on home or writer gate
+  if (homeVisible || writerGateVisible) {
     bottomNav.style.display = 'flex';
   } else {
-    bottomNav.style.display = 'none';
+    bottomNav.style.display = 'none'; // dashboard and other pages are hidden
   }
 }
 
@@ -11328,15 +11329,16 @@ function updateBottomNavVisibility() {
   if (!bottomNav) return;
 
   const homeVisible = !document.getElementById('welcomePage')?.classList.contains('hidden');
-  const dashboardVisible = !document.getElementById('dashboardPage')?.classList.contains('hidden');
   const writerGateVisible = !document.getElementById('writerGatePage')?.classList.contains('hidden');
 
-  if (homeVisible || dashboardVisible || writerGateVisible) {
+  // Show bottom nav only on home or writer gate
+  if (homeVisible || writerGateVisible) {
     bottomNav.style.display = 'flex';
   } else {
-    bottomNav.style.display = 'none';
+    bottomNav.style.display = 'none'; // dashboard and other pages are hidden
   }
 }
+
 
 const observer = new MutationObserver(updateBottomNavVisibility);
 observer.observe(document.body, { attributes: true, subtree: true, attributeFilter: ['class'] });
@@ -12984,13 +12986,13 @@ function updateBottomNavVisibility() {
   if (!bottomNav) return;
 
   const homeVisible = !document.getElementById('welcomePage')?.classList.contains('hidden');
-  const dashboardVisible = !document.getElementById('dashboardPage')?.classList.contains('hidden');
   const writerGateVisible = !document.getElementById('writerGatePage')?.classList.contains('hidden');
 
-  if (homeVisible || dashboardVisible || writerGateVisible) {
+  // Show bottom nav only on home or writer gate
+  if (homeVisible || writerGateVisible) {
     bottomNav.style.display = 'flex';
   } else {
-    bottomNav.style.display = 'none';
+    bottomNav.style.display = 'none'; // dashboard and other pages are hidden
   }
 }
 

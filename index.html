@@ -93,16 +93,7 @@
   cursor:pointer;
 }
 .small-note { color:#6b7280; font-size:13px; margin-top:8px; }
-  @media (max-width: 600px) {
-    #seriesCreatePopup .popup-content {
-      width: 90%;
-      max-width: 360px;
-      padding: 12px;
-    }
-    #seriesCreatePopup input, #seriesCreatePopup textarea, #seriesCreatePopup select {
-      font-size: 14px;
-    }
-  }
+
     /* Header */
     header{position:fixed;top:12px;left:12px;z-index:60}
     .profile-btn{width:56px;height:56px;border-radius:50%;background:white; box-shadow:0 10px 30px rgba(0,0,0,0.12); display:flex;align-items:center;justify-content:center; border:none;cursor:pointer;overflow:hidden;font-size:16px}
@@ -509,7 +500,6 @@ async function loadCurrentUsername() {
 }
 loadCurrentUsername();
 
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
   apiKey: "AIzaSyCgTh6FzKWYCGyRgBmeclvGKxuuFL3L81Y",
   authDomain: "meurbal.firebaseapp.com",
@@ -520,6 +510,7 @@ const firebaseConfig = {
   appId: "1:917148598257:web:dd42e5d690b56d2ac08e50",
   measurementId: "G-EHJVB3XC90"
 };
+
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
@@ -666,7 +657,7 @@ onValue(ref(db, 'series'), snap => {
     window.seriesData = [];
     saveLocal('seriesData', []);
     if (typeof renderBrowseSeries === 'function') {
-      renderBrowseSeries([], { includeDemo: true, demoCount: 10 });
+      renderBrowseSeries([], { includeDemo: yes, demoCount: 0 });
     }
   }
 });
@@ -953,19 +944,17 @@ document.addEventListener('DOMContentLoaded', showHomePage);
     </div>
   </div>
 
-   <!-- Series Create Popup (series + episode1) -->
-<!-- SERIES CREATE POPUP -->
-<div id="seriesCreatePopup" class="hidden popup">
-  <div class="popup-content" style="max-width:420px;width:90%;padding:14px;">
-    <h3 style="margin-bottom:8px;text-align:center;">Create / Edit Series</h3>
+  <!-- Series Create Popup (series + episode1) -->
+ <div id="seriesCreatePopup" class="hidden popup">
+  <div class="popup-content" style="max-width:480px;padding:16px;">
+    <h3 style="margin-bottom:8px;">Create / Edit Series</h3>
 
     <!-- Series Section -->
     <div style="margin-bottom:8px;">
-      <label style="font-weight:600;">Series Title *</label>
-      <input id="seriesTitleInput" placeholder="e.g. The Lost Scrolls" style="margin-bottom:6px;width:100%;">
-      
-      <label>Genre *</label>
-      <select id="seriesGenreInput" style="margin-bottom:6px;width:100%;">
+      <label style="font-weight:600;">Series Title</label>
+      <input id="seriesTitleInput" placeholder="e.g. The Lost Scrolls" style="margin-bottom:6px;">
+      <label>Genre</label>
+      <select id="seriesGenreInput" style="margin-bottom:6px;">
         <option value="">Select genre</option>
         <option>Comedy</option>
         <option>Fantasy</option>
@@ -978,30 +967,39 @@ document.addEventListener('DOMContentLoaded', showHomePage);
         <option>Crime</option>
         <option>Historic</option>
       </select>
-
       <label>Description (optional)</label>
-      <textarea id="seriesDescInput" rows="2" placeholder="Short series description" style="margin-bottom:6px;width:100%;"></textarea>
+      <textarea id="seriesDescInput" rows="2" placeholder="Short series description" style="margin-bottom:6px;"></textarea>
     </div>
 
+   
     <!-- Episode Section -->
     <div style="margin-bottom:8px;">
-      <label style="font-weight:600;">Episode 1 *</label>
-      <input id="ep1TitleInput" placeholder="Episode 1 title" style="margin-bottom:6px;width:100%;">
-      <textarea id="ep1DescInput" rows="2" placeholder="Short episode description" style="margin-bottom:6px;width:100%;"></textarea>
+      <label style="font-weight:600;">Episode 1</label>
+      <input id="ep1TitleInput" placeholder="Episode 1 title" style="margin-bottom:6px;">
+      <textarea id="ep1DescInput" rows="2" placeholder="Short episode description" style="margin-bottom:6px;"></textarea>
 
       <!-- Cover -->
       <label>Series Cover</label>
-      <input type="file" id="seriesCoverInput" accept="image/*" style="width:100%;">
-
-      <!-- Writer Name & Date -->
-      <label>Writer Name</label>
-      <input type="text" id="seriesWriterNameInput" placeholder="e.g. John Doe" style="width:100%;">
+      <input type="file" id="seriesCoverInput" accept="image/*">
       
-      <label>Publish Date</label>
-      <input type="date" id="seriesPublishDateInput" style="width:100%;">
-      <div id="seriesCoverPreview" style="margin-top:6px;text-align:center;">
+<!-- ✅ Added Writer Name & Publish Date fields for Series Form -->
+<label>Writer Name</label>
+<input type="text" id="seriesWriterNameInput" placeholder="e.g. John Doe">
+<label>Publish Date</label>
+<input type="date" id="seriesPublishDateInput">
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const sDate = document.getElementById('seriesPublishDateInput');
+    if (sDate && !sDate.value) {
+      sDate.value = new Date().toISOString().split('T')[0];
+    }
+  });
+</script>
+<!-- ✅ End Added Writer Name & Publish Date fields -->
+
+<div id="seriesCoverPreview" style="margin-top:6px;text-align:center;">
         <img id="seriesCoverImg" src="" alt="Cover Preview"
-          style="max-width:100px;height:150px;object-fit:cover;border-radius:8px;display:none;">
+          style="max-width:100px;height:180px;object-fit:cover;border-radius:8px;display:none;">
       </div>
     </div>
 
@@ -1012,51 +1010,7 @@ document.addEventListener('DOMContentLoaded', showHomePage);
   </div>
 </div>
 
-<script>
-  document.addEventListener('DOMContentLoaded', () => {
-    const sDate = document.getElementById('seriesPublishDateInput');
-    if (sDate && !sDate.value) {
-      sDate.value = new Date().toISOString().split('T')[0];
-    }
 
-    const coverInput = document.getElementById('seriesCoverInput');
-    const coverImg = document.getElementById('seriesCoverImg');
-    coverInput.addEventListener('change', (e) => {
-      const file = e.target.files[0];
-      if (file) {
-        const reader = new FileReader();
-        reader.onload = () => {
-          coverImg.src = reader.result;
-          coverImg.style.display = 'block';
-        };
-        reader.readAsDataURL(file);
-      }
-    });
-
-    document.getElementById('seriesCreateConfirmBtn').addEventListener('click', () => {
-      const title = document.getElementById('seriesTitleInput').value.trim();
-      const genre = document.getElementById('seriesGenreInput').value.trim();
-      const desc = document.getElementById('seriesDescInput').value.trim();
-      const ep1Title = document.getElementById('ep1TitleInput').value.trim();
-
-      if (!title || !genre || !ep1Title) {
-        alert("⚠️ Please fill in the required fields: Series Title, Genre, and Episode 1 Title.");
-        return;
-      }
-
-      if (desc) {
-        const wordCount = desc.split(/\s+/).filter(Boolean).length;
-        if (wordCount < 3 || wordCount > 8) {
-          alert("⚠️ Series description should be between 3 and 8 words.");
-          return;
-        }
-      }
-
-      alert("✅ Series created or updated successfully!");
-      // You can add your saving logic here
-    });
-  });
-</script>
   <!-- Add Episode Popup -->
   <div id="addEpisodePopup" class="hidden popup">
     <div class="popup-content">
@@ -1079,81 +1033,48 @@ document.addEventListener('DOMContentLoaded', showHomePage);
     <div id="slotsContainer"></div>
   </div>
 
-<div id="storyFormPage" class="form-container hidden">
-  <h2>Create Story / Series</h2>
+  <!-- Story Form -->
+  <div id="storyFormPage" class="form-container hidden">
+    <h2>Create Story / Series</h2>
+    <label>Title</label><input type="text" id="storyTitle">
+    <label>Genre</label>
+    <select id="storyGenre">
+      <option value="">Select genre</option>
+      <option>Horror</option><option>Comedy</option><option>Action</option>
+      <option>Romance</option><option>Tragic</option><option>Fantasy</option>
+      <option>Thriller</option><option>Adventure</option><option>Crime</option>
+       <option>Historic</option>
+    </select>
+    <label>Description</label>
+    <textarea id="storyDesc" rows="3"></textarea>
+    <label>Cover Image</label>
+<input type="file" id="storyCoverInput" accept="image/*">
 
-  <label>Title</label>
-  <input type="text" id="storyTitle" placeholder="Enter your story title">
+    <div id="storyCoverPreview" style="margin-top:10px;text-align:center;">
+      <img id="storyCoverImg" src="" alt="Cover Preview" style="max-width:120px;height:220px;object-fit:cover;border-radius:12px;display:none;">
+    </div>
 
-  <label>Genre</label>
-  <select id="storyGenre">
-    <option value="">Select genre</option>
-    <option>Horror</option>
-    <option>Comedy</option>
-    <option>Action</option>
-    <option>Romance</option>
-    <option>Tragic</option>
-    <option>Fantasy</option>
-    <option>Thriller</option>
-    <option>Adventure</option>
-    <option>Crime</option>
-    <option>Historic</option>
-  </select>
+    <!-- Added Writer Name & Publish Date inputs -->
+    <label>Writer Name</label>
+    <input type="text" id="writerNameInput" placeholder="e.g. John Doe">
+    <label>Publish Date</label>
+    <input type="date" id="publishDateInput">
+    <script>
+      document.addEventListener('DOMContentLoaded', () => {
+        const dateInput = document.getElementById('publishDateInput');
+        if (dateInput && !dateInput.value) {
+          dateInput.value = new Date().toISOString().split('T')[0];
+        }
+      });
+    </script>
+    <!-- End added inputs -->
 
-  <label>Description (must be 3–8 words)</label>
-  <textarea id="storyDesc" rows="3" placeholder="Short story description (3–8 words)"></textarea>
-  <small id="storyDescWarn" style="color:red;display:none;">⚠️ Description must be between 3 and 8 words.</small>
-
-  <label>Cover Image</label>
-  <input type="file" id="storyCoverInput" accept="image/*">
-
-  <div id="storyCoverPreview" style="margin-top:10px;text-align:center;">
-    <img id="storyCoverImg" src="" alt="Cover Preview"
-         style="max-width:120px;height:220px;object-fit:cover;border-radius:12px;display:none;">
+ 
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn btn-secondary" id="cancelCreateBtn">Cancel</button>
+      <button class="btn btn-primary" id="startCreatingBtn">Start Creating</button>
+    </div>
   </div>
-
-  <!-- Added Writer Name & Publish Date inputs -->
-  <label>Writer Name</label>
-  <input type="text" id="writerNameInput" placeholder="e.g. John Doe">
-
-  <label>Publish Date</label>
-  <input type="date" id="publishDateInput">
-  <script>
-    document.addEventListener('DOMContentLoaded', () => {
-      const dateInput = document.getElementById('publishDateInput');
-      if (dateInput && !dateInput.value) {
-        dateInput.value = new Date().toISOString().split('T')[0];
-      }
-    });
-  </script>
-  <!-- End added inputs -->
-
-  <div style="display:flex;gap:8px;justify-content:flex-end">
-    <button class="btn btn-secondary" id="cancelCreateBtn">Cancel</button>
-    <button class="btn btn-primary" id="startCreatingBtn" disabled>Start Creating</button>
-  </div>
-</div>
-
-<script>
-document.addEventListener('DOMContentLoaded', () => {
-  const titleInput = document.getElementById('storyTitle');
-  const descInput = document.getElementById('storyDesc');
-  const createBtn = document.getElementById('startCreatingBtn');
-  const descWarn = document.getElementById('storyDescWarn');
-
-  function validateStoryForm() {
-    const descWords = descInput.value.trim().split(/\s+/).filter(w => w.length > 0);
-    const validDesc = descWords.length >= 3 && descWords.length <= 8;
-    const validTitle = titleInput.value.trim().length > 0;
-
-    descWarn.style.display = validDesc ? 'none' : 'block';
-    createBtn.disabled = !(validDesc && validTitle);
-  }
-
-  titleInput.addEventListener('input', validateStoryForm);
-  descInput.addEventListener('input', validateStoryForm);
-});
-</script>
 
   <!-- Dashboard -->
 <div id="dashboardPage" class="hidden">
@@ -3215,7 +3136,7 @@ function pickStoryExploration(candidates, count, rng) {
 }
 
 // Demo stories generator
-function generateDemoStories(count=50, rng) {
+function generateDemoStories(count=0, rng) {
   rng = rng || rngForStoryRender();
   const genres=["Action","Romance","Comedy","Fantasy","Horror","Tragic","Thriller","Adventure","Crime","Historic"];
   const covers=[
@@ -9068,7 +8989,6 @@ document.addEventListener('DOMContentLoaded', attachAnalyticsButtons);
 
 
 <script>
-<script>
 function updateBottomNavVisibility() {
   const bottomNav = document.getElementById('bottomNav');
   if (!bottomNav) return;
@@ -9083,7 +9003,6 @@ function updateBottomNavVisibility() {
     bottomNav.style.display = 'none'; // dashboard and other pages are hidden
   }
 }
-
 
 const observer = new MutationObserver(updateBottomNavVisibility);
 observer.observe(document.body, { attributes: true, subtree: true, attributeFilter: ['class'] });
@@ -10346,6 +10265,7 @@ function updateBottomNavVisibility() {
   }
 }
 
+
 const observer = new MutationObserver(updateBottomNavVisibility);
 observer.observe(document.body, { attributes: true, subtree: true, attributeFilter: ['class'] });
 
@@ -11337,7 +11257,6 @@ document.addEventListener('DOMContentLoaded', attachAnalyticsButtons);
 
 
 <script>
-<script>
 function updateBottomNavVisibility() {
   const bottomNav = document.getElementById('bottomNav');
   if (!bottomNav) return;
@@ -11352,6 +11271,7 @@ function updateBottomNavVisibility() {
     bottomNav.style.display = 'none'; // dashboard and other pages are hidden
   }
 }
+
 
 const observer = new MutationObserver(updateBottomNavVisibility);
 observer.observe(document.body, { attributes: true, subtree: true, attributeFilter: ['class'] });
@@ -12468,7 +12388,7 @@ pop.style.cssText = `
   justify-content:center;
   background:rgba(0,0,0,0.45);
   backdrop-filter:blur(6px);
-  z-index:2000;
+  z-index:1300;
   font-family:Poppins,sans-serif;
 `;
 pop.innerHTML = `
@@ -12730,7 +12650,6 @@ document.addEventListener('DOMContentLoaded', function(){
 import { getDatabase, ref, get, set, update } from "https://www.gstatic.com/firebasejs/10.14.0/firebase-database.js";
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.0/firebase-app.js";
 
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
   apiKey: "AIzaSyCgTh6FzKWYCGyRgBmeclvGKxuuFL3L81Y",
   authDomain: "meurbal.firebaseapp.com",
@@ -12967,7 +12886,6 @@ document.addEventListener('DOMContentLoaded', attachAnalyticsButtons);
 </script>
 
 
-<script>
 <script>
 function updateBottomNavVisibility() {
   const bottomNav = document.getElementById('bottomNav');

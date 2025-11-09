@@ -10247,6 +10247,7 @@ function attachAnalyticsButtons() {
 document.addEventListener('DOMContentLoaded', attachAnalyticsButtons);
 </script>
 
+
 <script>
 function updateBottomNavVisibility() {
   const bottomNav = document.getElementById('bottomNav');
@@ -10262,6 +10263,7 @@ function updateBottomNavVisibility() {
     bottomNav.style.display = 'none'; // dashboard and other pages are hidden
   }
 }
+
 const observer = new MutationObserver(updateBottomNavVisibility);
 observer.observe(document.body, { attributes: true, subtree: true, attributeFilter: ['class'] });
 
@@ -11267,6 +11269,7 @@ function updateBottomNavVisibility() {
     bottomNav.style.display = 'none'; // dashboard and other pages are hidden
   }
 }
+
 const observer = new MutationObserver(updateBottomNavVisibility);
 observer.observe(document.body, { attributes: true, subtree: true, attributeFilter: ['class'] });
 
@@ -12382,7 +12385,7 @@ pop.style.cssText = `
   justify-content:center;
   background:rgba(0,0,0,0.45);
   backdrop-filter:blur(6px);
-  z-index:2000;
+  z-index:1300;
   font-family:Poppins,sans-serif;
 `;
 pop.innerHTML = `
@@ -12900,6 +12903,7 @@ observer.observe(document.body, { attributes: true, subtree: true, attributeFilt
 
 document.addEventListener('DOMContentLoaded', updateBottomNavVisibility);
 </script>
+
 
 
 <script>

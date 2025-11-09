@@ -1088,9 +1088,9 @@ document.addEventListener('DOMContentLoaded', () => {
     <option>Historic</option>
   </select>
 
-  <label>Description (must be 7–8 words)</label>
-  <textarea id="storyDesc" rows="3" placeholder="Short story description (7–8 words)"></textarea>
-  <small id="storyDescWarn" style="color:red;display:none;">⚠️ Description must be between 7 and 8 words.</small>
+  <label>Description (must be 3–8 words)</label>
+  <textarea id="storyDesc" rows="3" placeholder="Short story description (3–8 words)"></textarea>
+  <small id="storyDescWarn" style="color:red;display:none;">⚠️ Description must be between 3 and 8 words.</small>
 
   <label>Cover Image</label>
   <input type="file" id="storyCoverInput" accept="image/*">
@@ -1131,7 +1131,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function validateStoryForm() {
     const descWords = descInput.value.trim().split(/\s+/).filter(w => w.length > 0);
-    const validDesc = descWords.length >= 7 && descWords.length <= 8;
+    const validDesc = descWords.length >= 3 && descWords.length <= 8;
     const validTitle = titleInput.value.trim().length > 0;
 
     descWarn.style.display = validDesc ? 'none' : 'block';
@@ -12295,10 +12295,13 @@ function loadSessions() {
 // --- Sidebar ---
 function openVoiceChatSidebar() {
   if (document.getElementById('voiceChatSidebar')) return;
+  const isMobile = window.innerWidth <= 768;
+  const width = isMobile ? '90%' : '420px';
+
   const bar = document.createElement('div');
   bar.id = 'voiceChatSidebar';
   bar.style.cssText = `
-    position: fixed; top: 0; right: 0; width: 420px; height: 100vh;
+    position: fixed; top: 0; right: 0; width: ${width}; height: 100vh;
     background: rgba(20, 20, 30, 0.95); backdrop-filter: blur(20px);
     color: #fff; font-family: 'Poppins','Inter',sans-serif;
     display: flex; flex-direction: column;
@@ -12314,8 +12317,7 @@ function openVoiceChatSidebar() {
       <span style="font-weight:600;opacity:0.85;">✍️ Meurbal Writer</span>
       <button id="copyBtn" title="Copy text" style="
         justify-self: center;background: #2563eb;border: none;color: #fff;font-size: 14px;
-        font-weight: 600;border-radius: 8px;padding: 6px 12px;cursor: pointer;
-        box-shadow: 0 0 10px rgba(37,99,235,0.6); transition: transform 0.2s ease, background 0.2s ease;
+        font-weight: 600;border-radius: 8px;padding: 6px 12px;cursor:pointer;
       ">📋 Copy</button>
       <div style="justify-self: end; display:flex; align-items:center; gap:6px;">
         <button id="sessionsBtn" style="background:#6b7280;border:none;border-radius:8px;color:#fff;padding:6px 10px;cursor:pointer;">Sessions</button>
@@ -12335,10 +12337,10 @@ function openVoiceChatSidebar() {
     setTimeout(() => bar.remove(), 300);
   };
   document.getElementById('sessionsBtn').onclick = showSessionList;
-  document.getElementById('copyBtn').onclick = async () => {
+  document.getElementById('copyBtn').onclick = () => {
     const text = document.getElementById('liveVoiceBubble')?.textContent || '';
     if (!text) return alert('Nothing to copy!');
-    await navigator.clipboard.writeText(text);
+    navigator.clipboard.writeText(text);
     const ta = safeTextarea();
     if(ta){ ta.value = text; ta.dispatchEvent(new Event('input', { bubbles: true })); }
     alert('✅ Copied!');
@@ -12430,9 +12432,13 @@ function chooseLanguage(){
   });
 }
 
-// --- Voice Assistant ---
-async function openVoiceAssistant(prevText=''){
+async function openVoiceAssistant(prevText='') {
   const lang = await chooseLanguage();
+
+  // Open sidebar always
+  openVoiceChatSidebar();
+  if(prevText) addVoiceMessage(prevText);
+
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!SpeechRecognition) return alert('Speech Recognition not supported!');
   const rec = new SpeechRecognition();
@@ -12440,41 +12446,62 @@ async function openVoiceAssistant(prevText=''){
   rec.interimResults = true;
   rec.lang = lang;
 
-  let full = prevText, isPaused = false, bufferTimeout;
-  openVoiceChatSidebar();
-  if(prevText) addVoiceMessage(prevText);
+  const pop = document.createElement('div');
+  pop.style.cssText = `
+    position:fixed;
+    inset:0;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:rgba(0,0,0,0.45);
+    backdrop-filter:blur(6px);
+    z-index:1300;
+    font-family:Poppins,sans-serif;
+  `;
 
- const pop = document.createElement('div');
-pop.style.cssText = `
-  position:fixed;
-  inset:0;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  background:rgba(0,0,0,0.45);
-  backdrop-filter:blur(6px);
-  z-index:1300;
-  font-family:Poppins,sans-serif;
-`;
-pop.innerHTML = `
-  <div style="position:relative;background:rgba(255,255,255,0.25);backdrop-filter:blur(14px);border-radius:16px;padding:28px 32px;text-align:center;color:#fff;box-shadow:0 10px 30px rgba(0,0,0,0.25);min-width:360px;">
-    <button id="closePopupBtn" style="position:absolute;top:10px;right:12px;background:rgba(255,255,255,0.15);border:none;color:#fff;font-size:18px;font-weight:bold;border-radius:8px;width:28px;height:28px;cursor:pointer;line-height:1;">×</button>
-    <h2 style="margin-top:0">🎙️ Meurbal Assistant</h2>
-    <p>${lang==='hi-IN'
-      ? 'बोलिए — मैं आपकी कल्पना को शब्दों में ढाल दूंगा।'
-      : 'Speak naturally — I’ll write beautifully as you talk.'
-    }</p>
-    <div style="margin:18px 0;display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
-      <button id="startBtn" style="background:#22c55e;color:#fff;border:none;border-radius:10px;padding:10px 18px;font-weight:600;cursor:pointer;">Start</button>
-      <button id="pauseBtn" style="background:#facc15;color:#000;border:none;border-radius:10px;padding:10px 18px;font-weight:600;cursor:pointer;display:none;">Pause</button>
-      <button id="finishBtn" style="background:#ef4444;color:#fff;border:none;border-radius:10px;padding:10px 18px;font-weight:600;cursor:pointer;display:none;">Finish</button>
-      <button id="copyPopupBtn" style="background:#2563eb;color:#fff;border:none;border-radius:10px;padding:10px 18px;font-weight:600;cursor:pointer;display:none;">📋 Copy</button>
-      <button id="prevBtn" style="background:#6b7280;color:#fff;border:none;border-radius:10px;padding:10px 18px;font-weight:600;cursor:pointer;">Previous</button>
+  const isMobile = window.innerWidth <= 768;
+  const width = isMobile ? '90%' : '400px';
+  const padding = isMobile ? '16px 20px' : '28px 32px';
+  const fontSize = isMobile ? '14px' : '16px';
+  const btnPadding = isMobile ? '8px 12px' : '10px 18px';
+
+  pop.innerHTML = `
+    <div style="
+      position:relative;
+      background:rgba(255,255,255,0.25);
+      backdrop-filter:blur(14px);
+      border-radius:16px;
+      padding:${padding};
+      text-align:center;
+      color:#fff;
+      box-shadow:0 10px 30px rgba(0,0,0,0.25);
+      min-width:300px;
+      max-width:${width};
+      font-size:${fontSize};
+    ">
+      <button id="closePopupBtn" style="
+        position:absolute;top:10px;right:12px;
+        background:rgba(255,255,255,0.15);border:none;
+        color:#fff;font-size:18px;font-weight:bold;
+        border-radius:8px;width:28px;height:28px;
+        cursor:pointer;line-height:1;">×</button>
+      <h2 style="margin-top:0;font-size:${parseInt(fontSize)+2}px;">🎙️ Meurbal Assistant</h2>
+      <p style="margin-bottom:16px;font-size:${fontSize};">
+        ${lang==='hi-IN'
+          ? 'बोलिए — मैं आपकी कल्पना को शब्दों में ढाल दूंगा।'
+          : 'Speak naturally — I’ll write beautifully as you talk.'
+        }
+      </p>
+      <div style="margin:12px 0;display:flex;gap:6px;justify-content:center;flex-wrap:wrap;">
+        <button id="startBtn" style="background:#22c55e;color:#fff;border:none;border-radius:10px;padding:${btnPadding};font-weight:600;cursor:pointer;">Start</button>
+        <button id="pauseBtn" style="background:#facc15;color:#000;border:none;border-radius:10px;padding:${btnPadding};font-weight:600;cursor:pointer;display:none;">Pause</button>
+        <button id="finishBtn" style="background:#ef4444;color:#fff;border:none;border-radius:10px;padding:${btnPadding};font-weight:600;cursor:pointer;display:none;">Finish</button>
+        <button id="copyPopupBtn" style="background:#2563eb;color:#fff;border:none;border-radius:10px;padding:${btnPadding};font-weight:600;cursor:pointer;display:none;">📋 Copy</button>
+        <button id="prevBtn" style="background:#6b7280;color:#fff;border:none;border-radius:10px;padding:${btnPadding};font-weight:600;cursor:pointer;">Previous</button>
+      </div>
+      <p id="status" style="opacity:.9;font-size:${fontSize};">Click <b>Start</b> and speak clearly…</p>
     </div>
-    <p id="status" style="opacity:.9;">Click <b>Start</b> and speak clearly…</p>
-  </div>
-`;
-
+  `;
 // Append popup
 document.body.appendChild(pop);
 

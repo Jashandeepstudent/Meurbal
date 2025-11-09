@@ -1033,48 +1033,83 @@ document.addEventListener('DOMContentLoaded', showHomePage);
     <div id="slotsContainer"></div>
   </div>
 
-  <!-- Story Form -->
-  <div id="storyFormPage" class="form-container hidden">
-    <h2>Create Story / Series</h2>
-    <label>Title</label><input type="text" id="storyTitle">
-    <label>Genre</label>
-    <select id="storyGenre">
-      <option value="">Select genre</option>
-      <option>Horror</option><option>Comedy</option><option>Action</option>
-      <option>Romance</option><option>Tragic</option><option>Fantasy</option>
-      <option>Thriller</option><option>Adventure</option><option>Crime</option>
-       <option>Historic</option>
-    </select>
-    <label>Description</label>
-    <textarea id="storyDesc" rows="3"></textarea>
-    <label>Cover Image</label>
-<input type="file" id="storyCoverInput" accept="image/*">
+   <!-- Story Form -->
+<div id="storyFormPage" class="form-container hidden">
+  <h2>Create Story / Series</h2>
 
-    <div id="storyCoverPreview" style="margin-top:10px;text-align:center;">
-      <img id="storyCoverImg" src="" alt="Cover Preview" style="max-width:120px;height:220px;object-fit:cover;border-radius:12px;display:none;">
-    </div>
+  <label>Title</label>
+  <input type="text" id="storyTitle" placeholder="Enter your story title">
 
-    <!-- Added Writer Name & Publish Date inputs -->
-    <label>Writer Name</label>
-    <input type="text" id="writerNameInput" placeholder="e.g. John Doe">
-    <label>Publish Date</label>
-    <input type="date" id="publishDateInput">
-    <script>
-      document.addEventListener('DOMContentLoaded', () => {
-        const dateInput = document.getElementById('publishDateInput');
-        if (dateInput && !dateInput.value) {
-          dateInput.value = new Date().toISOString().split('T')[0];
-        }
-      });
-    </script>
-    <!-- End added inputs -->
+  <label>Genre</label>
+  <select id="storyGenre">
+    <option value="">Select genre</option>
+    <option>Horror</option>
+    <option>Comedy</option>
+    <option>Action</option>
+    <option>Romance</option>
+    <option>Tragic</option>
+    <option>Fantasy</option>
+    <option>Thriller</option>
+    <option>Adventure</option>
+    <option>Crime</option>
+    <option>Historic</option>
+  </select>
 
- 
-    <div style="display:flex;gap:8px;justify-content:flex-end">
-      <button class="btn btn-secondary" id="cancelCreateBtn">Cancel</button>
-      <button class="btn btn-primary" id="startCreatingBtn">Start Creating</button>
-    </div>
+  <label>Description (must be 3–8 words)</label>
+  <textarea id="storyDesc" rows="3" placeholder="Short story description (3–8 words)"></textarea>
+  <small id="storyDescWarn" style="color:red;display:none;">⚠️ Description must be between 3 and 8 words.</small>
+
+  <label>Cover Image</label>
+  <input type="file" id="storyCoverInput" accept="image/*">
+
+  <div id="storyCoverPreview" style="margin-top:10px;text-align:center;">
+    <img id="storyCoverImg" src="" alt="Cover Preview"
+         style="max-width:120px;height:220px;object-fit:cover;border-radius:12px;display:none;">
   </div>
+
+  <!-- Added Writer Name & Publish Date inputs -->
+  <label>Writer Name</label>
+  <input type="text" id="writerNameInput" placeholder="e.g. John Doe">
+
+  <label>Publish Date</label>
+  <input type="date" id="publishDateInput">
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const dateInput = document.getElementById('publishDateInput');
+      if (dateInput && !dateInput.value) {
+        dateInput.value = new Date().toISOString().split('T')[0];
+      }
+    });
+  </script>
+  <!-- End added inputs -->
+
+  <div style="display:flex;gap:8px;justify-content:flex-end">
+    <button class="btn btn-secondary" id="cancelCreateBtn">Cancel</button>
+    <button class="btn btn-primary" id="startCreatingBtn" disabled>Start Creating</button>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const titleInput = document.getElementById('storyTitle');
+  const descInput = document.getElementById('storyDesc');
+  const createBtn = document.getElementById('startCreatingBtn');
+  const descWarn = document.getElementById('storyDescWarn');
+
+  function validateStoryForm() {
+    const descWords = descInput.value.trim().split(/\s+/).filter(w => w.length > 0);
+    const validDesc = descWords.length >= 3 && descWords.length <= 8;
+    const validTitle = titleInput.value.trim().length > 0;
+
+    descWarn.style.display = validDesc ? 'none' : 'block';
+    createBtn.disabled = !(validDesc && validTitle);
+  }
+
+  titleInput.addEventListener('input', validateStoryForm);
+  descInput.addEventListener('input', validateStoryForm);
+});
+</script>
+
 
   <!-- Dashboard -->
 <div id="dashboardPage" class="hidden">
@@ -12388,7 +12423,7 @@ pop.style.cssText = `
   justify-content:center;
   background:rgba(0,0,0,0.45);
   backdrop-filter:blur(6px);
-  z-index:1300;
+  z-index:2000;
   font-family:Poppins,sans-serif;
 `;
 pop.innerHTML = `

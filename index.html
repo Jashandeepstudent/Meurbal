@@ -5,7 +5,7 @@
 <style>#profileBtn,#profileDropdown{display:none!important;}</style>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1.0" />
-  <title>Writer App — Slots UI Improved (fixed v2)</title>
+  <title>Meurbal - Where Dream.Write.Live</title>
 <!-- Favicon setup for Meurbal -->
 <link rel="icon" type="image/png" sizes="96x96" href="melogo.png">
 <link rel="icon" type="image/png" sizes="192x192" href="melogo.png">
@@ -778,39 +778,96 @@ async function saveSerialToFirebase(ser) {
 
 
 <body>
-<!-- Bottom Navigation -->
+<!-- 🌌 COSMIC PURPLE BOTTOM NAVIGATION -->
 <div id="bottomNav" style="
   position: fixed;
   bottom: 0;
   left: 0;
   width: 100%;
-  background: #ffffff;
-  border-top: 1px solid #ddd;
+  background: linear-gradient(135deg, #6a11cb, #2575fc);
+  border-top: 1px solid rgba(255,255,255,0.15);
   display: flex;
   justify-content: space-around;
+  align-items: center;
   padding: 10px 0;
   z-index: 9999;
+  box-shadow: 0 -3px 15px rgba(106,17,203,0.4);
+  transition: transform 0.35s ease, opacity 0.35s ease;
 ">
-  <button id="homeBtn" style="background:none;border:none;font-size:24px;">🏠</button>
-  <button id="writerBtn" style="background:none;border:none;font-size:24px;">✏️</button>
+  <!-- 🏠 Home -->
+  <button id="homeBtn" class="nav-btn" style="background:none;border:none;cursor:pointer;display:flex;flex-direction:column;align-items:center;color:white;">
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"
+      stroke-linecap="round" stroke-linejoin="round">
+      <path d="M3 9.5L12 3l9 6.5V21a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1V9.5z"></path>
+    </svg>
+    <span class="nav-label" style="font-size:12px;margin-top:4px;opacity:0.85;">Home</span>
+  </button>
+
+  <!-- ✏️ Writer -->
+  <button id="writerBtn" class="nav-btn" style="background:none;border:none;cursor:pointer;display:flex;flex-direction:column;align-items:center;color:white;">
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"
+      stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 20h9"></path>
+      <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"></path>
+    </svg>
+    <span class="nav-label" style="font-size:12px;margin-top:4px;opacity:0.85;">Writer</span>
+  </button>
 </div>
 
-<script>
-  const bottomNav = document.getElementById("bottomNav");
-  const hiddenHashes = ["#browseSeries", "#browseStories", "#dashboardPage", "#createEditor"];
+<style>
+  .nav-btn:hover svg { filter: drop-shadow(0 0 6px rgba(255,255,255,0.7)); transform: scale(1.1); transition: all 0.25s ease; }
+  .nav-btn:hover .nav-label { opacity: 1; }
+  #bottomNav.hidden { transform: translateY(100%); opacity: 0; }
+</style>
 
-  function updateNavVisibility() {
-    if (hiddenHashes.some(hash => window.location.hash.includes(hash))) {
-      bottomNav.style.display = "none";
-    } else {
-      bottomNav.style.display = "flex";
+<script>
+  const bottomNav = document.getElementById('bottomNav');
+
+  // ✅ Hide bar when these pages are visible
+  function updateBottomNavVisibility() {
+    const pagesToHide = [
+      'dashboardPage',       // dashboard
+      'storyFormPage',       // story editor
+      'slidesPage',          // serial editor
+      'workspacePage',       // writer workspace
+      'categoriesPage',      // browse stories
+      'serialCategoriesPage',
+      'editorPage'
+     
+    ];
+
+    let shouldHide = false;
+    for (const id of pagesToHide) {
+      const el = document.getElementById(id);
+      if (el && !el.classList.contains('hidden')) {
+        shouldHide = true;
+        break;
+      }
     }
+
+    bottomNav.classList.toggle('hidden', shouldHide);
   }
 
-  // Run on load and whenever the hash changes
-  window.addEventListener("hashchange", updateNavVisibility);
-  window.addEventListener("DOMContentLoaded", updateNavVisibility);
+  // 🏠 Home button
+  document.getElementById('homeBtn').addEventListener('click', () => {
+    if (typeof showHomePage === 'function') showHomePage();
+    updateBottomNavVisibility();
+  });
+
+  // ✏️ Writer button
+  document.getElementById('writerBtn').addEventListener('click', () => {
+    if (typeof showWriterGateway === 'function') showWriterGateway();
+    updateBottomNavVisibility();
+  });
+
+  // 👁️ React to any class visibility changes
+  const observer = new MutationObserver(updateBottomNavVisibility);
+  observer.observe(document.body, { attributes: true, subtree: true, attributeFilter: ['class'] });
+
+  document.addEventListener('DOMContentLoaded', updateBottomNavVisibility);
 </script>
+
+
 
 
 
@@ -822,12 +879,15 @@ function showHomePage(){
   const slidesPage = document.getElementById('slidesPage');
   const categoriesPage = document.getElementById('categoriesPage');
   const serialCategoriesPage = document.getElementById('serialCategoriesPage');
+  const writerGatePage = document.getElementById('writerGatePage'); // ✅ add this line
+
   if(welcomePage) welcomePage.classList.remove('hidden');
   if(dashboardPage) dashboardPage.classList.add('hidden');
   if(profileFormPage) profileFormPage.classList.add('hidden');
   if(slidesPage) slidesPage.classList.add('hidden');
   if(categoriesPage) categoriesPage.classList.add('hidden');
   if(serialCategoriesPage) serialCategoriesPage.classList.add('hidden');
+  if(writerGatePage) writerGatePage.classList.add('hidden'); // ✅ hide writer gate
 }
 
 document.getElementById('homeBtn').addEventListener('click', ()=>{ showHomePage(); });
@@ -881,14 +941,211 @@ document.addEventListener('DOMContentLoaded', showHomePage);
     <div class="dropdown" id="profileDropdown"></div>
   </header>
 
-  <main id="welcomePage">
-    <h1>Welcome!</h1>
-    <div class="buttons">
-      <button id="browseStoriesBtn" class="btn btn-primary btn-small">📖 Browse Stories</button>
-      <button id="browseSerialsBtn" class="btn btn-secondary btn-small">🎬 Browse Serials</button>
-      <button id="createContentBtn" class="btn btn-primary btn-small">✍️ Create Story / Serial</button>
+<!-- 🎬 CINEMATIC MEURBAL WELCOME PAGE -->
+<main id="welcomePage" role="main" aria-labelledby="welcomeTitle"
+  style="display:flex;align-items:center;justify-content:center;height:100vh;overflow:hidden;position:relative;background:#000;color:#fff;font-family:'Poppins',system-ui;">
+
+  <style>
+    /* ======= Cinematic Welcome Page Styles (Final Custom Version) ======= */
+    #welcomePage * { box-sizing:border-box; }
+
+    #welcomePage .wall-wrap {
+      position:fixed;inset:0;z-index:0;overflow:hidden;display:block;
+    }
+
+    #welcomePage .wall {
+      position:absolute;left:50%;top:50%;
+      transform:translate(-50%,-50%);
+      width:200%;height:140%;
+      display:grid;
+      grid-template-columns:repeat(8,1fr);
+      grid-auto-rows:1fr;
+      gap:8px;
+      padding:40px;
+      animation: wallMove 40s linear infinite;
+      filter:saturate(1.05) contrast(0.95);
+    }
+
+    #welcomePage .cover {
+      position:relative;overflow:hidden;border-radius:12px;
+      box-shadow:0 12px 30px rgba(0,0,0,0.6);
+      border:1px solid rgba(255,255,255,0.04);
+    }
+
+    #welcomePage .cover::after {
+      content:"";
+      position:absolute;inset:0;
+      background:linear-gradient(135deg,rgba(255,255,255,0.06),rgba(0,0,0,0.15));
+      mix-blend-mode:screen;
+      pointer-events:none;
+    }
+
+    #welcomePage .cover img {
+      width:100%;height:100%;object-fit:cover;display:block;
+      transform:scale(1.06);
+      transition:transform 18s ease;
+      filter:brightness(1.25) contrast(0.92) saturate(1.1);
+    }
+    #welcomePage .cover:hover img { transform:scale(1.12); }
+
+    #welcomePage .wall-overlay {
+      position:fixed;inset:0;pointer-events:none;
+      background:
+        radial-gradient(circle at 50% 30%, rgba(255,255,255,0.18), transparent 70%),
+        linear-gradient(180deg,rgba(0,0,0,0.45),rgba(0,0,0,0.65));
+      z-index:1;
+    }
+
+    #welcomePage .center-card {
+      position:relative;z-index:3;
+      width:min(520px,calc(100% - 48px));
+      border-radius:20px;padding:48px;
+      background:rgba(255,255,255,0.08);
+      border:1px solid rgba(255,255,255,0.12);
+      backdrop-filter:blur(14px) saturate(1.05);
+      text-align:center;
+      box-shadow:0 20px 60px rgba(5,8,18,0.6);
+    }
+
+    #welcomePage .brand {
+      display:flex;gap:12px;align-items:center;justify-content:center;margin-bottom:10px;
+    }
+
+    #welcomePage .logo {
+      width:44px;height:44px;border-radius:10px;object-fit:cover;
+      box-shadow:0 6px 18px rgba(37,117,252,0.18);
+    }
+
+    #welcomePage .brand h4 {
+      font-size:18px;margin:0;font-weight:600;
+      background:linear-gradient(90deg,#2575fc,#6a11cb);
+      -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+    }
+
+    #welcomePage .tagline {
+      color:rgba(255,255,255,0.9);margin:6px 0 18px;font-weight:300;
+    }
+
+    #welcomePage h1 {
+      font-size:26px;line-height:1.05;margin:4px 0 10px;font-weight:700;
+      background:linear-gradient(90deg,#2575fc,#6a11cb);
+      -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+    }
+
+    #welcomePage .subtitle {
+      color:#e9eefc;opacity:0.9;font-size:14px;margin-bottom:26px;
+    }
+
+    #welcomePage .cta-row {
+      display:flex;gap:14px;justify-content:center;align-items:center;flex-wrap:wrap;
+    }
+
+    #welcomePage .btn {
+      min-width:160px;padding:14px 20px;border-radius:12px;border:none;cursor:pointer;
+      font-weight:600;font-size:15px;letter-spacing:0.2px;
+      transition:transform .22s ease,box-shadow .22s ease;
+    }
+
+    #welcomePage .btn.primary {
+      color:#fff;background:linear-gradient(135deg,#6a11cb,#2575fc);
+      box-shadow:0 10px 30px rgba(37,117,252,0.24);
+    }
+
+    #welcomePage .btn.ghost {
+      background:transparent;color:#f0f6ff;
+      border:1px solid rgba(255,255,255,0.12);
+      backdrop-filter:blur(6px);
+    }
+
+    #welcomePage .btn.primary:hover {
+      transform:translateY(-5px);
+      box-shadow:0 16px 40px rgba(37,117,252,0.32);
+    }
+
+    #welcomePage .btn.ghost:hover { transform:translateY(-4px); }
+
+    #welcomePage .muted {
+      margin-top:18px;font-size:12px;color:rgba(255,255,255,0.6);
+    }
+
+    @keyframes wallMove {
+      0% { transform:translate(-45%,-48%) scale(1); }
+      50% { transform:translate(-52%,-52%) scale(1.04); }
+      100% { transform:translate(-45%,-48%) scale(1); }
+    }
+
+    @media (max-width:880px) {
+      #welcomePage .wall { width:260%;height:180%;padding:18px;grid-template-columns:repeat(6,1fr); }
+      #welcomePage .center-card { padding:28px; }
+      #welcomePage h1 { font-size:20px; }
+      #welcomePage .btn { min-width:150px; }
+    }
+
+    @media (max-width:480px) {
+      #welcomePage .wall { grid-template-columns:repeat(4,1fr);height:200%; }
+      #welcomePage .center-card { padding:22px;border-radius:16px; }
+      #welcomePage h1 { font-size:18px; }
+      #welcomePage .btn { width:100%; }
+      #welcomePage .cta-row { flex-direction:column;gap:12px; }
+    }
+  </style>
+
+  <!-- Background cinematic wall -->
+  <div class="wall-wrap" aria-hidden="true">
+    <div class="wall">
+      <div class="cover"><img src="https://images.unsplash.com/photo-1542204625-6f6b1d68b4f6?q=80&w=1200&auto=format&fit=crop" alt=""></div>
+      <div class="cover"><img src="https://images.unsplash.com/photo-1519681393784-d120267933ba?q=80&w=1200&auto=format&fit=crop" alt=""></div>
+      <div class="cover"><img src="https://images.unsplash.com/photo-1503264116251-35a269479413?q=80&w=1200&auto=format&fit=crop" alt=""></div>
+      <div class="cover"><img src="https://images.unsplash.com/photo-1499084732479-de2c02d45fc4?q=80&w=1200&auto=format&fit=crop" alt=""></div>
+      <div class="cover"><img src="https://images.unsplash.com/photo-1549880180-2f2b8b9373b3?q=80&w=1200&auto=format&fit=crop" alt=""></div>
+      <div class="cover"><img src="https://images.unsplash.com/photo-1462331940025-496dfbfc7564?q=80&w=1200&auto=format&fit=crop" alt=""></div>
+      <div class="cover"><img src="https://images.unsplash.com/photo-1518791841217-8f162f1e1131?q=80&w=1200&auto=format&fit=crop" alt=""></div>
+      <div class="cover"><img src="https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?q=80&w=1200&auto=format&fit=crop" alt=""></div>
+      <div class="cover"><img src="https://images.unsplash.com/photo-1496307042754-b4aa456c4a2d?q=80&w=1200&auto=format&fit=crop" alt=""></div>
+      <div class="cover"><img src="https://images.unsplash.com/photo-1506619216599-9d16b7d1b4a2?q=80&w=1200&auto=format&fit=crop" alt=""></div>
     </div>
-  </main>
+    <div class="wall-overlay"></div>
+  </div>
+
+  <!-- Frosted glass center card -->
+  <section class="center-card">
+    <div class="brand">
+      <img src="melogo.png" alt="Meurbal Logo" class="logo">
+      <div>
+        <h4>Meurbal</h4>
+        <div class="tagline">Where Dream. Write. Live.</div>
+      </div>
+    </div>
+
+    <h1 id="welcomeTitle">Enter worlds of wonder & thrill</h1>
+    <div class="subtitle">Fantasy, action, romance, adventure & crime — all in one home.</div>
+
+    <div class="cta-row">
+      <button class="btn primary" id="browseStoriesBtn">📖 Browse Stories</button>
+      <button class="btn ghost" id="browseSerialsBtn">🎬 Browse Serials</button>
+      <button class="btn primary" id="createContentBtn">✍️ Create Story / Serial</button>
+    </div>
+
+  </section>
+</main>
+
+<script>
+  // Hook buttons to navigation
+  document.getElementById('browseStoriesBtn').addEventListener('click', () => {
+    if (typeof openCategoriesPage === 'function') openCategoriesPage();
+    updateHeaderVisibility?.();
+  });
+  document.getElementById('browseSerialsBtn').addEventListener('click', () => {
+    if (typeof openSerialCategoriesPage === 'function') openSerialCategoriesPage();
+    updateHeaderVisibility?.();
+  });
+  document.getElementById('createContentBtn').addEventListener('click', () => {
+    if (typeof openWriterGateway === 'function') openWriterGateway();
+    updateHeaderVisibility?.();
+  });
+</script>
+
+
 
 
   <!-- Categories Page (opened from Browse Stories) -->
@@ -1002,16 +1259,37 @@ document.addEventListener('DOMContentLoaded', showHomePage);
     <button class="btn btn-primary" id="saveProfileBtn">Create Profile</button>
   </div>
 
-  <!-- Choose Type Popup -->
-  <div id="chooseTypePopup" class="hidden popup">
-    <div class="popup-content">
-      <h2>What do you want to create?</h2>
-      <div style="display:flex;gap:12px;justify-content:center;margin-top:12px">
-        <button id="createStoryBtn" class="btn btn-primary">Story</button>
-        <button id="createSerialBtn" class="btn btn-secondary">Serial</button>
-      </div>
+ <!-- Choose Type Popup -->
+<div id="chooseTypePopup" class="hidden popup">
+  <div class="popup-content" style="position: relative; padding: 20px;">
+    <!-- Close button -->
+    <span id="closeChooseTypePopup" 
+          style="position: absolute; top: 10px; right: 15px; font-size: 24px; cursor: pointer;">
+      &times;
+    </span>
+
+    <h2>What do you want to create?</h2>
+    <div style="display:flex; gap:12px; justify-content:center; margin-top:12px;">
+      <button id="createStoryBtn" class="btn btn-primary">Story</button>
+      <button id="createSerialBtn" class="btn btn-secondary">Serial</button>
     </div>
   </div>
+</div>
+
+<script>
+  // Get elements
+  const popup = document.getElementById('chooseTypePopup');
+  const closeBtn = document.getElementById('closeChooseTypePopup');
+
+  // Close popup on button click
+  closeBtn.addEventListener('click', () => {
+    popup.classList.add('hidden'); // hide the popup
+  });
+
+  // Optional: Open popup for testing
+  // popup.classList.remove('hidden');
+</script>
+
 
   <!-- Slot Name / Unlock Popup -->
   <div id="slotNamePopup" class="hidden popup">
@@ -1076,7 +1354,7 @@ document.addEventListener('DOMContentLoaded', showHomePage);
 
       <div id="serialCoverPreview" style="margin-top:6px;text-align:center;">
         <img id="serialCoverImg" src="" alt="Cover Preview"
-          style="max-width:100px;height:180px;object-fit:cover;border-radius:8px;display:none;">
+          style="max-width:1px;height:1px;object-fit:cover;border-radius:1px;display:none;">
       </div>
     </div>
 
@@ -1175,10 +1453,7 @@ document.addEventListener('DOMContentLoaded', () => {
   <label>Cover Image</label>
   <input type="file" id="storyCoverInput" accept="image/*">
 
-  <div id="storyCoverPreview" style="margin-top:10px;text-align:center;">
-    <img id="storyCoverImg" src="" alt="Cover Preview"
-         style="max-width:120px;height:220px;object-fit:cover;border-radius:12px;display:none;">
-  </div>
+
 
   <!-- Added Writer Name & Publish Date inputs -->
   <label>Writer Name</label>
@@ -1209,20 +1484,47 @@ document.addEventListener('DOMContentLoaded', () => {
   const createBtn = document.getElementById('startCreatingBtn');
   const descWarn = document.getElementById('storyDescWarn');
 
-  function validateStoryForm() {
-    const descWords = descInput.value.trim().split(/\s+/).filter(w => w.length > 0);
-    const validDesc = descWords.length >= 3 && descWords.length <= 8;
-    const validTitle = titleInput.value.trim().length > 0;
+  // ensure it's a button (not a submit in a form)
+  createBtn.type = 'button';
 
-    descWarn.style.display = validDesc ? 'none' : 'block';
-    createBtn.disabled = !(validDesc && validTitle);
+  function validateStoryForm() {
+    const title = titleInput.value.trim();
+    const desc = descInput.value.trim();
+
+    const descWords = desc.split(/\s+/).filter(w => w.length > 0);
+    const hasDesc = desc.length > 0;
+    const validDesc = !hasDesc || (descWords.length >= 3 && descWords.length <= 8);
+    const validTitle = title.length > 0;
+
+    // Show warning only if description is filled but invalid
+    descWarn.style.display = hasDesc && !validDesc ? 'block' : 'none';
+
+    // Enable button only if title is filled AND (desc empty or valid)
+    createBtn.disabled = !(validTitle && validDesc);
   }
 
+  // Run validation on input changes
   titleInput.addEventListener('input', validateStoryForm);
   descInput.addEventListener('input', validateStoryForm);
+
+  // Run once on load so button state is correct
+  validateStoryForm();
+
+  // Click handler: only proceeds if enabled; dispatches a custom event you can listen for
+  createBtn.addEventListener('click', () => {
+    if (createBtn.disabled) return; // safety, shouldn't happen because browser blocks clicks on disabled buttons
+    const payload = {
+      title: titleInput.value.trim(),
+      description: descInput.value.trim(),
+      genre: document.getElementById('storyGenre').value,
+      writer: document.getElementById('writerNameInput')?.value || '',
+      publishDate: document.getElementById('publishDateInput')?.value || ''
+    };
+    // Dispatch an app-level event — listen for 'startCreating' elsewhere to open editor / save draft
+    window.dispatchEvent(new CustomEvent('startCreating', { detail: payload }));
+  });
 });
 </script>
-
 
   <!-- Dashboard -->
 <div id="dashboardPage" class="hidden">
@@ -1820,7 +2122,7 @@ addEpConfirmBtn.addEventListener('click', ()=>{
   editorDiv.innerHTML = `
   ${(editType === 'serial' && opts.isEdit && opts.episodeIndex === 0) ? `
     <div style="background:#fff8e1;border:1px solid #facc15; border-radius:10px;padding:10px;margin-bottom:8px; text-align:center;font-weight:600;color:#92400e;">
-      ⚠️ Please create a new sheet before writing your Episode 1 by clicking the + button.
+      ⚠️ Please create a new sheet before writing your Episodes by clicking the + button.
     </div>` : ''}
 
   <div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
@@ -1879,7 +2181,7 @@ addEpConfirmBtn.addEventListener('click', ()=>{
   if (existingPopup) return;
 
   const img = document.createElement('img');
-  img.src = 'WhatsApp%20Image%202025-10-29%20at%2007.30.10_f5277356.jpg';
+  img.src = 'meurballogo.jpg';
   img.alt = 'AI Logo';
   img.style.cssText = `
     width:38px;height:38px;border-radius:10px;cursor:pointer;
@@ -1905,57 +2207,70 @@ addEpConfirmBtn.addEventListener('click', ()=>{
     padding: 32px 36px; min-width: 360px; text-align: center;
     border: 1px solid rgba(255,255,255,0.25); animation: popupFade 0.3s ease-out;
   `;
-  inner.innerHTML = `
-    <h2 style="
-      margin: 0 0 22px; font-size: 1.4rem; color: #fff; font-weight: 700;
-      text-shadow: 0 2px 8px rgba(0,0,0,0.4);
-    ">
-      🤖 Choose your AI Mode
-    </h2>
-    <div style="
-      display:flex; align-items:center; justify-content:center;
-    ">
-      <button id="aiAssistantBtn_local" style="
-        background: linear-gradient(135deg, #4facfe, #00f2fe);
-        color: white; font-weight:700; font-size:16px;
-        border:none; border-radius: 12px; padding: 12px 22px;
-        cursor:pointer; letter-spacing: 0.3px;
-        transition: all 0.25s ease; box-shadow: 0 6px 16px rgba(0,242,254,0.4);
-      ">
-        💡 AI Assistant
-      </button>
-    </div>
-  `;
+ inner.innerHTML = `
+  <h2 style="
+    margin:0 0 22px;
+    font-size:1.4rem;
+    color:#fff;
+    font-weight:700;
+    text-shadow:0 2px 8px rgba(0,0,0,0.4);
+  ">🤖 Choose your AI Mode</h2>
+
+  <div style="display:flex;align-items:center;justify-content:center;gap:14px;">
+    <button id="aiAssistantBtn_local" style="
+      background:linear-gradient(135deg,#4facfe,#00f2fe);
+      color:white;font-weight:700;font-size:16px;
+      border:none;border-radius:12px;padding:12px 26px;
+      cursor:pointer;letter-spacing:0.3px;
+      transition:all 0.25s ease;
+      box-shadow:0 6px 16px rgba(0,242,254,0.4);
+    ">💡 AI Assistant</button>
+
+    <button id="aiCloseBtn_local" style="
+      background:linear-gradient(135deg,#ff5f6d,#ffc371);
+      color:white;font-weight:700;font-size:16px;
+      border:none;border-radius:12px;padding:12px 26px;
+      cursor:pointer;letter-spacing:0.3px;
+      transition:all 0.25s ease;
+      box-shadow:0 6px 16px rgba(255,95,109,0.4);
+    ">✖ Close</button>
+  </div>
+`;
+
   aiPopup.appendChild(inner);
   document.body.appendChild(aiPopup);
 
-  const aiAssistantBtn = aiPopup.querySelector('#aiAssistantBtn_local');
-  aiAssistantBtn.addEventListener('mouseover', () => aiAssistantBtn.style.transform = 'scale(1.07)');
-  aiAssistantBtn.addEventListener('mouseout', () => aiAssistantBtn.style.transform = 'scale(1.0)');
+const aiAssistantBtn = aiPopup.querySelector('#aiAssistantBtn_local');
+const aiCloseBtn = aiPopup.querySelector('#aiCloseBtn_local');
 
-  aiAssistantBtn.addEventListener('mouseover', () => {
-    aiAssistantBtn.style.boxShadow = '0 0 20px rgba(0,242,254,0.7)';
-  });
-  aiAssistantBtn.addEventListener('mouseout', () => {
-    aiAssistantBtn.style.boxShadow = '0 6px 16px rgba(0,242,254,0.4)';
-  });
+aiAssistantBtn.addEventListener('mouseover', () => aiAssistantBtn.style.transform = 'scale(1.07)');
+aiAssistantBtn.addEventListener('mouseout', () => aiAssistantBtn.style.transform = 'scale(1.0)');
 
-  function toggleAIPopup(show) {
-    aiPopup.style.display = show ? 'flex' : 'none';
-  }
+aiAssistantBtn.addEventListener('mouseover', () => {
+  aiAssistantBtn.style.boxShadow = '0 0 20px rgba(0,242,254,0.7)';
+});
+aiAssistantBtn.addEventListener('mouseout', () => {
+  aiAssistantBtn.style.boxShadow = '0 6px 16px rgba(0,242,254,0.4)';
+});
 
-  img.addEventListener('click', e => {
-    e.stopPropagation();
-    toggleAIPopup(aiPopup.style.display !== 'flex');
-  });
-  document.addEventListener('click', e => { if (e.target === aiPopup) toggleAIPopup(false); });
-  document.addEventListener('keydown', e => { if (e.key === 'Escape') toggleAIPopup(false); });
+function toggleAIPopup(show) {
+  aiPopup.style.display = show ? 'flex' : 'none';
+}
 
-  aiAssistantBtn.addEventListener('click', () => {
-    toggleAIPopup(false);
-    saveActiveSheet && saveActiveSheet();
-    openVoiceAssistant();
-  });
+img.addEventListener('click', e => {
+  e.stopPropagation();
+  toggleAIPopup(aiPopup.style.display !== 'flex');
+});
+document.addEventListener('click', e => { if (e.target === aiPopup) toggleAIPopup(false); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') toggleAIPopup(false); });
+
+aiAssistantBtn.addEventListener('click', () => {
+  toggleAIPopup(false);
+  saveActiveSheet && saveActiveSheet();
+  openVoiceAssistant();
+});
+
+aiCloseBtn.addEventListener('click', () => toggleAIPopup(false));  // ✅ CLOSE 
 
   const style = document.createElement('style');
   style.textContent = `
@@ -4115,7 +4430,7 @@ async function openPreviewFullScreen(story){
     <div>
       <strong>${escapeHtml(story.title)}</strong>
       <div class="muted" style="font-size:12px">
-        ${escapeHtml(story.genre || "—")} • Written by ${escapeHtml(author)} • ${dateStr}
+        ${escapeHtml(story.genre || "—")}
       </div>
     </div>
     <div><button id="readerCloseFullBtn" class="btn btn-secondary">Close</button></div>
@@ -6237,7 +6552,7 @@ async function openSerialReader(serialTitle, episodeIndex) {
     <div><button class="btn btn-secondary" id="backToSerialBtn">← Back</button></div>
     <div style="text-align:center;flex:1">
       <h2 style="margin:6px 0;font-size:16px">${serial.title} — ${ep.title}</h2>
-      <div class="muted" style="font-size:12px">${serial.genre || '—'} • ${ep.description || ''}</div>
+ 
     </div>
     <div style="width:120px;visibility:hidden"></div>
   `;
@@ -7979,12 +8294,15 @@ function showHomePage(){
   const slidesPage = document.getElementById('slidesPage');
   const categoriesPage = document.getElementById('categoriesPage');
   const serialCategoriesPage = document.getElementById('serialCategoriesPage');
+  const writerGatePage = document.getElementById('writerGatePage'); // ✅ add this line
+
   if(welcomePage) welcomePage.classList.remove('hidden');
   if(dashboardPage) dashboardPage.classList.add('hidden');
   if(profileFormPage) profileFormPage.classList.add('hidden');
   if(slidesPage) slidesPage.classList.add('hidden');
   if(categoriesPage) categoriesPage.classList.add('hidden');
   if(serialCategoriesPage) serialCategoriesPage.classList.add('hidden');
+  if(writerGatePage) writerGatePage.classList.add('hidden'); // ✅ hide writer gate
 }
 
 document.getElementById('homeBtn').addEventListener('click', ()=>{ showHomePage(); });
@@ -9528,13 +9846,17 @@ function showHomePage(){
   const slidesPage = document.getElementById('slidesPage');
   const categoriesPage = document.getElementById('categoriesPage');
   const serialCategoriesPage = document.getElementById('serialCategoriesPage');
+  const writerGatePage = document.getElementById('writerGatePage'); // ✅ add this line
+
   if(welcomePage) welcomePage.classList.remove('hidden');
   if(dashboardPage) dashboardPage.classList.add('hidden');
   if(profileFormPage) profileFormPage.classList.add('hidden');
   if(slidesPage) slidesPage.classList.add('hidden');
   if(categoriesPage) categoriesPage.classList.add('hidden');
   if(serialCategoriesPage) serialCategoriesPage.classList.add('hidden');
+  if(writerGatePage) writerGatePage.classList.add('hidden'); // ✅ hide writer gate
 }
+
 
 document.getElementById('homeBtn').addEventListener('click', ()=>{ showHomePage(); });
 
@@ -9729,6 +10051,150 @@ document.addEventListener('DOMContentLoaded', function(){
 </script>
 <!-- End Firebase save patch -->
 
+<script>
+(function attachGlobalAIBadge() {
+  let aiBadgeVisible = false;
+
+  function ensureBadge() {
+    if (document.getElementById('global_ai_badge')) return;
+
+    const img = document.createElement('img');
+    img.id = 'global_ai_badge';
+    img.src = 'meurballogo.jpg';
+    img.alt = 'AI';
+    img.style.cssText = `
+      position: fixed;
+      top: 12px;
+      left: 14px;
+      width: 42px;
+      height: 42px;
+      border-radius: 12px;
+      cursor: pointer;
+      object-fit: cover;
+      background: #fff;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      z-index: 999999999 !important;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.6s ease;
+    `;
+
+    const aiPopup = document.createElement('div');
+    aiPopup.id = 'global_ai_popup';
+    aiPopup.style.cssText = `
+      position: fixed;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000000000 !important;
+      background: rgba(0,0,0,0.45);
+      backdrop-filter: blur(6px);
+      font-family: 'Poppins','Inter',system-ui,sans-serif;
+    `;
+
+    const inner = document.createElement('div');
+    inner.style.cssText = `
+      background: rgba(255,255,255,0.25);
+      backdrop-filter: blur(14px) saturate(180%);
+      border-radius: 18px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+      padding: 32px 36px;
+      min-width: 360px;
+      text-align: center;
+      border: 1px solid rgba(255,255,255,0.25);
+      animation: popupFade 0.3s ease-out;
+    `;
+    inner.innerHTML = `
+      <h2 style="margin:0 0 22px;font-size:1.4rem;color:#fff;font-weight:700;
+        text-shadow:0 2px 8px rgba(0,0,0,0.4);">🤖 Choose your AI Mode</h2>
+      <div style="display:flex;align-items:center;justify-content:center;gap:14px;">
+        <button id="aiAssistantBtn_local" style="
+          background:linear-gradient(135deg,#4facfe,#00f2fe);
+          color:white;font-weight:700;font-size:16px;
+          border:none;border-radius:12px;padding:12px 26px;
+          cursor:pointer;letter-spacing:0.3px;
+          transition:all 0.25s ease;
+          box-shadow:0 6px 16px rgba(0,242,254,0.4);
+        ">💡 AI Assistant</button>
+        <button id="aiCloseBtn_local" style="
+          background:linear-gradient(135deg,#ff5f6d,#ffc371);
+          color:white;font-weight:700;font-size:16px;
+          border:none;border-radius:12px;padding:12px 26px;
+          cursor:pointer;letter-spacing:0.3px;
+          transition:all 0.25s ease;
+          box-shadow:0 6px 16px rgba(255,95,109,0.4);
+        ">✖ Close</button>
+      </div>
+    `;
+
+    aiPopup.appendChild(inner);
+    document.body.appendChild(img);
+    document.body.appendChild(aiPopup);
+
+    const btn = aiPopup.querySelector('#aiAssistantBtn_local');
+    const closeBtn = aiPopup.querySelector('#aiCloseBtn_local');
+
+    function togglePopup(show) {
+      aiPopup.style.display = show ? 'flex' : 'none';
+    }
+
+    img.addEventListener('click', (e) => {
+      e.stopPropagation();
+      togglePopup(aiPopup.style.display !== 'flex');
+    });
+    document.addEventListener('click', (e) => {
+      if (e.target === aiPopup) togglePopup(false);
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') togglePopup(false);
+    });
+    btn.addEventListener('click', () => {
+      togglePopup(false);
+      if (typeof openVoiceAssistant === 'function') openVoiceAssistant();
+    });
+    closeBtn.addEventListener('click', () => togglePopup(false));
+
+    // popup animation
+    if (!document.getElementById('ai_popup_anim')) {
+      const s = document.createElement('style');
+      s.id = 'ai_popup_anim';
+      s.textContent = `
+        @keyframes popupFade {
+          from {transform:scale(0.95);opacity:0;}
+          to {transform:scale(1);opacity:1;}
+        }
+      `;
+      document.head.appendChild(s);
+    }
+
+    // 🕒 Wait until meurbalSplash is hidden/removed
+    const checkSplashDone = setInterval(() => {
+      const splash = document.getElementById('meurbalSplash');
+      const hiddenNow =
+        !splash ||
+        splash.classList.contains('hidden') ||
+        splash.style.display === 'none' ||
+        splash.style.visibility === 'hidden' ||
+        parseFloat(window.getComputedStyle(splash).opacity) < 0.05;
+
+      if (hiddenNow && !aiBadgeVisible) {
+        aiBadgeVisible = true;
+        // Delay a bit after removal for smooth reveal
+        setTimeout(() => {
+          img.style.opacity = '1';
+          img.style.pointerEvents = 'auto';
+        }, 800); // ~ matches splash.remove timing
+        clearInterval(checkSplashDone);
+      }
+    }, 300);
+  }
+
+  ensureBadge();
+  // Recreate if DOM wipes it later
+  setInterval(ensureBadge, 1500);
+})();
+</script>
 
 <!-- 📊 Combined Analytics Feature -->
 <script type="module">
@@ -10245,13 +10711,17 @@ function showHomePage(){
   const slidesPage = document.getElementById('slidesPage');
   const categoriesPage = document.getElementById('categoriesPage');
   const serialCategoriesPage = document.getElementById('serialCategoriesPage');
+  const writerGatePage = document.getElementById('writerGatePage'); // ✅ add this line
+
   if(welcomePage) welcomePage.classList.remove('hidden');
   if(dashboardPage) dashboardPage.classList.add('hidden');
   if(profileFormPage) profileFormPage.classList.add('hidden');
   if(slidesPage) slidesPage.classList.add('hidden');
   if(categoriesPage) categoriesPage.classList.add('hidden');
   if(serialCategoriesPage) serialCategoriesPage.classList.add('hidden');
+  if(writerGatePage) writerGatePage.classList.add('hidden'); // ✅ hide writer gate
 }
+
 
 document.getElementById('homeBtn').addEventListener('click', ()=>{ showHomePage(); });
 
@@ -10982,13 +11452,17 @@ function showHomePage(){
   const slidesPage = document.getElementById('slidesPage');
   const categoriesPage = document.getElementById('categoriesPage');
   const serialCategoriesPage = document.getElementById('serialCategoriesPage');
+  const writerGatePage = document.getElementById('writerGatePage'); // ✅ add this line
+
   if(welcomePage) welcomePage.classList.remove('hidden');
   if(dashboardPage) dashboardPage.classList.add('hidden');
   if(profileFormPage) profileFormPage.classList.add('hidden');
   if(slidesPage) slidesPage.classList.add('hidden');
   if(categoriesPage) categoriesPage.classList.add('hidden');
   if(serialCategoriesPage) serialCategoriesPage.classList.add('hidden');
+  if(writerGatePage) writerGatePage.classList.add('hidden'); // ✅ hide writer gate
 }
+
 
 document.getElementById('homeBtn').addEventListener('click', ()=>{ showHomePage(); });
 
@@ -11292,23 +11766,45 @@ async function openVoiceAssistant(prevText=''){
   openVoiceChatSidebar();
   if(prevText) addVoiceMessage(prevText);
 
-  const pop = document.createElement('div');
-  pop.style.cssText = 'position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.45);backdrop-filter:blur(6px);z-index:1300;font-family:Poppins,sans-serif;';
-  pop.innerHTML = `
-    <div style="background:rgba(255,255,255,0.25);backdrop-filter:blur(14px);border-radius:16px;padding:28px 32px;text-align:center;color:#fff;box-shadow:0 10px 30px rgba(0,0,0,0.25);min-width:360px;">
-      <h2 style="margin-top:0">🎙️ Meurbal Assistant</h2>
-      <p>${lang==='hi-IN'?'बोलिए — मैं आपकी कल्पना को शब्दों में ढाल दूंगा।':'Speak naturally — I’ll write beautifully as you talk.'}</p>
-      <div style="margin:18px 0;display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
-        <button id="startBtn" style="background:#22c55e;color:#fff;border:none;border-radius:10px;padding:10px 18px;font-weight:600;cursor:pointer;">Start</button>
-        <button id="pauseBtn" style="background:#facc15;color:#000;border:none;border-radius:10px;padding:10px 18px;font-weight:600;cursor:pointer;display:none;">Pause</button>
-        <button id="finishBtn" style="background:#ef4444;color:#fff;border:none;border-radius:10px;padding:10px 18px;font-weight:600;cursor:pointer;display:none;">Finish</button>
-        <button id="copyPopupBtn" style="background:#2563eb;color:#fff;border:none;border-radius:10px;padding:10px 18px;font-weight:600;cursor:pointer;display:none;">📋 Copy</button>
-        <button id="prevBtn" style="background:#6b7280;color:#fff;border:none;border-radius:10px;padding:10px 18px;font-weight:600;cursor:pointer;">Previous</button>
-      </div>
-      <p id="status" style="opacity:.9;">Click <b>Start</b> and speak clearly…</p>
+ const pop = document.createElement('div');
+pop.style.cssText = `
+  position:fixed;
+  inset:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:rgba(0,0,0,0.45);
+  backdrop-filter:blur(6px);
+  z-index:1600; /* higher than sidebar */
+
+  font-family:Poppins,sans-serif;
+`;
+pop.innerHTML = `
+  <div style="position:relative;background:rgba(255,255,255,0.25);backdrop-filter:blur(14px);border-radius:16px;padding:28px 32px;text-align:center;color:#fff;box-shadow:0 10px 30px rgba(0,0,0,0.25);min-width:360px;">
+    <button id="closePopupBtn" style="position:absolute;top:10px;right:12px;background:rgba(255,255,255,0.15);border:none;color:#fff;font-size:18px;font-weight:bold;border-radius:8px;width:28px;height:28px;cursor:pointer;line-height:1;">×</button>
+    <h2 style="margin-top:0">🎙️ Meurbal Assistant</h2>
+    <p>${lang==='hi-IN'
+      ? 'बोलिए — मैं आपकी कल्पना को शब्दों में ढाल दूंगा।'
+      : 'Speak naturally — I’ll write beautifully as you talk.'
+    }</p>
+    <div style="margin:18px 0;display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
+      <button id="startBtn" style="background:#22c55e;color:#fff;border:none;border-radius:10px;padding:10px 18px;font-weight:600;cursor:pointer;">Start</button>
+      <button id="pauseBtn" style="background:#facc15;color:#000;border:none;border-radius:10px;padding:10px 18px;font-weight:600;cursor:pointer;display:none;">Pause</button>
+      <button id="finishBtn" style="background:#ef4444;color:#fff;border:none;border-radius:10px;padding:10px 18px;font-weight:600;cursor:pointer;display:none;">Finish</button>
+      <button id="copyPopupBtn" style="background:#2563eb;color:#fff;border:none;border-radius:10px;padding:10px 18px;font-weight:600;cursor:pointer;display:none;">📋 Copy</button>
+      <button id="prevBtn" style="background:#6b7280;color:#fff;border:none;border-radius:10px;padding:10px 18px;font-weight:600;cursor:pointer;">Previous</button>
     </div>
-  `;
-  document.body.appendChild(pop);
+    <p id="status" style="opacity:.9;">Click <b>Start</b> and speak clearly…</p>
+  </div>
+`;
+
+// Append popup
+document.body.appendChild(pop);
+
+// Add close button event
+document.getElementById('closePopupBtn').addEventListener('click', () => {
+  pop.remove();
+});
 
   const liveBubble = () => document.getElementById('liveVoiceBubble');
 

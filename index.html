@@ -6,6 +6,27 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1.0" />
   <title>Writer App — Slots UI Improved (fixed v2)</title>
+<!-- Favicon setup for Meurbal -->
+<link rel="icon" type="image/png" sizes="96x96" href="melogo.png">
+<link rel="icon" type="image/png" sizes="192x192" href="melogo.png">
+<link rel="icon" type="image/png" sizes="512x512" href="melogo.png">
+<link rel="icon" type="image/svg+xml" href="melogo.svg">
+<link rel="shortcut icon" href="melogo.ico">
+<link rel="apple-touch-icon" sizes="180x180" href="melogo.png">
+<!-- Splash / Opening Animation -->
+<div id="meurbalSplash" aria-hidden="true">
+  <div class="meurbal-splash-inner">
+    <img src="melogo.png" alt="Meurbal logo" id="meurbalSplashLogo">
+    <div id="meurbalSplashBar">
+      <div id="meurbalSplashBarFill"></div>
+    </div>
+  </div>
+</div>
+
+<meta name="apple-mobile-web-app-title" content="Meurbal">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#00bcd4">
+
   <style>
     :root{ --bg:#f9fafb;--accent:#4f46e5;--muted:#6b7280; --shadow:0 4px 14px rgba(0,0,0,0.08);--border:#e5e7eb; }
     *{box-sizing:border-box}
@@ -88,6 +109,67 @@
     .dropdown{position:absolute;background:white;border:1px solid var(--border);border-radius:10px; box-shadow:0 4px 14px rgba(0,0,0,0.08);padding:8px;display:none;flex-direction:column; min-width:220px;z-index:55}
     .dropdown button{background:transparent;border:none;padding:10px;border-radius:8px;text-align:left;cursor:pointer;font-size:15px}
     .dropdown button:hover{background:#f3f4f6}
+/* --- Meurbal Splash --- */
+#meurbalSplash {
+  position: fixed;
+  inset: 0;
+  z-index: 999999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(180deg, #00e5ff, #00bfff); /* cyan gradient */
+  opacity: 1;
+  transition: opacity 400ms ease, transform 400ms ease;
+  will-change: opacity, transform;
+}
+
+#meurbalSplash.hidden {
+  opacity: 0;
+  pointer-events: none;
+  transform: scale(0.995);
+}
+
+.meurbal-splash-inner {
+  text-align: center;
+}
+
+#meurbalSplashLogo {
+  width: min(40vw, 230px);
+  max-width: 250px;
+  height: auto;
+  display: inline-block;
+  transform-origin: center;
+  animation: logoPop 900ms cubic-bezier(.2,.9,.2,1);
+  filter: drop-shadow(0 10px 25px rgba(0,0,0,0.25));
+  margin-bottom: 28px;
+}
+
+@keyframes logoPop {
+  0% { transform: scale(.8) translateY(6px); opacity: 0; }
+  60% { transform: scale(1.05) translateY(-4px); opacity: 1; }
+  100% { transform: scale(1) translateY(0); opacity: 1; }
+}
+
+/* --- Loading Bar --- */
+#meurbalSplashBar {
+  position: relative;
+  width: 180px;
+  height: 6px;
+  background: rgba(255,255,255,0.3);
+  border-radius: 6px;
+  overflow: hidden;
+  margin: 0 auto;
+}
+
+#meurbalSplashBarFill {
+  position: absolute;
+  top: 0; left: 0;
+  height: 100%;
+  width: 0%;
+  background: #ffffff;
+  border-radius: 6px;
+  transition: width 0.2s linear;
+}
 
     /* Main */
     main{display:flex;flex-direction:column;align-items:center;justify-content:center; height:100vh;text-align:center;padding:20px}
@@ -504,10 +586,30 @@ const db = getDatabase(app);
 const statusBox = document.createElement('div');
 statusBox.id = '__firebase_status_box';
 statusBox.textContent = '🟡 Firebase: Connecting...';
-statusBox.style.cssText = 'position:fixed;right:12px;bottom:12px;padding:8px 12px;border-radius:10px;background:#fff;font-weight:700;box-shadow:0 8px 30px rgba(0,0,0,0.12);z-index:99999';
-document.addEventListener('DOMContentLoaded', ()=> document.body.appendChild(statusBox));
-function setStatus(text,color){try{statusBox.textContent=text;if(color)statusBox.style.background=color;}catch(e){}}
-get(ref(db,'/')).then(()=>setStatus('🟢 Firebase: Connected','#dcfce7')).catch(()=>setStatus('🔴 Firebase: Offline','#fee2e2'));
+statusBox.style.cssText = `
+  display: none;
+  position: fixed;
+  right: 12px;
+  bottom: 12px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: #fff;
+  font-weight: 700;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+  z-index: 99999;
+`;
+document.addEventListener('DOMContentLoaded', () => document.body.appendChild(statusBox));
+
+function setStatus(text, color) {
+  try {
+    statusBox.textContent = text;
+    if (color) statusBox.style.background = color;
+  } catch (e) {}
+}
+
+get(ref(db, '/'))
+  .then(() => setStatus('🟢 Firebase: Connected', '#dcfce7'))
+  .catch(() => setStatus('🔴 Firebase: Offline', '#fee2e2'));
 
 window._firebase={app,db,ref,set,get,child};
 
@@ -676,11 +778,41 @@ async function saveSerialToFirebase(ser) {
 
 
 <body>
-
-<div id="topNav" style="position: fixed; top: 0; left: 0; width: 100%; background: #ffffff; border-bottom: 1px solid #ddd; display: flex; justify-content: space-around; padding: 10px 0; z-index: 9999;">
+<!-- Bottom Navigation -->
+<div id="bottomNav" style="
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  background: #ffffff;
+  border-top: 1px solid #ddd;
+  display: flex;
+  justify-content: space-around;
+  padding: 10px 0;
+  z-index: 9999;
+">
   <button id="homeBtn" style="background:none;border:none;font-size:24px;">🏠</button>
   <button id="writerBtn" style="background:none;border:none;font-size:24px;">✏️</button>
 </div>
+
+<script>
+  const bottomNav = document.getElementById("bottomNav");
+  const hiddenHashes = ["#browseSeries", "#browseStories", "#dashboardPage", "#createEditor"];
+
+  function updateNavVisibility() {
+    if (hiddenHashes.some(hash => window.location.hash.includes(hash))) {
+      bottomNav.style.display = "none";
+    } else {
+      bottomNav.style.display = "flex";
+    }
+  }
+
+  // Run on load and whenever the hash changes
+  window.addEventListener("hashchange", updateNavVisibility);
+  window.addEventListener("DOMContentLoaded", updateNavVisibility);
+</script>
+
+
 
 <script>
 function showHomePage(){
@@ -893,8 +1025,8 @@ document.addEventListener('DOMContentLoaded', showHomePage);
     </div>
   </div>
 
-  <!-- Serial Create Popup (series + episode1) -->
- <div id="serialCreatePopup" class="hidden popup">
+ <!-- Serial Create Popup -->
+<div id="serialCreatePopup" class="hidden popup">
   <div class="popup-content" style="max-width:480px;padding:16px;">
     <h3 style="margin-bottom:8px;">Create / Edit Serial</h3>
 
@@ -902,6 +1034,7 @@ document.addEventListener('DOMContentLoaded', showHomePage);
     <div style="margin-bottom:8px;">
       <label style="font-weight:600;">Series Title</label>
       <input id="seriesTitleInput" placeholder="e.g. The Lost Scrolls" style="margin-bottom:6px;">
+
       <label>Genre</label>
       <select id="seriesGenreInput" style="margin-bottom:6px;">
         <option value="">Select genre</option>
@@ -916,59 +1049,79 @@ document.addEventListener('DOMContentLoaded', showHomePage);
         <option>Crime</option>
         <option>Historic</option>
       </select>
-      <label>Description (optional)</label>
+
+      <label>Description (optional, 3–8 words if filled)</label>
       <textarea id="seriesDescInput" rows="2" placeholder="Short series description" style="margin-bottom:6px;"></textarea>
+      <small id="seriesDescWarn" style="color:red;display:none;">⚠️ Description must be 3–8 words if filled.</small>
     </div>
-
-    <!-- Tags -->
-    <div style="margin-bottom:10px;">
-      <label>Tags</label>
-      <div style="display:flex;gap:6px;align-items:center;margin-top:4px;margin-bottom:6px;">
-        <input id="seriesTagInput" placeholder="type a tag" style="flex:1;padding:8px;border-radius:6px;border:1px solid var(--border)">
-        <button id="addSeriesTagBtn" class="btn btn-secondary" type="button" style="padding:6px 10px;">Add</button>
-      </div>
-      <div id="seriesTagsContainer" style="display:flex;flex-wrap:wrap;gap:6px;"></div>
-    </div>
-
-    <hr style="margin:10px 0;opacity:0.5;">
 
     <!-- Episode Section -->
     <div style="margin-bottom:8px;">
       <label style="font-weight:600;">Episode 1</label>
       <input id="ep1TitleInput" placeholder="Episode 1 title" style="margin-bottom:6px;">
+      <small id="epTitleWarn" style="color:red;display:none;">⚠️ Episode title is required.</small>
+
       <textarea id="ep1DescInput" rows="2" placeholder="Short episode description" style="margin-bottom:6px;"></textarea>
 
       <!-- Cover -->
       <label>Series Cover</label>
       <input type="file" id="serialCoverInput" accept="image/*">
-      
-<!-- ✅ Added Writer Name & Publish Date fields for Serial Form -->
-<label>Writer Name</label>
-<input type="text" id="serialWriterNameInput" placeholder="e.g. John Doe">
-<label>Publish Date</label>
-<input type="date" id="serialPublishDateInput">
-<script>
-  document.addEventListener('DOMContentLoaded', () => {
-    const sDate = document.getElementById('serialPublishDateInput');
-    if (sDate && !sDate.value) {
-      sDate.value = new Date().toISOString().split('T')[0];
-    }
-  });
-</script>
-<!-- ✅ End Added Writer Name & Publish Date fields -->
 
-<div id="serialCoverPreview" style="margin-top:6px;text-align:center;">
+      <!-- Writer + Publish Date -->
+      <label>Writer Name</label>
+      <input type="text" id="serialWriterNameInput" placeholder="e.g. John Doe">
+
+      <label>Publish Date</label>
+      <input type="date" id="serialPublishDateInput">
+
+      <div id="serialCoverPreview" style="margin-top:6px;text-align:center;">
         <img id="serialCoverImg" src="" alt="Cover Preview"
           style="max-width:100px;height:180px;object-fit:cover;border-radius:8px;display:none;">
       </div>
     </div>
 
+    <!-- Buttons -->
     <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px;">
       <button id="serialCreateCancelBtn" class="btn btn-secondary" style="padding:6px 12px;">Cancel</button>
-      <button id="serialCreateConfirmBtn" class="btn btn-primary" style="padding:6px 12px;">Create / Update</button>
+      <button id="serialCreateConfirmBtn" class="btn btn-primary" style="padding:6px 12px;" disabled>Create / Update</button>
     </div>
   </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const descInput = document.getElementById('seriesDescInput');
+  const titleInput = document.getElementById('ep1TitleInput');
+  const createBtn = document.getElementById('serialCreateConfirmBtn');
+  const descWarn = document.getElementById('seriesDescWarn');
+  const titleWarn = document.getElementById('epTitleWarn');
+
+  const sDate = document.getElementById('serialPublishDateInput');
+  if (sDate && !sDate.value) sDate.value = new Date().toISOString().split('T')[0];
+
+  function validateForm() {
+    const descWords = descInput.value.trim().split(/\s+/).filter(w => w.length > 0);
+    // Description is valid if empty OR 3–8 words
+    const validDesc = descWords.length === 0 || (descWords.length >= 3 && descWords.length <= 8);
+    const validTitle = titleInput.value.trim().length > 0;
+
+    // Show/hide warnings
+    descWarn.style.display = validDesc ? 'none' : 'block';
+    titleWarn.style.display = validTitle ? 'none' : 'block';
+
+    // Enable button only if episode 1 title is filled and description (if any) is valid
+    createBtn.disabled = !(validTitle && validDesc);
+  }
+
+  [descInput, titleInput].forEach(el => {
+    el.addEventListener('input', validateForm);
+  });
+
+  validateForm(); // Initial check
+});
+</script>
+
+
 
 
   <!-- Add Episode Popup -->
@@ -993,55 +1146,83 @@ document.addEventListener('DOMContentLoaded', showHomePage);
     <div id="slotsContainer"></div>
   </div>
 
-  <!-- Story Form -->
-  <div id="storyFormPage" class="form-container hidden">
-    <h2>Create Story / Serial</h2>
-    <label>Title</label><input type="text" id="storyTitle">
-    <label>Genre</label>
-    <select id="storyGenre">
-      <option value="">Select genre</option>
-      <option>Horror</option><option>Comedy</option><option>Action</option>
-      <option>Romance</option><option>Tragic</option><option>Fantasy</option>
-      <option>Thriller</option><option>Adventure</option><option>Crime</option>
-       <option>Historic</option>
-    </select>
-    <label>Description</label>
-    <textarea id="storyDesc" rows="3"></textarea>
-    <label>Cover Image</label>
-<input type="file" id="storyCoverInput" accept="image/*">
+   <!-- Story Form -->
+<div id="storyFormPage" class="form-container hidden">
+  <h2>Create Story / Series</h2>
 
-    <div id="storyCoverPreview" style="margin-top:10px;text-align:center;">
-      <img id="storyCoverImg" src="" alt="Cover Preview" style="max-width:120px;height:220px;object-fit:cover;border-radius:12px;display:none;">
-    </div>
+  <label>Title</label>
+  <input type="text" id="storyTitle" placeholder="Enter your story title">
 
-    <!-- Added Writer Name & Publish Date inputs -->
-    <label>Writer Name</label>
-    <input type="text" id="writerNameInput" placeholder="e.g. John Doe">
-    <label>Publish Date</label>
-    <input type="date" id="publishDateInput">
-    <script>
-      document.addEventListener('DOMContentLoaded', () => {
-        const dateInput = document.getElementById('publishDateInput');
-        if (dateInput && !dateInput.value) {
-          dateInput.value = new Date().toISOString().split('T')[0];
-        }
-      });
-    </script>
-    <!-- End added inputs -->
+  <label>Genre</label>
+  <select id="storyGenre">
+    <option value="">Select genre</option>
+    <option>Horror</option>
+    <option>Comedy</option>
+    <option>Action</option>
+    <option>Romance</option>
+    <option>Tragic</option>
+    <option>Fantasy</option>
+    <option>Thriller</option>
+    <option>Adventure</option>
+    <option>Crime</option>
+    <option>Historic</option>
+  </select>
 
-    <!-- Story Tags UI (paste after storyDesc) -->
-<label>Tags (press Add)</label>
-<div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
-  <input id="storyTagInput" placeholder="type a tag and press Add" style="flex:1;padding:10px;border-radius:8px;border:1px solid var(--border)" />
-  <button id="addStoryTagBtn" class="btn btn-secondary" type="button">Add</button>
-</div>
-<div id="storyTagsContainer" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px"></div>
+  <label>Description (must be 3–8 words)</label>
+  <textarea id="storyDesc" rows="3" placeholder="Short story description (3–8 words)"></textarea>
+  <small id="storyDescWarn" style="color:red;display:none;">⚠️ Description must be between 3 and 8 words.</small>
 
-    <div style="display:flex;gap:8px;justify-content:flex-end">
-      <button class="btn btn-secondary" id="cancelCreateBtn">Cancel</button>
-      <button class="btn btn-primary" id="startCreatingBtn">Start Creating</button>
-    </div>
+  <label>Cover Image</label>
+  <input type="file" id="storyCoverInput" accept="image/*">
+
+  <div id="storyCoverPreview" style="margin-top:10px;text-align:center;">
+    <img id="storyCoverImg" src="" alt="Cover Preview"
+         style="max-width:120px;height:220px;object-fit:cover;border-radius:12px;display:none;">
   </div>
+
+  <!-- Added Writer Name & Publish Date inputs -->
+  <label>Writer Name</label>
+  <input type="text" id="writerNameInput" placeholder="e.g. John Doe">
+
+  <label>Publish Date</label>
+  <input type="date" id="publishDateInput">
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const dateInput = document.getElementById('publishDateInput');
+      if (dateInput && !dateInput.value) {
+        dateInput.value = new Date().toISOString().split('T')[0];
+      }
+    });
+  </script>
+  <!-- End added inputs -->
+
+  <div style="display:flex;gap:8px;justify-content:flex-end">
+    <button class="btn btn-secondary" id="cancelCreateBtn">Cancel</button>
+    <button class="btn btn-primary" id="startCreatingBtn" disabled>Start Creating</button>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const titleInput = document.getElementById('storyTitle');
+  const descInput = document.getElementById('storyDesc');
+  const createBtn = document.getElementById('startCreatingBtn');
+  const descWarn = document.getElementById('storyDescWarn');
+
+  function validateStoryForm() {
+    const descWords = descInput.value.trim().split(/\s+/).filter(w => w.length > 0);
+    const validDesc = descWords.length >= 3 && descWords.length <= 8;
+    const validTitle = titleInput.value.trim().length > 0;
+
+    descWarn.style.display = validDesc ? 'none' : 'block';
+    createBtn.disabled = !(validDesc && validTitle);
+  }
+
+  titleInput.addEventListener('input', validateStoryForm);
+  descInput.addEventListener('input', validateStoryForm);
+});
+</script>
+
 
   <!-- Dashboard -->
 <div id="dashboardPage" class="hidden">
@@ -1785,6 +1966,142 @@ addEpConfirmBtn.addEventListener('click', ()=>{
   `;
   document.head.appendChild(style);
 })();
+// 📝 Creation Workspace Reminder with glassmorphic card
+(function showCreationNotePopup() {
+  const popupKey = 'creationNoteCounter';
+  const firstTimeKey = 'creationNoteShownOnce';
+  const showAfter = 5; // show after 5 editor opens
+
+  const shownOnce = localStorage.getItem(firstTimeKey) === 'true';
+  let counter = parseInt(localStorage.getItem(popupKey) || '0', 10);
+
+  if (!shownOnce) {
+    localStorage.setItem(firstTimeKey, 'true');
+  } else {
+    counter++;
+    if (counter < showAfter) {
+      localStorage.setItem(popupKey, counter);
+      return;
+    }
+    counter = 0; // reset after showing
+    localStorage.setItem(popupKey, counter);
+  }
+
+  const existingNote = document.getElementById('editor_creation_note');
+  if (existingNote) return;
+
+  const notePopup = document.createElement('div');
+  notePopup.id = 'editor_creation_note';
+  notePopup.style.cssText = `
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1250;
+    background: rgba(0,0,0,0.55);
+    backdrop-filter: blur(6px);
+    font-family: 'Inter', 'Poppins', sans-serif;
+    opacity: 0;
+    animation: fadeSlideIn 0.5s forwards;
+  `;
+
+  const inner = document.createElement('div');
+  inner.style.cssText = `
+    background: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(14px) saturate(180%);
+    border-radius: 24px;
+    padding: 36px 42px;
+    max-width: 520px;
+    text-align: left;
+    box-shadow: 0 12px 36px rgba(0,0,0,0.25);
+    border: 1px solid rgba(255,255,255,0.3);
+    transform: translateY(30px);
+    position: relative;
+  `;
+
+  inner.innerHTML = `
+    <!-- Friendly icon -->
+    <div style="text-align:center;margin-bottom:20px;">
+      <img src="https://img.icons8.com/emoji/48/000000/light-bulb-emoji.png" alt="Note Icon" style="width:48px;height:48px;">
+    </div>
+    <h2 style="margin:0 0 16px; font-size:1.6rem; color:#fff; font-weight:800; line-height:1.3; text-shadow:0 2px 6px rgba(0,0,0,0.5);">
+      💡 Reminder
+    </h2>
+    <p style="font-size:1.05rem; color:#eee; line-height:1.7;">
+      To save your progress safely:
+    </p>
+    <ul style="font-size:1rem; color:#ddd; line-height:1.6; margin:10px 0 0 20px;">
+      <li>Type your Episodes or Stories in the <strong>Writing Workspace</strong> first.</li>
+      <li>Save your work there before copying it into this Editor.</li>
+      <li>Then you can publish your Episode or Story from here safely.</li>
+    </ul>
+    <p style="margin-top:14px; font-size:0.95rem; color:#ccc; line-height:1.5;">
+      The <strong>Creation Workspace</strong> is available in the Writer Section .
+    </p>
+    <button id="closeCreationNoteBtn" disabled style="
+      margin-top:24px;
+      background: linear-gradient(135deg,#4facfe,#00f2fe);
+      color:white;
+      font-weight:700;
+      font-size:15px;
+      border:none;
+      border-radius:14px;
+      padding:12px 26px;
+      cursor:not-allowed;
+      box-shadow:0 6px 20px rgba(0,242,254,0.5);
+      transition: all 0.3s ease;
+      display:block;
+      margin-left:auto;
+      margin-right:auto;
+    ">Got it! (5)</button>
+  `;
+
+  notePopup.appendChild(inner);
+  document.body.appendChild(notePopup);
+
+  const closeBtn = notePopup.querySelector('#closeCreationNoteBtn');
+
+  // Countdown logic
+  let countdown = 5;
+  const countdownInterval = setInterval(() => {
+    countdown--;
+    closeBtn.textContent = `Got it! (${countdown})`;
+    if (countdown <= 0) {
+      clearInterval(countdownInterval);
+      closeBtn.textContent = 'Got it!';
+      closeBtn.disabled = false;
+      closeBtn.style.cursor = 'pointer';
+    }
+  }, 1000);
+
+  closeBtn.addEventListener('click', () => notePopup.remove());
+
+  notePopup.addEventListener('click', e => {
+    if (e.target === notePopup) notePopup.remove();
+  });
+
+  document.addEventListener('keydown', function escListener(e) {
+    if (e.key === 'Escape') {
+      notePopup.remove();
+      document.removeEventListener('keydown', escListener);
+    }
+  });
+
+  const style = document.createElement('style');
+  style.textContent = `
+    @keyframes fadeSlideIn {
+      0% { opacity: 0; transform: translateY(30px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+    #closeCreationNoteBtn:hover:enabled {
+      transform: scale(1.05);
+      box-shadow:0 8px 24px rgba(0,242,254,0.6);
+    }
+  `;
+  document.head.appendChild(style);
+})();
+
   // 🧭 Close button logic
   closeEditorBtn.addEventListener('click', () => {
     saveActiveSheet();
@@ -7946,7 +8263,25 @@ document.addEventListener("DOMContentLoaded", () => {
     renderList();
   }
 
-  function closeModal(){ const c = document.getElementById('ws_wysiwyg_container'); c.classList.add('hidden'); c.setAttribute('aria-hidden','true'); c.innerHTML = ''; }
+function closeModal() {
+  const modal = document.getElementById('ws_wysiwyg_container');
+  if (!modal) return;
+
+  // Hide the workspace modal
+  modal.classList.add('hidden');
+  modal.setAttribute('aria-hidden', 'true');
+
+  // ✅ Show your main welcome page instead
+  const welcomePage = document.getElementById('welcomePage');
+  if (welcomePage) {
+    welcomePage.classList.remove('hidden');
+  }
+
+  // ✅ Remove the backdrop if it exists
+  const backdrop = document.getElementById('ws_backdrop');
+  if (backdrop) backdrop.remove();
+}
+
 
   /* Create popup */
   function openCreatePopup(){
@@ -9413,6 +9748,71 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
+(function setupMeurbalSplash() {
+  const SPLASH_KEY = 'meurbal_splash_shown_v2';
+  const MIN_MS = 3000; // Minimum 3 seconds
+  const splash = document.getElementById('meurbalSplash');
+  const barFill = document.getElementById('meurbalSplashBarFill');
+  if (!splash || !barFill) return;
+
+  // Skip if already shown in this session
+  if (sessionStorage.getItem(SPLASH_KEY)) {
+    splash.classList.add('hidden');
+    setTimeout(() => splash.remove?.(), 420);
+    return;
+  }
+
+  splash.classList.add('showing');
+
+  // Simulate bar fill while waiting for Firebase
+  let progress = 0;
+  const timer = setInterval(() => {
+    progress += Math.random() * 10; // random incremental fill
+    if (progress > 95) progress = 95; // cap before completion
+    barFill.style.width = progress + '%';
+  }, 200);
+
+  // Firebase wait (adjust ref path if needed)
+  const firebaseReadyPromise = (async () => {
+    try {
+      if (typeof db !== 'undefined' && typeof ref === 'function' && typeof get === 'function') {
+        await get(ref(db, '/'));
+      }
+    } catch (e) {
+      console.warn('Firebase load skipped:', e);
+    }
+  })();
+
+  // Wait until both minimum time and Firebase ready
+  Promise.all([
+    new Promise(res => setTimeout(res, MIN_MS)),
+    firebaseReadyPromise
+  ]).finally(() => {
+    clearInterval(timer);
+    barFill.style.width = '100%'; // fill to complete
+
+    // Save session
+    sessionStorage.setItem(SPLASH_KEY, '1');
+
+    // Fade out splash
+    setTimeout(() => splash.classList.add('hidden'), 400);
+    setTimeout(() => splash.remove?.(), 1000);
+
+    // Optional: greeting text or transition message
+    console.log("Dive into the world of imaginations 🌊✨");
+  });
+
+  // Fallback if Firebase hangs
+  setTimeout(() => {
+    clearInterval(timer);
+    if (!sessionStorage.getItem(SPLASH_KEY)) {
+      barFill.style.width = '100%';
+      splash.classList.add('hidden');
+      setTimeout(()=> splash.remove?.(), 800);
+      sessionStorage.setItem(SPLASH_KEY, '1');
+    }
+  }, 10000);
+})();
 
 // ✅ Increment read count when a story is opened
 export async function incrementReadCount(storyTitle) {
@@ -10169,7 +10569,7 @@ const firebaseConfig = {
   if(document.getElementById('firebaseStatusBox')) return;
   const box=document.createElement('div');
   box.id='firebaseStatusBox';
-  box.style='position:fixed;bottom:10px;left:10px;right:10px;padding:8px 12px;background:#000;color:#fff;font:13px/1.4 sans-serif;border-radius:10px;z-index:99999;display:flex;justify-content:space-between;align-items:center';
+  box.style='position:fixed;bottom:10px;left:10px;right:10px;padding:8px 12px;background:#fff;color:#fff;font:13px/1.4 sans-serif;border-radius:10px;z-index:99999;display:none;justify-content:space-between;align-items:center';
   box.innerHTML=`<div id="fbStatusText">Connecting…</div>
   <div>
     <button id="fbLoadBtn" style="background:#111;color:#fff;border:none;padding:4px 10px;border-radius:8px;cursor:pointer">Load</button>

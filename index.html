@@ -17,6 +17,10 @@
 <div id="meurbalSplash" aria-hidden="true">
   <div class="meurbal-splash-inner">
     <img src="melogo.png" alt="Meurbal logo" id="meurbalSplashLogo">
+  <p style="font-size: 20px; font-weight: 600; color: #0099FF; margin-bottom: 20px;">
+      <span style="font-weight: 700;">Dream. Write. Live.</span>
+    </p>
+
     <div id="meurbalSplashBar">
       <div id="meurbalSplashBarFill"></div>
     </div>
@@ -117,7 +121,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(180deg, #00e5ff, #00bfff); /* cyan gradient */
+  background: linear-gradient(180deg, #fff, #fff); /* cyan gradient */
   opacity: 1;
   transition: opacity 400ms ease, transform 400ms ease;
   will-change: opacity, transform;
@@ -155,7 +159,7 @@
   position: relative;
   width: 180px;
   height: 6px;
-  background: rgba(255,255,255,0.3);
+  background: rgba(0, 123, 255, 0.3); /* light blue background track */
   border-radius: 6px;
   overflow: hidden;
   margin: 0 auto;
@@ -166,10 +170,11 @@
   top: 0; left: 0;
   height: 100%;
   width: 0%;
-  background: #ffffff;
+  background: #007bff; /* bright blue fill color */
   border-radius: 6px;
   transition: width 0.2s linear;
 }
+
 
     /* Main */
     main{display:flex;flex-direction:column;align-items:center;justify-content:center; height:100vh;text-align:center;padding:20px}
@@ -810,7 +815,7 @@ async function saveSerialToFirebase(ser) {
       <path d="M12 20h9"></path>
       <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"></path>
     </svg>
-    <span class="nav-label" style="font-size:12px;margin-top:4px;opacity:0.85;">Writer</span>
+    <span class="nav-label" style="font-size:12px;margin-top:4px;opacity:0.85;">Writer Section</span>
   </button>
 </div>
 
@@ -919,15 +924,22 @@ document.getElementById('writerBtn').addEventListener('click', () => {
       writerGate.classList.add('hidden');
       profileForm.classList.remove('hidden');
     };
-  } else {
-    document.getElementById('writerGateTitle').innerText = "Writer Section Unlocked";
-    document.getElementById('writerGateSubtitle').innerText = "Access your tools, manage stories and serials.";
-    document.getElementById('writerGateActionBtn').innerText = "Open Writer Dashboard";
-    document.getElementById('writerGateActionBtn').onclick = () => {
-      writerGate.classList.add('hidden');
-      showDashboard('stories');
-    };
-  }
+  document.getElementById('writerGateWorkspaceBtn').style.display = 'none';
+  document.getElementById('writerGateAssistantBtn').style.display = 'none';
+
+} else {
+  document.getElementById('writerGateTitle').innerText = "Writer Section Unlocked";
+  document.getElementById('writerGateSubtitle').innerText = "Access your tools, manage stories and serials.";
+  document.getElementById('writerGateActionBtn').innerText = "Open Writer Dashboard";
+  document.getElementById('writerGateActionBtn').onclick = () => {
+    writerGate.classList.add('hidden');
+    showDashboard('stories');
+  };
+
+  // ✅ Show these buttons only when profile exists
+  document.getElementById('writerGateWorkspaceBtn').style.display = 'inline-flex';
+  document.getElementById('writerGateAssistantBtn').style.display = 'inline-flex';
+}
 });
 
 
@@ -1122,8 +1134,8 @@ document.addEventListener('DOMContentLoaded', showHomePage);
 
     <div class="cta-row">
       <button class="btn primary" id="browseStoriesBtn">📖 Browse Stories</button>
-      <button class="btn ghost" id="browseSerialsBtn">🎬 Browse Serials</button>
-      <button class="btn primary" id="createContentBtn">✍️ Create Story / Serial</button>
+      <button class="btn ghost" id="browseSerialsBtn">🎬 Browse Series</button>
+      <button class="btn primary" id="createContentBtn">✍️ Create Story / Series</button>
     </div>
 
   </section>
@@ -1150,13 +1162,177 @@ document.addEventListener('DOMContentLoaded', showHomePage);
 
   <!-- Categories Page (opened from Browse Stories) -->
   
-<!-- Writer Gate Page -->
-<div id="writerGatePage" class="hidden" style="padding:24px;text-align:center;; display:flex; flex-direction:column; align-items:center;">
+<div id="writerGatePage" class="hidden" style="padding:24px;text-align:center; display:flex; flex-direction:column; align-items:center;">
   <h2 id="writerGateTitle" style="margin-bottom:12px;"></h2>
   <p id="writerGateSubtitle" style="margin-bottom:20px;color:#555;"></p>
+
   <button id="writerGateActionBtn" style="padding:14px 24px; border-radius:14px; border:none; background:linear-gradient(135deg, #4facfe, #ffffff); color:white; font-weight:700; font-size:17px; cursor:pointer; box-shadow:0 4px 14px rgba(0,0,0,0.45); transition:transform .15s, box-shadow .15s;">Continue</button>
+
   <button id="writerGateWorkspaceBtn" style="margin-top:14px; padding:14px 24px; border-radius:14px; border:none; background:linear-gradient(135deg, #4facfe, #00f2fe); color:white; font-weight:700; font-size:17px; cursor:pointer; box-shadow:0 4px 14px rgba(0,0,0,0.45);">Your Creation Workspace</button>
+
+  <!-- NEW: Your Writing Assistant button -->
+  <button id="writerGateAssistantBtn" style="margin-top:14px; padding:12px 22px; border-radius:12px; border:none; background:linear-gradient(135deg,#5b9bff,#00d4ff); color:white; font-weight:700; font-size:16px; cursor:pointer; box-shadow:0 6px 18px rgba(0,0,0,0.12); display:flex; align-items:center; gap:10px;">
+    <img src="meurballogo.jpg" alt="AI" style="width:24px;height:24px;border-radius:6px;object-fit:cover;border:0;"/>
+    Your Writing Assistant
+  </button>
 </div>
+
+<script>
+/* --- Attach a small AI logo + popup safely (enhanced centered glass version) --- */
+(function attachAiBadge() {
+  // try to find an editor container if present, otherwise fallback to body
+  const editorDiv = document.getElementById('editorDiv') || document.querySelector('.editor') || document.body;
+
+  // if popup already exists, don't recreate
+  if (document.getElementById('editor_ai_popup')) return;
+
+// create small AI image (for editor area)
+const img = document.createElement('img');
+img.src = 'meurballogo.jpg';
+img.alt = 'AI Logo';
+img.style.cssText = `
+  width:38px;
+  height:38px;
+  border-radius:10px;
+  cursor:pointer;
+  object-fit:cover;
+  border:0;
+  margin-right:6px;
+  display:none;
+`;
+
+
+  // try to insert near editor close button or a toolbar; otherwise append to editorDiv
+  const closeBtn = editorDiv.querySelector('#closeEditorBtn');
+  if (closeBtn) closeBtn.parentNode.insertBefore(img, closeBtn);
+  else {
+    const maybeToolbar = editorDiv.querySelector('div[style*="display:flex"][style*="gap:8px"]');
+    if (maybeToolbar) maybeToolbar.appendChild(img);
+    else editorDiv.appendChild(img);
+  }
+
+  // create centered glass popup
+  const aiPopup = document.createElement('div');
+  aiPopup.id = 'editor_ai_popup';
+  aiPopup.style.cssText = `
+    position: fixed; inset: 0; display: none; align-items: center; justify-content: center;
+    z-index: 1200; background: rgba(0,0,0,0.45); backdrop-filter: blur(6px);
+    transition: opacity 0.25s ease; font-family: 'Poppins','Inter',system-ui,sans-serif;
+  `;
+
+  const inner = document.createElement('div');
+  inner.style.cssText = `
+    background: rgba(255,255,255,0.25); backdrop-filter: blur(14px) saturate(180%);
+    border-radius: 18px; box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+    padding: 32px 36px; min-width: 360px; text-align: center;
+    border: 1px solid rgba(255,255,255,0.25); animation: popupFade 0.3s ease-out;
+  `;
+  inner.innerHTML = `
+    <h2 style="
+      margin:0 0 22px;
+      font-size:1.4rem;
+      color:#fff;
+      font-weight:700;
+      text-shadow:0 2px 8px rgba(0,0,0,0.4);
+    ">🤖 Choose your AI Mode</h2>
+
+    <div style="display:flex;align-items:center;justify-content:center;gap:14px;">
+      <button id="aiAssistantBtn_local" style="
+        background:linear-gradient(135deg,#4facfe,#00f2fe);
+        color:white;font-weight:700;font-size:16px;
+        border:none;border-radius:12px;padding:12px 26px;
+        cursor:pointer;letter-spacing:0.3px;
+        transition:all 0.25s ease;
+        box-shadow:0 6px 16px rgba(0,242,254,0.4);
+      ">💡 AI Assistant</button>
+
+      <button id="aiCloseBtn_local" style="
+        background:linear-gradient(135deg,#ff5f6d,#ffc371);
+        color:white;font-weight:700;font-size:16px;
+        border:none;border-radius:12px;padding:12px 26px;
+        cursor:pointer;letter-spacing:0.3px;
+        transition:all 0.25s ease;
+        box-shadow:0 6px 16px rgba(255,95,109,0.4);
+      ">✖ Close</button>
+    </div>
+  `;
+
+  aiPopup.appendChild(inner);
+  document.body.appendChild(aiPopup);
+
+  const aiAssistantBtn = aiPopup.querySelector('#aiAssistantBtn_local');
+  const aiCloseBtn = aiPopup.querySelector('#aiCloseBtn_local');
+
+  aiAssistantBtn.addEventListener('mouseover', () => aiAssistantBtn.style.transform = 'scale(1.07)');
+  aiAssistantBtn.addEventListener('mouseout', () => aiAssistantBtn.style.transform = 'scale(1.0)');
+
+  aiAssistantBtn.addEventListener('mouseover', () => {
+    aiAssistantBtn.style.boxShadow = '0 0 20px rgba(0,242,254,0.7)';
+  });
+  aiAssistantBtn.addEventListener('mouseout', () => {
+    aiAssistantBtn.style.boxShadow = '0 6px 16px rgba(0,242,254,0.4)';
+  });
+
+  function toggleAIPopup(show) {
+    aiPopup.style.display = show ? 'flex' : 'none';
+    aiPopup.style.opacity = show ? '1' : '0';
+  }
+
+  // expose a global opener so other code (e.g. the writer gate button) can open it
+  window.openEditorAIPopup = function() { toggleAIPopup(true); };
+  window.closeEditorAIPopup = function() { toggleAIPopup(false); };
+
+  img.addEventListener('click', e => {
+    e.stopPropagation();
+    toggleAIPopup(aiPopup.style.display !== 'flex');
+  });
+
+  // close when clicking outside inner content
+  aiPopup.addEventListener('click', e => { if (e.target === aiPopup) toggleAIPopup(false); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') toggleAIPopup(false); });
+
+  aiAssistantBtn.addEventListener('click', () => {
+    toggleAIPopup(false);
+    // optional hooks - these functions may or may not exist in your app
+    if (typeof saveActiveSheet === 'function') try { saveActiveSheet(); } catch(e){}
+    if (typeof openVoiceAssistant === 'function') try { openVoiceAssistant(); } catch(e){}
+    // If you want to route to a built-in editor assistant handler, call it here.
+  });
+
+  aiCloseBtn.addEventListener('click', () => toggleAIPopup(false));  // ✅ CLOSE 
+
+  // small reusable style animation
+  const style = document.createElement('style');
+  style.textContent = `
+    @keyframes popupFade {
+      from { transform: scale(0.95); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+  `;
+  document.head.appendChild(style);
+
+})();
+</script>
+
+<script>
+/* Hook the "Your Writing Assistant" button to open the editor AI popup */
+(function hookWriterGateAssistant() {
+  const assistantBtn = document.getElementById('writerGateAssistantBtn');
+  if (!assistantBtn) return;
+
+  assistantBtn.addEventListener('click', (e) => {
+    e.preventDefault();
+    // Use the global opener created above by the AI popup script
+    if (typeof window.openEditorAIPopup === 'function') {
+      window.openEditorAIPopup();
+    } else {
+      // Fallback: try to show the popup by id if it exists (handles order-of-load issues)
+      const popup = document.getElementById('editor_ai_popup');
+      if (popup) popup.style.display = 'flex';
+    }
+  });
+})();
+</script>
 
 <div id="categoriesPage" class="hidden">
     <button class="back-btn" id="categoriesBackBtn">← Back</button>
@@ -1217,7 +1393,7 @@ document.addEventListener('DOMContentLoaded', showHomePage);
   <div id="serialCategoriesPage" class="hidden">
     <button class="back-btn" id="serialCategoriesBackBtn">← Back</button>
     <div class="categories-header">
-      <h2>Browse Serial Categories</h2>
+      <h2>Browse Series</h2>
       <div style="max-width:980px;margin:8px auto 0;display:flex;gap:8px;align-items:center;justify-content:space-between">
         <div style="flex:1">
           <input id="serialsSearchInput" placeholder="Search your serials..." style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px" />
@@ -1230,7 +1406,7 @@ document.addEventListener('DOMContentLoaded', showHomePage);
         <div id="serialsCards" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;padding:12px"></div>
       </div>
 
-      <p class="muted" style="margin:6px 0 12px">Choose a genre to explore serials. Swipe or scroll horizontally to see all categories.</p>
+      <p class="muted" style="margin:6px 0 12px">Explore Interesting Series Here Only</p>
     </div>
     <div class="categories-grid" id="serialCategoriesGrid" aria-label="serial categories">
       <!-- serial cards injected by JS -->
@@ -1271,7 +1447,7 @@ document.addEventListener('DOMContentLoaded', showHomePage);
     <h2>What do you want to create?</h2>
     <div style="display:flex; gap:12px; justify-content:center; margin-top:12px;">
       <button id="createStoryBtn" class="btn btn-primary">Story</button>
-      <button id="createSerialBtn" class="btn btn-secondary">Serial</button>
+      <button id="createSerialBtn" class="btn btn-secondary">Series</button>
     </div>
   </div>
 </div>
@@ -1306,7 +1482,7 @@ document.addEventListener('DOMContentLoaded', showHomePage);
  <!-- Serial Create Popup -->
 <div id="serialCreatePopup" class="hidden popup">
   <div class="popup-content" style="max-width:480px;padding:16px;">
-    <h3 style="margin-bottom:8px;">Create / Edit Serial</h3>
+    <h3 style="margin-bottom:8px;">Create Series</h3>
 
     <!-- Series Section -->
     <div style="margin-bottom:8px;">
@@ -1532,7 +1708,7 @@ document.addEventListener('DOMContentLoaded', () => {
     <h2>Your Content</h2>
     <div class="row">
       <button class="btn btn-primary" id="showStoriesBtn">Your Stories</button>
-      <button class="btn btn-secondary" id="showSerialsBtn">Your Serials</button>
+      <button class="btn btn-secondary" id="showSerialsBtn">Your Series</button>
     </div>
   </div>
 
@@ -2924,7 +3100,7 @@ function showDashboard(type = 'stories', genreFilter = 'All') {
       // Serial Options button
       const optionsBtn = document.createElement('button');
       optionsBtn.className = 'small-btn btn btn-secondary';
-      optionsBtn.textContent = 'Serial Options';
+      optionsBtn.textContent = 'Series Options';
       optionsBtn.addEventListener('click', () => {
         const serial = window.serialsData?.find(
           x => (x.title || '').trim().toLowerCase() === c.title.trim().toLowerCase()
@@ -8557,7 +8733,7 @@ document.addEventListener("DOMContentLoaded", () => {
           <div id="ws_header">
             <div>
               <div class="ws_title">Creation Workspaces</div>
-              <div class="ws_sub">Organize your stories and serials. Content is saved locally to your browser.</div>
+              <div class="ws_sub">Organize your stories and series content here. Content is saved in workspace only.</div>
             </div>
             <div class="ws_controls">
               <button id="wy_create_open" class="ws_btn">+ Create Workspace</button>
@@ -8608,7 +8784,7 @@ function closeModal() {
       <div class="editor_head"><div class="editor_title">New Workspace</div><div><button id="c_close" class="ws_btn ghost">Close</button></div></div>
       <div style="margin-top:12px;display:flex;flex-direction:column;gap:8px;">
         <input id="c_name" class="ws_input" placeholder="Workspace name" />
-        <select id="c_type" class="ws_select"><option value="story">Story</option><option value="serial">Serial</option></select>
+        <select id="c_type" class="ws_select"><option value="story">Story</option><option value="serial">Series</option></select>
         <button id="c_save" class="ws_btn">Create Workspace</button>
       </div>
     </div>`;
@@ -8774,7 +8950,7 @@ function closeModal() {
       <div class="editor_box">
         <div class="editor_head">
           <div>
-            <div class="editor_title">${escapeHtml(ws.name)} <span style="font-weight:600;color:var(--muted);font-size:13px">(Serial)</span></div>
+            <div class="editor_title">${escapeHtml(ws.name)} <span style="font-weight:600;color:var(--muted);font-size:13px">(Series)</span></div>
             <div class="note">Add episodes — each has its own content and styling.</div>
           </div>
           <div style="display:flex;gap:8px;align-items:center;">
@@ -8943,7 +9119,7 @@ function closeModal() {
   };
 
   /* helper renderList for editors */
-  function renderList(){ try{ const list = document.getElementById('ws_list'); if(!list) return; const arr = loadAll() || []; list.innerHTML = ''; arr.forEach(ws => { const card = document.createElement('div'); card.className='ws_card'; card.innerHTML = `<div><div style="font-weight:800;font-size:15px;color:var(--accent)">${escapeHtml(ws.name)}</div><div class="ws_meta">${ws.type==='story'?'Story':'Serial'} • ${new Date(ws.updatedAt||ws.createdAt).toLocaleString()}</div><div class="note" style="margin-top:8px">${ ws.type==='story' ? (ws.content ? shorten(stripHtml(ws.content),120) : '<i>Empty</i>') : ((ws.episodes && ws.episodes.length) ? ws.episodes.length+' episodes' : '<i>No episodes</i>') }</div></div><div class="ws_actions"><button class="small_btn" data-act="open" data-id="${ws.id}">Open</button><button class="small_btn" data-act="preview" data-id="${ws.id}">Preview</button><button class="small_btn" data-act="delete" data-id="${ws.id}" style="background:#ff6b6b;color:white;">Delete</button></div>`; list.appendChild(card); card.querySelector('[data-act="open"]').onclick = ()=> openWorkspace(ws.id); card.querySelector('[data-act="preview"]').onclick = ()=> previewWorkspace(ws.id); card.querySelector('[data-act="delete"]').onclick = ()=>{ if(!confirm('Delete workspace \"'+ws.name+'\" ?')) return; const remaining = loadAll().filter(x=>x.id!==ws.id); saveAll(remaining); renderList(); }; }); const countEl = document.getElementById('wy_count'); if(countEl) countEl.innerText = (loadAll()||[]).length; }catch(e){} }
+  function renderList(){ try{ const list = document.getElementById('ws_list'); if(!list) return; const arr = loadAll() || []; list.innerHTML = ''; arr.forEach(ws => { const card = document.createElement('div'); card.className='ws_card'; card.innerHTML = `<div><div style="font-weight:800;font-size:15px;color:var(--accent)">${escapeHtml(ws.name)}</div><div class="ws_meta">${ws.type==='story'?'Story':'Series'} • ${new Date(ws.updatedAt||ws.createdAt).toLocaleString()}</div><div class="note" style="margin-top:8px">${ ws.type==='story' ? (ws.content ? shorten(stripHtml(ws.content),120) : '<i>Empty</i>') : ((ws.episodes && ws.episodes.length) ? ws.episodes.length+' episodes' : '<i>No episodes</i>') }</div></div><div class="ws_actions"><button class="small_btn" data-act="open" data-id="${ws.id}">Open</button><button class="small_btn" data-act="preview" data-id="${ws.id}">Preview</button><button class="small_btn" data-act="delete" data-id="${ws.id}" style="background:#ff6b6b;color:white;">Delete</button></div>`; list.appendChild(card); card.querySelector('[data-act="open"]').onclick = ()=> openWorkspace(ws.id); card.querySelector('[data-act="preview"]').onclick = ()=> previewWorkspace(ws.id); card.querySelector('[data-act="delete"]').onclick = ()=>{ if(!confirm('Delete workspace \"'+ws.name+'\" ?')) return; const remaining = loadAll().filter(x=>x.id!==ws.id); saveAll(remaining); renderList(); }; }); const countEl = document.getElementById('wy_count'); if(countEl) countEl.innerText = (loadAll()||[]).length; }catch(e){} }
 
   window.__ws_renderList = renderList;
 
@@ -10052,122 +10228,6 @@ document.addEventListener('DOMContentLoaded', function(){
 <!-- End Firebase save patch -->
 
 <script>
-(function attachGlobalAIBadge() {
-  let aiBadgeVisible = false;
-
-  function ensureBadge() {
-    if (document.getElementById('global_ai_badge')) return;
-
-    const img = document.createElement('img');
-    img.id = 'global_ai_badge';
-    img.src = 'meurballogo.jpg';
-    img.alt = 'AI';
-    img.style.cssText = `
-      position: fixed;
-      top: 12px;
-      left: 14px;
-      width: 42px;
-      height: 42px;
-      border-radius: 12px;
-      cursor: pointer;
-      object-fit: cover;
-      background: #fff;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-      z-index: 999999999 !important;
-      pointer-events: none;
-      opacity: 0;
-      transition: opacity 0.6s ease;
-    `;
-
-    const aiPopup = document.createElement('div');
-    aiPopup.id = 'global_ai_popup';
-    aiPopup.style.cssText = `
-      position: fixed;
-      inset: 0;
-      display: none;
-      align-items: center;
-      justify-content: center;
-      z-index: 1000000000 !important;
-      background: rgba(0,0,0,0.45);
-      backdrop-filter: blur(6px);
-      font-family: 'Poppins','Inter',system-ui,sans-serif;
-    `;
-
-    const inner = document.createElement('div');
-    inner.style.cssText = `
-      background: rgba(255,255,255,0.25);
-      backdrop-filter: blur(14px) saturate(180%);
-      border-radius: 18px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.25);
-      padding: 32px 36px;
-      min-width: 360px;
-      text-align: center;
-      border: 1px solid rgba(255,255,255,0.25);
-      animation: popupFade 0.3s ease-out;
-    `;
-    inner.innerHTML = `
-      <h2 style="margin:0 0 22px;font-size:1.4rem;color:#fff;font-weight:700;
-        text-shadow:0 2px 8px rgba(0,0,0,0.4);">🤖 Choose your AI Mode</h2>
-      <div style="display:flex;align-items:center;justify-content:center;gap:14px;">
-        <button id="aiAssistantBtn_local" style="
-          background:linear-gradient(135deg,#4facfe,#00f2fe);
-          color:white;font-weight:700;font-size:16px;
-          border:none;border-radius:12px;padding:12px 26px;
-          cursor:pointer;letter-spacing:0.3px;
-          transition:all 0.25s ease;
-          box-shadow:0 6px 16px rgba(0,242,254,0.4);
-        ">💡 AI Assistant</button>
-        <button id="aiCloseBtn_local" style="
-          background:linear-gradient(135deg,#ff5f6d,#ffc371);
-          color:white;font-weight:700;font-size:16px;
-          border:none;border-radius:12px;padding:12px 26px;
-          cursor:pointer;letter-spacing:0.3px;
-          transition:all 0.25s ease;
-          box-shadow:0 6px 16px rgba(255,95,109,0.4);
-        ">✖ Close</button>
-      </div>
-    `;
-
-    aiPopup.appendChild(inner);
-    document.body.appendChild(img);
-    document.body.appendChild(aiPopup);
-
-    const btn = aiPopup.querySelector('#aiAssistantBtn_local');
-    const closeBtn = aiPopup.querySelector('#aiCloseBtn_local');
-
-    function togglePopup(show) {
-      aiPopup.style.display = show ? 'flex' : 'none';
-    }
-
-    img.addEventListener('click', (e) => {
-      e.stopPropagation();
-      togglePopup(aiPopup.style.display !== 'flex');
-    });
-    document.addEventListener('click', (e) => {
-      if (e.target === aiPopup) togglePopup(false);
-    });
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') togglePopup(false);
-    });
-    btn.addEventListener('click', () => {
-      togglePopup(false);
-      if (typeof openVoiceAssistant === 'function') openVoiceAssistant();
-    });
-    closeBtn.addEventListener('click', () => togglePopup(false));
-
-    // popup animation
-    if (!document.getElementById('ai_popup_anim')) {
-      const s = document.createElement('style');
-      s.id = 'ai_popup_anim';
-      s.textContent = `
-        @keyframes popupFade {
-          from {transform:scale(0.95);opacity:0;}
-          to {transform:scale(1);opacity:1;}
-        }
-      `;
-      document.head.appendChild(s);
-    }
-
     // 🕒 Wait until meurbalSplash is hidden/removed
     const checkSplashDone = setInterval(() => {
       const splash = document.getElementById('meurbalSplash');
@@ -11486,7 +11546,7 @@ document.getElementById('writerBtn').addEventListener('click', () => {
   writerGate.classList.remove('hidden');
 
   if (!profile) {
-    document.getElementById('writerGateTitle').innerText = "No Writer Profile Found";
+    document.getElementById('writerGateTitle').innerText = "No Writer Profile Yet";
     document.getElementById('writerGateSubtitle').innerText = "To unlock the Writer Section, please create your writer profile.";
     document.getElementById('writerGateActionBtn').innerText = "Create Profile";
     document.getElementById('writerGateActionBtn').onclick = () => {

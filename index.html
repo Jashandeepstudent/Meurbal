@@ -799,6 +799,17 @@ async function saveSerialToFirebase(ser) {
   box-shadow: 0 -3px 15px rgba(106,17,203,0.4);
   transition: transform 0.35s ease, opacity 0.35s ease;
 ">
+  <!-- 🧑‍🚀 Register -->
+  <button id="registerBtn" class="nav-btn" style="background:none;border:none;cursor:pointer;display:flex;flex-direction:column;align-items:center;color:white;">
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"
+      stroke-linecap="round" stroke-linejoin="round">
+      <path d="M20 21v-2a4 4 0 0 0-3-3.87"></path>
+      <path d="M4 21v-2a4 4 0 0 1 3-3.87"></path>
+      <circle cx="12" cy="7" r="4"></circle>
+    </svg>
+    <span class="nav-label" style="font-size:12px;margin-top:4px;opacity:0.85;">Register</span>
+  </button>
+
   <!-- 🏠 Home -->
   <button id="homeBtn" class="nav-btn" style="background:none;border:none;cursor:pointer;display:flex;flex-direction:column;align-items:center;color:white;">
     <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"
@@ -818,6 +829,8 @@ async function saveSerialToFirebase(ser) {
     <span class="nav-label" style="font-size:12px;margin-top:4px;opacity:0.85;">Writer Section</span>
   </button>
 </div>
+  <!-- 🧑‍🚀 Register -->
+
 
 <style>
   .nav-btn:hover svg { filter: drop-shadow(0 0 6px rgba(255,255,255,0.7)); transform: scale(1.1); transition: all 0.25s ease; }
@@ -4671,13 +4684,121 @@ async function openPreviewFullScreen(story){
   controls.innerHTML = `
     <button id="prevFullBtn" class="btn btn-secondary">◀ Prev</button>
     <button id="nextFullBtn" class="btn btn-secondary">Next ▶</button>
+  <button id="zenModeBtn" class="btn btn-secondary">🌙 Zen Shield</button>
     <button id="markLastBtn" class="btn btn-primary">✏️ Mark Last Read</button>
     <button id="removeMarkBtn" class="btn btn-danger">🗑️ Remove Last Read</button>
     <button id="narrateBtn" class="btn btn-secondary">🎧 Narrate</button>
   `;
   body.appendChild(controls);
+// ====== ZEN MODE FUNCTION (Full Sheet Immersive) ======
+function activateZenMode() {
+  const existing = document.getElementById("zenOverlay");
+  if (existing) {
+    existing.remove();
+    document.body.style.overflow = "";
+    return;
+  }
 
-  // ====== NARRATION CONTROLS ======
+  // ✅ Get current visible story page (pageFront)
+  let content = "";
+  if (typeof pageFront !== "undefined" && pageFront.innerHTML.trim()) {
+    content = pageFront.innerHTML.trim();
+  } else {
+    content = "<p>No content available...</p>";
+  }
+
+  // Hide the rest of UI
+  const uiEls = document.querySelectorAll(
+    "#bottomNav, header, .popup, .form-container, .nav-btn, .profile-btn, #readerModal"
+  );
+  uiEls.forEach(el => (el.style.display = "none"));
+
+  // === Overlay Container ===
+  const overlay = document.createElement("div");
+  overlay.id = "zenOverlay";
+  overlay.style.cssText = `
+    position: fixed;
+    inset: 0;
+    z-index: 999999;
+    background: radial-gradient(circle at center, rgba(255,255,255,0.9) 20%, rgba(240,230,200,0.8) 100%);
+    backdrop-filter: blur(10px) brightness(0.95);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease-in-out;
+    overflow: hidden;
+  `;
+
+  // === Content Area ===
+  const textWrap = document.createElement("div");
+  textWrap.id = "zenTextArea";
+  textWrap.innerHTML = content;
+  textWrap.style.cssText = `
+    width: 880px;
+    max-width: 90vw;
+    height: 460px;
+    max-height: 80vh;
+    background: #fffef9;
+    border: 1px solid #e5d7b7;
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    padding: 40px 50px;
+    overflow-y: auto;
+    font-family: 'Georgia', serif;
+    font-size: 18px;
+    line-height: 1.8;
+    color: #2e2b23;
+    text-align: justify;
+    animation: zenFadeIn 0.6s ease;
+  `;
+
+  // === Controls ===
+  const btnRow = document.createElement("div");
+  btnRow.style.cssText = `
+    display: flex;
+    justify-content: center;
+    margin-top: 20px;
+  `;
+
+  const closeBtn = document.createElement("button");
+  closeBtn.textContent = "🛡 Close Shield Mode";
+  closeBtn.className = "btn btn-secondary";
+  closeBtn.style.cssText = `
+    padding: 12px 20px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #ff5f6d, #ffc371);
+    color: white;
+    font-weight: 700;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.3);
+    cursor: pointer;
+  `;
+  closeBtn.onclick = () => {
+    overlay.remove();
+    document.body.style.overflow = "";
+    uiEls.forEach(el => (el.style.display = ""));
+  };
+
+  btnRow.append(closeBtn);
+  overlay.append(textWrap, btnRow);
+  document.body.appendChild(overlay);
+  document.body.style.overflow = "hidden";
+}
+
+// ====== EVENT HANDLER ======
+document.addEventListener("click", (e) => {
+  if (e.target && e.target.id === "zenModeBtn") {
+    activateZenMode();
+  }
+});
+// ====== SMOOTH FADE ANIMATION ======
+const style = document.createElement("style");
+style.textContent = `
+@keyframes zenFadeIn {
+  from { opacity:0; transform:scale(0.97); }
+  to { opacity:1; transform:scale(1); }
+}`;
+document.head.appendChild(style);  // ====== NARRATION CONTROLS ======
   const narrationControls = document.createElement("div");
   Object.assign(narrationControls.style, {
     display: "none",
@@ -6158,17 +6279,26 @@ async function openSerialPreview(input) {
       setTimeout(() => preview.remove(), 300);
     };
 
-    // --- Read episode ---
-    preview.querySelectorAll(".read-episode-btn").forEach((btn) => {
-      btn.addEventListener("click", async (e) => {
-        const epIndex = parseInt(e.currentTarget.dataset.ep, 10);
-        const episode = serialData.episodes[epIndex];
-        episode.reads = (episode.reads || 0) + 1;
-        await set(ref(db, `serials/${encodeURIComponent(serialData.title)}`), serialData);
-        preview.remove();
-        if (typeof openSerialReader === "function") openSerialReader(serialData.title, epIndex);
-      });
-    });
+preview.querySelectorAll(".read-episode-btn").forEach((btn) => {
+  btn.addEventListener("click", async (e) => {
+    const button = e.currentTarget;
+    button.disabled = true; // ⛔ Prevent double click
+
+    const epIndex = parseInt(button.dataset.ep, 10);
+    const episode = serialData.episodes[epIndex];
+
+    // Increase reads once
+    episode.reads = (episode.reads || 0) + 1;
+
+    // Save back to Firebase
+    await set(ref(db, `serials/${encodeURIComponent(serialData.title)}`), serialData);
+
+    // Continue reading
+    preview.remove();
+    if (typeof openSerialReader === "function") openSerialReader(serialData.title, epIndex);
+  });
+});
+
 
     // --- Like / Dislike smart toggle ---
     const likeBtn = document.getElementById("likeBtn");
@@ -7383,19 +7513,25 @@ if (savedMark) {
     padding:12px;background:#fff;flex-shrink:0;
   `;
 
-  const prevBtn = document.createElement('button');
-  prevBtn.className = 'btn btn-secondary';
-  prevBtn.textContent = '◀ Prev Episode';
+const prevBtn = document.createElement('button');
+prevBtn.className = 'btn btn-secondary';
+prevBtn.textContent = '◀ Prev Episode';
 
-  const nextBtn = document.createElement('button');
-  nextBtn.className = 'btn btn-primary';
-  nextBtn.textContent = 'Next Episode ▶';
+const nextBtn = document.createElement('button');
+nextBtn.className = 'btn btn-primary';
+nextBtn.textContent = 'Next Episode ▶';
 
-  [prevBtn, nextBtn].forEach(styleButton);
-  footer.append(prevBtn, nextBtn);
+// 🧘 Zen Shield Button
+const zenShieldBtn = document.createElement('button');
+zenShieldBtn.className = 'btn btn-info';
+zenShieldBtn.textContent = '🧘 Zen Shield';
+zenShieldBtn.style.marginLeft = '8px';
 
-  panel.append(header, body, footer);
+// Helper style for consistency
+[prevBtn, nextBtn, zenShieldBtn].forEach(styleButton);
 
+footer.append(prevBtn, nextBtn, zenShieldBtn);
+panel.append(header, body, footer);
 
   // --- Button Actions ---
   document.getElementById('backToSerialBtn').addEventListener('click', () => {
@@ -7411,6 +7547,107 @@ if (savedMark) {
     if (episodeIndex < (serial.episodes || []).length - 1)
       openSerialReader(serial.title, episodeIndex + 1);
   });
+
+zenShieldBtn.addEventListener('click', () => {
+  // Find the reader panel container
+  const readerPanel = panel; // your current reading container
+  const scrollContainer = readerPanel.querySelector('.reader-body') || readerPanel;
+
+  // Remember current scroll position (inside reader only)
+  const scrollY = scrollContainer.scrollTop;
+
+  // Create shield layer *inside the reader panel only*
+  const zenLayer = document.createElement('div');
+  zenLayer.id = 'zenShieldLayer';
+  zenLayer.style.cssText = `
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at top left, #d7e8ff 0%, #f3f9ff 30%, #eaf5f0 80%);
+    backdrop-filter: blur(10px) brightness(0.95);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    overflow-y: auto;
+    scroll-behavior: smooth;
+    padding: 60px 0;
+    z-index: 99;
+    border-radius: inherit;
+  `;
+
+  // Copy reading content only
+  const zenContent = document.createElement('div');
+  zenContent.innerHTML = pageBox.innerHTML;
+  zenContent.style.cssText = `
+    max-width: 900px;
+    padding: 40px 50px;
+    font-size: 20px;
+    line-height: 1.9;
+    color: #1c1b16;
+    background: rgba(255,255,255,0.9);
+    border-radius: 18px;
+    box-shadow: 0 12px 32px rgba(0,0,0,0.15);
+    font-family: 'Georgia', 'Times New Roman', serif;
+    text-align: justify;
+    letter-spacing: 0.3px;
+  `;
+
+  // Close button
+  const closeZenBtn = document.createElement('button');
+  closeZenBtn.textContent = '✖ Close Shield';
+  closeZenBtn.className = 'btn btn-danger';
+  closeZenBtn.style.cssText = `
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 1000;
+    font-size: 16px;
+    padding: 8px 14px;
+    border-radius: 8px;
+    background: #d64545;
+    color: white;
+    border: none;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    cursor: pointer;
+  `;
+
+  // Ambient animation (isolated)
+  const ambient = document.createElement('div');
+  ambient.style.cssText = `
+    position:absolute;
+    inset:0;
+    background:radial-gradient(circle at 30% 30%, rgba(255,255,255,0.3), transparent 60%),
+               radial-gradient(circle at 70% 70%, rgba(255,255,255,0.2), transparent 60%);
+    animation: zenAmbient 8s ease-in-out infinite alternate;
+    z-index:0;
+  `;
+  if (!document.getElementById('zenAmbientStyle')) {
+    const styleTag = document.createElement('style');
+    styleTag.id = 'zenAmbientStyle';
+    styleTag.textContent = `
+      @keyframes zenAmbient {
+        0% { transform: scale(1); opacity: 0.8; }
+        100% { transform: scale(1.2); opacity: 1; }
+      }
+    `;
+    document.head.appendChild(styleTag);
+  }
+
+  zenLayer.append(ambient, zenContent, closeZenBtn);
+  readerPanel.appendChild(zenLayer);
+
+  // Hide local reader UI only
+  readerPanel.querySelectorAll('.reader-header, .reader-footer')
+    .forEach(el => (el.style.display = 'none'));
+
+  // Restore scroll & UI on close
+  closeZenBtn.addEventListener('click', () => {
+    zenLayer.remove();
+    readerPanel.querySelectorAll('.reader-header, .reader-footer')
+      .forEach(el => (el.style.display = ''));
+    scrollContainer.scrollTo(0, scrollY);
+  });
+});
 
   window.scrollTo(0, 0);
 }
@@ -9175,46 +9412,294 @@ document.addEventListener('DOMContentLoaded', function(){
 <!-- Register button already added into topNav by script injection below -->
 
 <!-- Auth Popup -->
-<div id="authPopup" class="hidden popup" aria-hidden="true">
-  <div class="popup-content">
-    <h3 id="authTitle">Register / Sign in</h3>
-    <div style="display:flex;flex-direction:column;gap:8px;margin-top:8px">
-      <button id="googleSignBtn" class="btn btn-primary">Continue with Google</button>
-      <div style="text-align:center;color:var(--muted);font-weight:700">— OR —</div>
-      <input id="authEmail" type="email" placeholder="Email">
-      <input id="authPass" type="password" placeholder="Password (min 6)">
-      <div style="display:flex;gap:8px;justify-content:flex-end">
-        <button id="authCancelBtn" class="btn btn-secondary">Cancel</button>
-        <button id="authEmailRegisterBtn" class="btn btn-primary">Register</button>
-        <button id="authEmailSignInBtn" class="btn btn-secondary">Sign in</button>
-      </div>
+<!-- 🌌 Galactic Fullscreen Auth Portal -->
+<div id="authPopup" class="hidden" aria-hidden="true" style="
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle at 20% 30%, rgba(106,17,203,0.85), rgba(37,117,252,0.9) 60%, rgba(0,0,0,0.9) 100%);
+  overflow: hidden;
+  transition: opacity 0.4s ease, transform 0.4s ease;
+">
+  <!-- ✨ Starfield -->
+  <canvas id="starCanvas" style="position:absolute;inset:0;width:100%;height:100%;z-index:0;"></canvas>
+
+  <!-- ⚡ Auth Card -->
+  <div class="galactic-card" style="
+    position: relative;
+    z-index: 2;
+    width: min(420px, 92%);
+    padding: 32px 26px;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 18px;
+    backdrop-filter: blur(20px) saturate(180%);
+    text-align: center;
+    box-shadow: 0 0 30px rgba(106,17,203,0.4);
+    color: white;
+    animation: popIn 0.5s ease;
+  ">
+    <h2 style="margin-bottom:10px;font-size:24px;font-weight:700;">🌌 Register / Sign In</h2>
+    <p style="margin-bottom:18px;color:rgba(255,255,255,0.8);font-size:14px;">Join Meurbal — Dream. Write. Live.</p>
+
+    <button id="googleSignBtn" class="btn btn-primary" style="
+      width:100%;
+      background:linear-gradient(135deg,#ff9800,#ff5722);
+      font-weight:700;
+      border:none;
+      border-radius:10px;
+      padding:10px 14px;
+      box-shadow:0 0 10px rgba(255,152,0,0.4);
+      margin-bottom:12px;
+    ">Continue with Google</button>
+
+    <div style="text-align:center;color:rgba(255,255,255,0.6);font-weight:700;margin:6px 0;">— OR —</div>
+
+    <input id="authEmail" type="email" placeholder="Email" style="
+      width:100%;padding:10px;border-radius:8px;border:none;
+      background:rgba(255,255,255,0.15);color:#fff;margin-bottom:8px;outline:none;
+    ">
+    <input id="authPass" type="password" placeholder="Password (min 6)" style="
+      width:100%;padding:10px;border-radius:8px;border:none;
+      background:rgba(255,255,255,0.15);color:#fff;margin-bottom:14px;outline:none;
+    ">
+
+    <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
+      <button id="authEmailRegisterBtn" style="
+        background:linear-gradient(135deg,#00eaff,#0077ff);
+        border:none;padding:8px 16px;
+        border-radius:20px;color:white;font-weight:700;font-size:14px;
+        cursor:pointer;transition:transform .2s;
+      ">Register</button>
+
+      <button id="authEmailSignInBtn" style="
+        background:rgba(255,255,255,0.12);
+        color:white;border:1px solid rgba(255,255,255,0.25);
+        padding:8px 16px;border-radius:20px;font-weight:700;font-size:14px;
+        cursor:pointer;transition:transform .2s;
+      ">Sign in</button>
+
+      <button id="authCancelBtn" style="
+        background:transparent;color:#ccc;border:none;
+        text-decoration:underline;font-size:13px;margin-top:6px;
+        cursor:pointer;
+      ">Cancel</button>
     </div>
   </div>
 </div>
 
-<!-- Profile Popup (shown after new registration) -->
-<div id="profilePopup" class="hidden popup" aria-hidden="true">
-  <div class="popup-content">
-    <h3>Complete Reader Profile</h3>
-    <label>Username</label>
-    <input id="readerUsername" placeholder="Pick a username">
-    <label>Favourite genres</label>
-    <div class="genres-container" id="readerGenres">
-      <label class="genre-option"><input type="checkbox" value="Horror">Horror</label>
-      <label class="genre-option"><input type="checkbox" value="Comedy">Comedy</label>
-      <label class="genre-option"><input type="checkbox" value="Action">Action</label>
-      <label class="genre-option"><input type="checkbox" value="Romance">Romance</label>
-      <label class="genre-option"><input type="checkbox" value="Fantasy">Fantasy</label>
-      <label class="genre-option"><input type="checkbox" value="Thriller">Thriller</label>
+<!-- 🌠 Fixed Multi-Direction Starfield -->
+<script>
+(function starfield(){
+  const canvas = document.getElementById('starCanvas');
+  if(!canvas) return;
+  const ctx = canvas.getContext('2d');
+  let stars = [];
+  const numStars = 160;
+  let w, h;
+  function resize(){
+    w = canvas.width = window.innerWidth;
+    h = canvas.height = window.innerHeight;
+    stars = Array.from({length:numStars},()=>({
+      x: Math.random()*w,
+      y: Math.random()*h,
+      z: Math.random()*w,
+      dx: (Math.random()-0.5)*0.6,  // horizontal drift
+      dy: (Math.random()-0.5)*0.6   // vertical drift
+    }));
+  }
+  window.addEventListener('resize', resize);
+  resize();
+
+  function draw(){
+    ctx.fillStyle='rgba(0,0,20,1)';
+    ctx.fillRect(0,0,w,h);
+    for(const s of stars){
+      s.z -= 1.5;
+      s.x += s.dx;
+      s.y += s.dy;
+      if(s.z<=0){ s.z=w; s.x=Math.random()*w; s.y=Math.random()*h; }
+      const k=128.0/s.z;
+      const px=s.x*k+w/2;
+      const py=s.y*k+h/2;
+      if(px>=0&&px<=w&&py>=0&&py<=h){
+        const size=(1-s.z/w)*2;
+        ctx.fillStyle='rgba(255,255,255,'+(1-s.z/w)+')';
+        ctx.beginPath();
+        ctx.arc(px,py,size,0,Math.PI*2);
+        ctx.fill();
+      }
+    }
+    requestAnimationFrame(draw);
+  }
+  draw();
+})();
+</script>
+
+<style>
+@keyframes popIn {
+  0% { transform: scale(0.9); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+</style>
+
+<!-- 🌠 Galactic Fullscreen Profile Portal -->
+<div id="profilePopup" class="hidden" aria-hidden="true" style="
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle at 25% 40%, rgba(106,17,203,0.85), rgba(37,117,252,0.9) 70%, rgba(0,0,0,0.95) 100%);
+  overflow: hidden;
+  transition: opacity 0.4s ease, transform 0.4s ease;
+">
+  <!-- ✨ Starfield Background -->
+  <canvas id="profileStarCanvas" style="position:absolute;inset:0;width:100%;height:100%;z-index:0;"></canvas>
+
+  <!-- ⚡ Profile Card -->
+  <div class="profile-card" style="
+    position: relative;
+    z-index: 2;
+    width: min(440px, 92%);
+    padding: 32px 26px;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 18px;
+    backdrop-filter: blur(20px) saturate(180%);
+    text-align: left;
+    box-shadow: 0 0 30px rgba(106,17,203,0.4);
+    color: white;
+    animation: popIn 0.5s ease;
+  ">
+    <h2 style="margin-bottom:10px;font-size:24px;font-weight:700;text-align:center;">🌌 Complete Reader Profile</h2>
+    <p style="margin-bottom:20px;color:rgba(255,255,255,0.8);font-size:14px;text-align:center;">Let your cosmic identity shine ✨</p>
+
+    <label style="font-weight:600;">Username</label>
+    <input id="readerUsername" placeholder="Pick a username" style="
+      width:100%;padding:10px;margin:6px 0 14px;
+      border-radius:8px;border:none;outline:none;
+      background:rgba(255,255,255,0.15);color:#fff;
+    ">
+
+    <label style="font-weight:600;">Favourite Genres</label>
+    <div id="readerGenres" style="display:flex;flex-wrap:wrap;gap:10px;margin:8px 0 14px;">
+      <label class="genre-option" style="background:rgba(255,255,255,0.12);padding:6px 10px;border-radius:8px;cursor:pointer;">
+        <input type="checkbox" value="Horror" style="margin-right:4px;">Horror
+      </label>
+      <label class="genre-option" style="background:rgba(255,255,255,0.12);padding:6px 10px;border-radius:8px;cursor:pointer;">
+        <input type="checkbox" value="Comedy" style="margin-right:4px;">Comedy
+      </label>
+      <label class="genre-option" style="background:rgba(255,255,255,0.12);padding:6px 10px;border-radius:8px;cursor:pointer;">
+        <input type="checkbox" value="Action" style="margin-right:4px;">Action
+      </label>
+      <label class="genre-option" style="background:rgba(255,255,255,0.12);padding:6px 10px;border-radius:8px;cursor:pointer;">
+        <input type="checkbox" value="Romance" style="margin-right:4px;">Romance
+      </label>
+      <label class="genre-option" style="background:rgba(255,255,255,0.12);padding:6px 10px;border-radius:8px;cursor:pointer;">
+        <input type="checkbox" value="Fantasy" style="margin-right:4px;">Fantasy
+      </label>
+      <label class="genre-option" style="background:rgba(255,255,255,0.12);padding:6px 10px;border-radius:8px;cursor:pointer;">
+        <input type="checkbox" value="Thriller" style="margin-right:4px;">Thriller
+      </label>
     </div>
-    <label></label>
-    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px" id="themeChoices">
+
+    <label style="font-weight:600;"></label>
+    <div id="themeChoices" style="
+      display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;
+    ">
+      <!-- You can dynamically inject themes here -->
     </div>
-    <div style="display:flex;gap:8px;justify-content:flex-end">
-      <button id="profileSaveBtn" class="btn btn-primary">Save Profile</button>
+
+    <div style="display:flex;gap:10px;justify-content:center;margin-top:10px;">
+      <button id="profileSaveBtn" style="
+        background:linear-gradient(135deg,#00eaff,#0077ff);
+        border:none;padding:8px 20px;border-radius:20px;
+        color:white;font-weight:700;font-size:14px;
+        cursor:pointer;transition:transform .2s;
+      ">Save Profile</button>
+
+      <button id="profileCancelBtn" style="
+        background:rgba(255,255,255,0.12);
+        border:1px solid rgba(255,255,255,0.25);
+        color:white;padding:8px 20px;border-radius:20px;
+        font-weight:700;font-size:14px;cursor:pointer;
+      ">Cancel</button>
     </div>
   </div>
 </div>
+
+<!-- 🌌 Starfield Animation for Profile -->
+<script>
+(function starfieldProfile(){
+  const canvas = document.getElementById('profileStarCanvas');
+  if(!canvas) return;
+  const ctx = canvas.getContext('2d');
+  let w, h, stars;
+  const numStars = 180;
+
+  function resize(){
+    w = canvas.width = window.innerWidth;
+    h = canvas.height = window.innerHeight;
+    stars = Array.from({length:numStars},()=>({
+      x: Math.random()*w,
+      y: Math.random()*h,
+      r: Math.random()*1.8 + 0.3,
+      dx: (Math.random()-0.5)*0.6,
+      dy: (Math.random()-0.5)*0.6,
+      alpha: Math.random()*0.8 + 0.2
+    }));
+  }
+  window.addEventListener('resize', resize);
+  resize();
+
+  function draw(){
+    ctx.fillStyle='rgba(0,0,20,1)';
+    ctx.fillRect(0,0,w,h);
+    for(const s of stars){
+      s.x += s.dx;
+      s.y += s.dy;
+      if(s.x<0) s.x=w;
+      if(s.x>w) s.x=0;
+      if(s.y<0) s.y=h;
+      if(s.y>h) s.y=0;
+      ctx.beginPath();
+      ctx.arc(s.x,s.y,s.r,0,Math.PI*2);
+      ctx.fillStyle=`rgba(255,255,255,${s.alpha})`;
+      ctx.fill();
+    }
+    requestAnimationFrame(draw);
+  }
+  draw();
+})();
+</script>
+
+<style>
+@keyframes popIn {
+  0% { transform: scale(0.9); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+</style>
+</script>
+
+<style>
+@keyframes popIn {
+  0% { transform: scale(0.9); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+</style>
+</script>
+
+<style>
+@keyframes popIn {
+  0% { transform: scale(0.9); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+</style>
 
 <script type="module">
 // Firebase Auth + Reader Profile integration
@@ -12394,7 +12879,25 @@ if ('serviceWorker' in navigator) {
       .catch(err => console.log('❌ Service worker failed:', err));
   });
 }
+>
+  // 🔗 Wire bottom nav Register button to the auth popup logic
+  document.addEventListener('DOMContentLoaded', () => {
+    const bottomRegisterBtn = document.getElementById('registerBtn');
+    const authPopup = document.getElementById('authPopup');
+    const registerBtnTop = document.querySelector('#topNav #registerBtn');
 
+    if (!bottomRegisterBtn || !authPopup) return;
+
+    // When clicked in bottom nav
+    bottomRegisterBtn.addEventListener('click', () => {
+      // If user is logged in (top button says “Log Out”), then log out
+      if (registerBtnTop && registerBtnTop.dataset.signed === 'true') {
+        registerBtnTop.click(); // reuse existing logout logic
+      } else {
+        authPopup.classList.remove('hidden');
+        authPopup.setAttribute('aria-hidden', 'false');
+      }
+    });
 </script>
 
 </html>

@@ -13,7 +13,6 @@
 <link rel="icon" type="image/svg+xml" href="melogo.svg">
 <link rel="shortcut icon" href="melogo.ico">
 <link rel="apple-touch-icon" sizes="180x180" href="melogo.png">
-<meta name="theme-color" content="#0000FF">
 <!-- Splash / Opening Animation -->
 <div id="meurbalSplash" aria-hidden="true">
   <div class="meurbal-splash-inner">
@@ -12899,48 +12898,6 @@ if ('serviceWorker' in navigator) {
         authPopup.setAttribute('aria-hidden', 'false');
       }
     });
-<!-- Install App Button -->
-<button id="installAppBtn"
-  style="position:fixed;bottom:80px;right:20px;
-         background:linear-gradient(135deg,#6a11cb,#2575fc);
-         color:white;border:none;border-radius:12px;
-         padding:12px 20px;font-weight:700;cursor:pointer;
-         box-shadow:0 6px 18px rgba(0,0,0,0.2);display:none;z-index:9999;">
-  📲 Install Meurbal
-</button>
-
-<script>
-  let deferredPrompt;
-  const installBtn = document.getElementById('installAppBtn');
-
-  // Catch the install prompt event
-  window.addEventListener('beforeinstallprompt', (e) => {
-    e.preventDefault();
-    deferredPrompt = e;
-    installBtn.style.display = 'block'; // Show install button
-  });
-
-  // When user clicks install button
-  installBtn.addEventListener('click', async () => {
-    if (!deferredPrompt) return;
-    deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-    if (outcome === 'accepted') {
-      console.log('✅ App installed');
-    } else {
-      console.log('❌ User dismissed install');
-    }
-    installBtn.style.display = 'none';
-    deferredPrompt = null;
-  });
-
-  // Hide button once installed
-  window.addEventListener('appinstalled', () => {
-    installBtn.style.display = 'none';
-    console.log('🎉 Meurbal installed successfully!');
-  });
-</script>
-
 </script>
 
 </html>

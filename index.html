@@ -724,7 +724,7 @@ function openSerialPreview(serialData) {
 
 // ---------- STORIES + SERIALS LOAD FROM FIREBASE ----------
 
-let _storiesRendered = false;
+
 
 onValue(ref(db, 'stories'), snap => {
   if (snap.exists()) {
@@ -3044,107 +3044,134 @@ function showDashboard(type = 'stories', genreFilter = 'All') {
     });
   }
 
-  // ---------- Render all cards ----------
-  savedCards.forEach(c => {
-    // Only render cards matching the selected type
-    if (
-      (type === 'stories' && c.type !== 'story') ||
-      (type === 'serials' && c.type !== 'serial')
-    ) return;
+savedCards.forEach(c => {
+  // Only render cards matching the selected type
+  if (
+    (type === 'stories' && c.type !== 'story') ||
+    (type === 'serials' && c.type !== 'serial')
+  ) return;
 
-    const card = document.createElement('div');
-    card.className = 'dashboard-card';
-    card.innerHTML = `
-      <div class="left">
-        <div style="max-width:65%">
-          <h3>${c.title}</h3>
-          <div class="meta">${c.meta}</div>
-          <p class="desc">${
-            c.type === 'serial' ? 'Episodes: ' + (c.episodesCount || '0') : ''
-          }</p>
-          <p>Status: <span class="status-public">Public</span></p>
-        </div>
+  const card = document.createElement('div');
+  card.className = 'dashboard-card';
+  card.innerHTML = `
+    <div class="left">
+      <div style="max-width:65%">
+        <h3>${c.title}</h3>
+        <div class="meta">${c.meta}</div>
+        <p class="desc">${
+          c.type === 'serial' ? 'Episodes: ' + (c.episodesCount || '0') : ''
+        }</p>
+        <p>Status: <span class="status-public">Public</span></p>
       </div>
-      <div class="card-actions"></div>
-    `;
+    </div>
+    <div class="card-actions"></div>
+  `;
 
-    const actions = card.querySelector('.card-actions');
+  const actions = card.querySelector('.card-actions');
 
-    if (c.type === 'story') {
-      // Update button
-      const updateBtn = document.createElement('button');
-      updateBtn.className = 'small-btn btn btn-secondary';
-      updateBtn.textContent = 'Update';
-      updateBtn.addEventListener('click', () => {
-        const s = window.storiesData?.find(
-          x => (x.title || '').trim().toLowerCase() === c.title.trim().toLowerCase()
-        );
-        if (!s) return alert('⏳ Story data not loaded yet. Try again.');
-        createEditorPage(s.title, s.genre, s.description, {
-          isEdit: true,
-          editType: 'story',
-          index: window.storiesData.indexOf(s)
-        });
-      });
-      actions.appendChild(updateBtn);
+  // ---------- STORY CARD ACTIONS ----------
+  if (c.type === 'story') {
 
-      // Analysis button
-      const analysisBtn = document.createElement('button');
-      analysisBtn.className = 'small-btn btn btn-info';
-      analysisBtn.textContent = '📊 Analysis';
-      analysisBtn.style.background = '#3f74f0';
-      analysisBtn.style.color = 'white';
-      analysisBtn.addEventListener('click', () => {
-        const s = window.storiesData?.find(
-          x => (x.title || '').trim().toLowerCase() === c.title.trim().toLowerCase()
-        );
-        if (s && s.title) {
-          openAnalyticsModal(s.title);
-        } else if (typeof openAnalyticsModal === 'function') {
-          openAnalyticsModal(c.title);
-        } else {
-          alert('Story analytics not available yet. Try again after data loads.');
+
+    // Analysis button
+    const analysisBtn = document.createElement('button');
+    analysisBtn.className = 'small-btn btn btn-info';
+    analysisBtn.textContent = '📊 Analysis';
+    analysisBtn.style.background = '#3f74f0';
+    analysisBtn.style.color = 'white';
+    analysisBtn.addEventListener('click', () => {
+      const s = window.storiesData?.find(
+        x => (x.title || '').trim().toLowerCase() === c.title.trim().toLowerCase()
+      );
+      if (s && s.title) {
+        openAnalyticsModal(s.title);
+      } else if (typeof openAnalyticsModal === 'function') {
+        openAnalyticsModal(c.title);
+      } else {
+        alert('Story analytics not available yet. Try again after data loads.');
+      }
+    });
+    actions.appendChild(analysisBtn);
+
+    // ✅ Delete button (only for stories)
+    const deleteBtn = document.createElement('button');
+    deleteBtn.className = 'small-btn btn btn-danger';
+    deleteBtn.textContent = '🗑️ Delete';
+    deleteBtn.style.background = '#dc2626';
+    deleteBtn.style.color = 'white';
+    deleteBtn.addEventListener('click', async () => {
+      if (!confirm(`Are you sure you want to delete story "${c.title}"?`)) return;
+
+      try {
+        const db = window._firebase?.db;
+        const refFunc = window._firebase?.ref;
+        const setFunc = window._firebase?.set;
+
+        if (!db || !refFunc || !setFunc) {
+          alert('❌ Firebase not initialized. Please reload the app.');
+          return;
         }
-      });
-      actions.appendChild(analysisBtn);
-    }
 
-    if (c.type === 'serial') {
-      // Serial Options button
-      const optionsBtn = document.createElement('button');
-      optionsBtn.className = 'small-btn btn btn-secondary';
-      optionsBtn.textContent = 'Series Options';
-      optionsBtn.addEventListener('click', () => {
-        const serial = window.serialsData?.find(
-          x => (x.title || '').trim().toLowerCase() === c.title.trim().toLowerCase()
+        // ✅ Remove from Firebase by title key
+        await setFunc(refFunc(db, `stories/${encodeURIComponent(c.title)}`), null);
+
+        // ✅ Remove from local data
+        window.storiesData = (window.storiesData || []).filter(
+          s => (s.title || '').trim().toLowerCase() !== c.title.trim().toLowerCase()
         );
-        if (!serial) return alert('❗ Serial not found');
-        openSerialOptions(serial, window.serialsData.indexOf(serial));
-      });
-      actions.appendChild(optionsBtn);
+        localStorage.setItem('storiesData', JSON.stringify(window.storiesData));
 
-      // Analysis button
-      const analyticsBtn = document.createElement('button');
-      analyticsBtn.className = 'small-btn btn btn-primary';
-      analyticsBtn.textContent = 'Analysis';
-      analyticsBtn.addEventListener('click', () => {
-        const serial = window.serialsData?.find(
-          x => (x.title || '').trim().toLowerCase() === c.title.trim().toLowerCase()
-        );
-        if (serial && serial.title) {
-          openSerialAnalyticsModal(serial.title);
-        } else if (typeof openSerialAnalyticsModal === 'function') {
-          openSerialAnalyticsModal(c.title);
-        } else {
-          alert('Serial analytics not available yet. Try again after data loads.');
-        }
-      });
-      actions.appendChild(analyticsBtn);
-    }
+        // ✅ Remove from dashboardCards
+        const saved = JSON.parse(localStorage.getItem('dashboardCards') || '[]');
+        const updated = saved.filter(card => card.title !== c.title);
+        localStorage.setItem('dashboardCards', JSON.stringify(updated));
 
-    dashboardList.appendChild(card);
-    hadCards = true;
-  });
+        // ✅ Remove card visually
+        card.remove();
+        alert(`✅ Story "${c.title}" deleted successfully.`);
+      } catch (err) {
+        console.error('❌ Failed to delete story:', err);
+        alert('❌ Error deleting story from Firebase. Please check console.');
+      }
+    });
+    actions.appendChild(deleteBtn);
+  }
+
+  // ---------- SERIAL CARD ACTIONS ----------
+  if (c.type === 'serial') {
+    const optionsBtn = document.createElement('button');
+    optionsBtn.className = 'small-btn btn btn-secondary';
+    optionsBtn.textContent = 'Series Options';
+    optionsBtn.addEventListener('click', () => {
+      const serial = window.serialsData?.find(
+        x => (x.title || '').trim().toLowerCase() === c.title.trim().toLowerCase()
+      );
+      if (!serial) return alert('❗ Serial not found');
+      openSerialOptions(serial, window.serialsData.indexOf(serial));
+    });
+    actions.appendChild(optionsBtn);
+
+    const analyticsBtn = document.createElement('button');
+    analyticsBtn.className = 'small-btn btn btn-primary';
+    analyticsBtn.textContent = 'Analysis';
+    analyticsBtn.addEventListener('click', () => {
+      const serial = window.serialsData?.find(
+        x => (x.title || '').trim().toLowerCase() === c.title.trim().toLowerCase()
+      );
+      if (serial && serial.title) {
+        openSerialAnalyticsModal(serial.title);
+      } else if (typeof openSerialAnalyticsModal === 'function') {
+        openSerialAnalyticsModal(c.title);
+      } else {
+        alert('Serial analytics not available yet. Try again after data loads.');
+      }
+    });
+    actions.appendChild(analyticsBtn);
+  }
+
+  dashboardList.appendChild(card);
+  hadCards = true;
+});
 
   // ---------- Save merged cards ----------
   if (savedCards.length) {
@@ -3350,6 +3377,14 @@ function openSerialOptions(serial, serialIndex) {
         ➕ Add New Episode
       </button>
 
+      <button id="deleteSerialBtn" class="btn btn-danger" style="margin-top:12px;background:#dc2626;color:white;">
+        🗑️ Delete Serial
+      </button>
+
+      <button id="deleteEpisodeBtn" class="btn btn-warning" style="margin-top:12px;background:#f59e0b;color:white;">
+        ⚡ Delete Episode
+      </button>
+
       <button id="closeSerialOpts" class="btn btn-secondary" style="margin-top:10px;">
         Close
       </button>
@@ -3357,8 +3392,10 @@ function openSerialOptions(serial, serialIndex) {
   `;
   document.body.appendChild(popup);
 
+  // ---- Close ----
   document.getElementById('closeSerialOpts').onclick = () => popup.remove();
 
+  // ---- Add Episode (original logic) ----
   document.getElementById('addEpNowBtn').onclick = () => {
     popup.remove();
 
@@ -3396,6 +3433,82 @@ function openSerialOptions(serial, serialIndex) {
         episodeIndex: newIndex
       }
     );
+  };
+
+  // ---- Delete Serial ----
+  document.getElementById('deleteSerialBtn').onclick = async () => {
+    if (!confirm(`Delete serial "${serial.title}" permanently?`)) return;
+
+    try {
+      const db = window._firebase?.db;
+      const refFunc = window._firebase?.ref;
+      const setFunc = window._firebase?.set;
+
+      if (!db || !refFunc || !setFunc) {
+        alert('❌ Firebase not initialized. Please reload the app.');
+        return;
+      }
+
+      // ✅ Remove from Firebase
+      await setFunc(refFunc(db, `serials/${encodeURIComponent(serial.title)}`), null);
+
+      // ✅ Remove from localStorage + memory
+      window.serialsData.splice(serialIndex, 1);
+      localStorage.setItem("serialsData", JSON.stringify(window.serialsData));
+
+      // ✅ Remove from dashboardCards
+      const saved = JSON.parse(localStorage.getItem('dashboardCards') || '[]');
+      const updated = saved.filter(card => card.title !== serial.title);
+      localStorage.setItem('dashboardCards', JSON.stringify(updated));
+
+      popup.remove();
+      alert(`✅ Serial "${serial.title}" deleted successfully.`);
+      showDashboard('serials');
+    } catch (err) {
+      console.error('❌ Failed to delete serial:', err);
+      alert('Error deleting serial. Please check console.');
+    }
+  };
+
+  // ---- Delete Episode ----
+  document.getElementById('deleteEpisodeBtn').onclick = async () => {
+    if (!serial.episodes || serial.episodes.length === 0) {
+      alert('No episodes to delete.');
+      return;
+    }
+
+    const list = serial.episodes.map((ep, i) => `${i + 1}. ${ep.title}`).join('\n');
+    const choice = prompt(`Enter episode number to delete:\n${list}`);
+    const index = parseInt(choice) - 1;
+
+    if (isNaN(index) || index < 0 || index >= serial.episodes.length) {
+      alert('Invalid episode number.');
+      return;
+    }
+
+    const epTitle = serial.episodes[index].title;
+    if (!confirm(`Delete episode "${epTitle}"?`)) return;
+
+    try {
+      serial.episodes.splice(index, 1);
+
+      // ✅ Save updated serial to Firebase
+      const db = window._firebase?.db;
+      const refFunc = window._firebase?.ref;
+      const setFunc = window._firebase?.set;
+
+      await setFunc(refFunc(db, `serials/${encodeURIComponent(serial.title)}`), serial);
+
+      // ✅ Update localStorage
+      serialsData[serialIndex] = serial;
+      localStorage.setItem('serialsData', JSON.stringify(serialsData));
+
+      alert(`✅ Episode "${epTitle}" deleted successfully.`);
+      popup.remove();
+    } catch (err) {
+      console.error('❌ Failed to delete episode:', err);
+      alert('Error deleting episode. Please check console.');
+    }
   };
 }
 async function saveSerialToFirebase(serial) {
@@ -10013,19 +10126,216 @@ document.addEventListener('DOMContentLoaded', attachAnalyticsButtons);
 
 <script>
 function openSerialOptions(serial, serialIndex) {
-  const modal = document.createElement('div');
-  modal.className = 'popup';
-  modal.innerHTML = `
-    <div class="popup-content">
-      <h3>${serial.title} — Serial Options</h3>
-      <button id="addNewEpBtn" class="btn btn-primary" style="margin-top:10px;">➕ Add New Episode</button>
-      <button id="editEpBtn" class="btn btn-secondary" style="margin-top:10px;">✏️ Edit Episodes</button>
-      <button id="closeOptBtn" class="btn btn-secondary" style="margin-top:10px;">Close</button>
-    </div>`;
-  document.body.appendChild(modal);
-  document.getElementById('closeOptBtn').onclick = () => modal.remove();
-  document.getElementById('addNewEpBtn').onclick = () => { modal.remove(); showAddEpisodeModal(serial, serialIndex); };
-  document.getElementById('editEpBtn').onclick = () => { modal.remove(); showEpisodeList(serial, serialIndex); };
+  // Remove any existing popup
+  document.querySelectorAll('.popup').forEach(p => p.remove());
+
+  const popup = document.createElement('div');
+  popup.className = 'popup';
+  popup.style.position = 'fixed';
+  popup.style.top = '0';
+  popup.style.left = '0';
+  popup.style.width = '100%';
+  popup.style.height = '100%';
+  popup.style.background = 'rgba(0,0,0,0.5)';
+  popup.style.display = 'flex';
+  popup.style.alignItems = 'center';
+  popup.style.justifyContent = 'center';
+  popup.style.zIndex = '9999';
+
+  popup.innerHTML = `
+    <div class="popup-content" 
+         style="background:white;padding:20px 24px;border-radius:12px;max-width:420px;width:90%;box-shadow:0 6px 20px rgba(0,0,0,0.2);text-align:center;">
+      <h3 style="margin-bottom:12px;font-size:20px;">${serial.title} — Serial Options</h3>
+
+      <button id="addEpNowBtn" class="btn btn-primary" style="margin-top:8px;width:100%;padding:10px;border:none;border-radius:8px;background:#3b82f6;color:white;font-weight:600;">
+        ➕ Add New Episode
+      </button>
+  <button id="deleteSerialBtn" class="btn btn-danger"
+  style="margin-top:10px;width:100%;padding:10px;border:none;border-radius:8px;
+         background:#dc2626;color:white;font-weight:600;">
+  🗑️ Delete Serial
+</button>
+      <button id="deleteEpisodeBtn" class="btn btn-warning" style="margin-top:10px;width:100%;padding:10px;border:none;border-radius:8px;background:#f59e0b;color:white;font-weight:600;">
+        ⚡ Delete Episode
+      </button>
+
+      <button id="closeSerialOpts" class="btn btn-secondary" style="margin-top:12px;width:100%;padding:10px;border:none;border-radius:8px;background:#6b7280;color:white;font-weight:600;">
+        ✖ Close
+      </button>
+    </div>
+  `;
+  document.body.appendChild(popup);
+
+  // ---- Close ----
+  document.getElementById('closeSerialOpts').onclick = () => popup.remove();
+
+  // ---- Add Episode ----
+  document.getElementById('addEpNowBtn').onclick = () => {
+    const addBox = document.createElement('div');
+    addBox.className = 'popup-inner';
+    addBox.style.marginTop = '14px';
+    addBox.innerHTML = `
+      <div style="margin-top:12px;text-align:left;">
+        <label style="display:block;font-weight:600;margin-bottom:6px;">Episode Title</label>
+        <input id="newEpTitle" type="text" placeholder="Enter episode title"
+               style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;">
+        <label style="display:block;font-weight:600;margin-top:10px;margin-bottom:6px;">Short Description</label>
+        <textarea id="newEpDesc" rows="2" placeholder="Optional description"
+               style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;"></textarea>
+        <div style="text-align:center;margin-top:14px;">
+          <button id="confirmAddEp" style="padding:8px 14px;background:#3b82f6;color:white;border:none;border-radius:6px;">✅ Add</button>
+          <button id="cancelAddEp" style="padding:8px 14px;background:#999;color:white;border:none;border-radius:6px;margin-left:6px;">Cancel</button>
+        </div>
+      </div>
+    `;
+    const content = popup.querySelector('.popup-content');
+    content.appendChild(addBox);
+
+    document.getElementById('cancelAddEp').onclick = () => addBox.remove();
+
+    document.getElementById('confirmAddEp').onclick = () => {
+      const title = document.getElementById('newEpTitle').value.trim();
+      const desc = document.getElementById('newEpDesc').value.trim();
+      if (!title) return alert('Please enter an episode title.');
+
+      serial.episodes = serial.episodes || [];
+      serial.episodes.push({
+        title,
+        description: desc,
+        sheets: [],
+        status: "Draft"
+      });
+
+      const newIndex = serial.episodes.length - 1;
+
+      // ✅ Save to Firebase + local
+      saveSerialToFirebase(serial);
+      serialsData[serialIndex] = serial;
+      localStorage.setItem("serialsData", JSON.stringify(serialsData));
+
+      alert(`✅ Added new episode "${title}"`);
+      popup.remove();
+
+      // ✅ Open editor for the new episode
+      createEditorPage(
+        title,
+        serial.genre,
+        desc,
+        {
+          isEdit: true,
+          editType: "serial",
+          index: serialIndex,
+          episodeIndex: newIndex
+        }
+      );
+    };
+  };
+document.getElementById('deleteSerialBtn').onclick = async () => {
+  if (!confirm(`Delete serial "${serial.title}" permanently?`)) return;
+
+  try {
+    const db = window._firebase?.db;
+    const refFunc = window._firebase?.ref;
+    const setFunc = window._firebase?.set;
+
+    if (!db || !refFunc || !setFunc) {
+      alert('❌ Firebase not initialized. Please reload the app.');
+      return;
+    }
+
+    // ✅ Remove from Firebase
+    await setFunc(refFunc(db, `serials/${encodeURIComponent(serial.title)}`), null);
+
+    // ✅ Remove from local memory + storage
+    window.serialsData.splice(serialIndex, 1);
+    localStorage.setItem("serialsData", JSON.stringify(window.serialsData));
+
+    // ✅ Remove from dashboardCards cache
+    const saved = JSON.parse(localStorage.getItem('dashboardCards') || '[]');
+    const updated = saved.filter(card => card.title !== serial.title);
+    localStorage.setItem('dashboardCards', JSON.stringify(updated));
+
+    // ✅ Remove serial card from dashboard visually
+    const dashboardList = document.getElementById('dashboardList');
+    if (dashboardList) {
+      const cards = dashboardList.querySelectorAll('.dashboard-card h3');
+      cards.forEach(h3 => {
+        if (h3.textContent.trim().toLowerCase() === serial.title.trim().toLowerCase()) {
+          h3.closest('.dashboard-card').remove();
+        }
+      });
+    }
+
+    // ✅ Close popup and refresh UI
+    popup.remove();
+    alert(`✅ Serial "${serial.title}" deleted successfully.`);
+
+    // Optional: refresh dashboard for clean state
+    showDashboard('serials');
+  } catch (err) {
+    console.error('❌ Failed to delete serial:', err);
+    alert('Error deleting serial. Please check console.');
+  }
+};
+  // ---- Delete Episode ----
+  document.getElementById('deleteEpisodeBtn').onclick = () => {
+    if (!serial.episodes || serial.episodes.length === 0) {
+      alert('No episodes to delete.');
+      return;
+    }
+
+    // Build a mini UI list
+    const listBox = document.createElement('div');
+    listBox.className = 'episode-list-box';
+    listBox.style.marginTop = '16px';
+    listBox.style.textAlign = 'left';
+    listBox.innerHTML = `
+      <p style="font-weight:600;margin-bottom:8px;">Select an episode to delete:</p>
+      <div style="max-height:180px;overflow-y:auto;border:1px solid #ddd;border-radius:8px;padding:6px;">
+        ${serial.episodes.map((ep, i) => `
+          <div class="ep-item" data-index="${i}"
+               style="padding:8px;border-bottom:1px solid #eee;cursor:pointer;border-radius:6px;">
+            <strong>${i + 1}. ${ep.title}</strong>
+            ${ep.description ? `<div style="font-size:13px;color:#555;">${ep.description}</div>` : ''}
+          </div>
+        `).join('')}
+      </div>
+      <div style="text-align:center;margin-top:12px;">
+        <button id="cancelDelEp" style="padding:8px 14px;background:#999;color:white;border:none;border-radius:6px;">Cancel</button>
+      </div>
+    `;
+    const content = popup.querySelector('.popup-content');
+    content.appendChild(listBox);
+
+    listBox.querySelectorAll('.ep-item').forEach(item => {
+      item.addEventListener('click', async () => {
+        const index = parseInt(item.dataset.index);
+        const ep = serial.episodes[index];
+        if (!confirm(`Delete episode "${ep.title}"?`)) return;
+
+        try {
+          serial.episodes.splice(index, 1);
+
+          const db = window._firebase?.db;
+          const refFunc = window._firebase?.ref;
+          const setFunc = window._firebase?.set;
+
+          await setFunc(refFunc(db, `serials/${encodeURIComponent(serial.title)}`), serial);
+
+          serialsData[serialIndex] = serial;
+          localStorage.setItem('serialsData', JSON.stringify(serialsData));
+
+          alert(`✅ Episode "${ep.title}" deleted successfully.`);
+          popup.remove();
+        } catch (err) {
+          console.error('❌ Failed to delete episode:', err);
+          alert('Error deleting episode. Please check console.');
+        }
+      });
+    });
+
+    document.getElementById('cancelDelEp').onclick = () => listBox.remove();
+  };
 }
 
 function showAddEpisodeModal(serial, serialIndex) {
@@ -12812,19 +13122,151 @@ document.addEventListener('DOMContentLoaded', attachAnalyticsButtons);
 
 <script>
 function openSerialOptions(serial, serialIndex) {
-  const modal = document.createElement('div');
-  modal.className = 'popup';
-  modal.innerHTML = `
+  const popup = document.createElement('div');
+  popup.className = 'popup';
+  popup.innerHTML = `
     <div class="popup-content">
       <h3>${serial.title} — Serial Options</h3>
-      <button id="addNewEpBtn" class="btn btn-primary" style="margin-top:10px;">➕ Add New Episode</button>
-      <button id="closeOptBtn" class="btn btn-secondary" style="margin-top:10px;">Close</button>
-    </div>`;
-  document.body.appendChild(modal);
-  document.getElementById('closeOptBtn').onclick = () => modal.remove();
-  document.getElementById('addNewEpBtn').onclick = () => { modal.remove(); showAddEpisodeModal(serial, serialIndex); };
-  document.getElementById('editEpBtn').onclick = () => { modal.remove(); showEpisodeList(serial, serialIndex); };
+
+      <button id="addEpNowBtn" class="btn btn-primary" style="margin-top:12px;">
+        ➕ Add New Episode
+      </button>
+
+      <button id="deleteSerialBtn" class="btn btn-danger" style="margin-top:12px;background:#dc2626;color:white;">
+        🗑️ Delete Serial
+      </button>
+
+      <button id="deleteEpisodeBtn" class="btn btn-warning" style="margin-top:12px;background:#f59e0b;color:white;">
+        ⚡ Delete Episode
+      </button>
+
+      <button id="closeSerialOpts" class="btn btn-secondary" style="margin-top:10px;">
+        Close
+      </button>
+    </div>
+  `;
+  document.body.appendChild(popup);
+
+  // ---- Close ----
+  document.getElementById('closeSerialOpts').onclick = () => popup.remove();
+
+  // ---- Add Episode (original logic) ----
+  document.getElementById('addEpNowBtn').onclick = () => {
+    popup.remove();
+
+    const title = prompt("Enter Episode Title:");
+    if (!title || !title.trim()) return;
+
+    const desc = prompt("Enter Short Episode Description (optional):") || "";
+
+    serial.episodes = serial.episodes || [];
+    serial.episodes.push({
+      title: title.trim(),
+      description: desc.trim(),
+      sheets: [],
+      status: "Draft"
+    });
+
+    const newIndex = serial.episodes.length - 1;
+
+    // ✅ Save to Firebase
+    saveSerialToFirebase(serial);
+
+    // ✅ Update localStorage copy
+    serialsData[serialIndex] = serial;
+    localStorage.setItem("serialsData", JSON.stringify(serialsData));
+
+    // ✅ Open editor for new episode
+    createEditorPage(
+      title.trim(),
+      serial.genre,
+      desc.trim(),
+      {
+        isEdit: true,
+        editType: "serial",
+        index: serialIndex,
+        episodeIndex: newIndex
+      }
+    );
+  };
+
+  // ---- Delete Serial ----
+  document.getElementById('deleteSerialBtn').onclick = async () => {
+    if (!confirm(`Delete serial "${serial.title}" permanently?`)) return;
+
+    try {
+      const db = window._firebase?.db;
+      const refFunc = window._firebase?.ref;
+      const setFunc = window._firebase?.set;
+
+      if (!db || !refFunc || !setFunc) {
+        alert('❌ Firebase not initialized. Please reload the app.');
+        return;
+      }
+
+      // ✅ Remove from Firebase
+      await setFunc(refFunc(db, `serials/${encodeURIComponent(serial.title)}`), null);
+
+      // ✅ Remove from localStorage + memory
+      window.serialsData.splice(serialIndex, 1);
+      localStorage.setItem("serialsData", JSON.stringify(window.serialsData));
+
+      // ✅ Remove from dashboardCards
+      const saved = JSON.parse(localStorage.getItem('dashboardCards') || '[]');
+      const updated = saved.filter(card => card.title !== serial.title);
+      localStorage.setItem('dashboardCards', JSON.stringify(updated));
+
+      popup.remove();
+      alert(`✅ Serial "${serial.title}" deleted successfully.`);
+      showDashboard('serials');
+    } catch (err) {
+      console.error('❌ Failed to delete serial:', err);
+      alert('Error deleting serial. Please check console.');
+    }
+  };
+
+  // ---- Delete Episode ----
+  document.getElementById('deleteEpisodeBtn').onclick = async () => {
+    if (!serial.episodes || serial.episodes.length === 0) {
+      alert('No episodes to delete.');
+      return;
+    }
+
+    const list = serial.episodes.map((ep, i) => `${i + 1}. ${ep.title}`).join('\n');
+    const choice = prompt(`Enter episode number to delete:\n${list}`);
+    const index = parseInt(choice) - 1;
+
+    if (isNaN(index) || index < 0 || index >= serial.episodes.length) {
+      alert('Invalid episode number.');
+      return;
+    }
+
+    const epTitle = serial.episodes[index].title;
+    if (!confirm(`Delete episode "${epTitle}"?`)) return;
+
+    try {
+      serial.episodes.splice(index, 1);
+
+      // ✅ Save updated serial to Firebase
+      const db = window._firebase?.db;
+      const refFunc = window._firebase?.ref;
+      const setFunc = window._firebase?.set;
+
+      await setFunc(refFunc(db, `serials/${encodeURIComponent(serial.title)}`), serial);
+
+      // ✅ Update localStorage
+      serialsData[serialIndex] = serial;
+      localStorage.setItem('serialsData', JSON.stringify(serialsData));
+
+      alert(`✅ Episode "${epTitle}" deleted successfully.`);
+      popup.remove();
+    } catch (err) {
+      console.error('❌ Failed to delete episode:', err);
+      alert('Error deleting episode. Please check console.');
+    }
+  };
 }
+
 
 function showAddEpisodeModal(serial, serialIndex) {
   const box = document.getElementById("serialEpModal");

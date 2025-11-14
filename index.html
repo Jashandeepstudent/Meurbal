@@ -12658,12 +12658,7 @@ window.showPage = function (pageId) {
   const page = document.getElementById(pageId);
   if (page) page.classList.remove("hidden");
 
-  if (window.__initial_nav) {
-    history.replaceState({ page: pageId }, \"\", \"#\" + pageId);
-    window.__initial_nav = false;
-  } else {
-    history.pushState({ page: pageId }, \"\", \"#\" + pageId);
-  }
+  history.pushState({ page: pageId }, "", "#" + pageId);
 
   localStorage.setItem("meurbal_last_page", pageId);
 };
@@ -12683,8 +12678,6 @@ document.addEventListener("DOMContentLoaded", () => {
   window.__ALL_PAGES = detectPages();
 
   const last = localStorage.getItem("meurbal_last_page") || "welcomePage";
-  // mark this as the initial navigation so we replaceState instead of pushState
-  window.__initial_nav = true;
   window.showPage(last);
 });
 
@@ -13386,8 +13379,6 @@ document.addEventListener("DOMContentLoaded", () => {
   window.__ALL_PAGES = detectPages();
 
   const last = localStorage.getItem("meurbal_last_page") || "welcomePage";
-  // mark this as the initial navigation so we replaceState instead of pushState
-  window.__initial_nav = true;
   window.showPage(last);
 });
 

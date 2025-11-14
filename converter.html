@@ -26,19 +26,6 @@
       box-shadow: 0 4px 14px rgba(0,0,0,0.1);
       display: inline-block;
       width: 350px;
-      border: 2px dashed #aaa;
-      transition: 0.3s ease;
-    }
-
-    #uploadBox.dragover {
-      border-color: #007bff;
-      background: #eaf2ff;
-    }
-
-    #uploadBox p {
-      margin: 0;
-      padding-bottom: 10px;
-      color: #555;
     }
 
     input[type="file"] {
@@ -50,7 +37,7 @@
       border-radius: 8px;
     }
 
-    /* Preview Centering */
+    /* NEW: Center preview using flex */
     #previewBox {
       margin-top: 25px;
       display: flex;
@@ -71,6 +58,12 @@
     #previewImg:hover {
       transform: scale(1.03);
     }
+
+    #note {
+      margin-top: 10px;
+      color: #555;
+      font-size: 14px;
+    }
   </style>
 </head>
 
@@ -79,56 +72,23 @@
   <h2>PNG → JPG Auto Converter</h2>
 
   <div id="uploadBox">
-    <p>Drag & Drop PNG Here<br>or Click to Select</p>
     <input type="file" id="imgInput" accept="image/*">
+    <p id="note">Upload a PNG — JPG will auto-generate</p>
   </div>
 
+  <!-- Centered preview container -->
   <div id="previewBox">
     <img id="previewImg" alt="Converted JPG Preview">
   </div>
 
   <script>
-    const uploadBox = document.getElementById("uploadBox");
     const input = document.getElementById("imgInput");
     const preview = document.getElementById("previewImg");
 
-    // -------------------------------
-    // CLICK → FILE PICKER
-    // -------------------------------
-    uploadBox.addEventListener("click", () => input.click());
-
-    // -------------------------------
-    // DRAG + DROP LOGIC
-    // -------------------------------
-    uploadBox.addEventListener("dragover", (e) => {
-      e.preventDefault();
-      uploadBox.classList.add("dragover");
-    });
-
-    uploadBox.addEventListener("dragleave", () => {
-      uploadBox.classList.remove("dragover");
-    });
-
-    uploadBox.addEventListener("drop", (e) => {
-      e.preventDefault();
-      uploadBox.classList.remove("dragover");
-
-      const file = e.dataTransfer.files[0];
-      if (file) processImage(file);
-    });
-
-    // -------------------------------
-    // NORMAL FILE SELECT
-    // -------------------------------
-    input.addEventListener("change", (e) => {
+    input.addEventListener("change", async (e) => {
       const file = e.target.files[0];
-      if (file) processImage(file);
-    });
+      if (!file) return;
 
-    // -------------------------------
-    // MAIN CONVERSION FUNCTION
-    // -------------------------------
-    function processImage(file) {
       const img = new Image();
       img.src = URL.createObjectURL(file);
 
@@ -142,6 +102,7 @@
 
         canvas.toBlob((blob) => {
           const jpgName = file.name.replace(/\.[^/.]+$/, "") + ".jpg";
+
           const url = URL.createObjectURL(blob);
 
           preview.src = url;
@@ -150,11 +111,9 @@
 
         }, "image/jpeg", 0.9);
       };
-    }
+    });
 
-    // -------------------------------
-    // CLICK IMAGE TO DOWNLOAD
-    // -------------------------------
+    // CLICK IMAGE → DOWNLOAD JPG
     preview.addEventListener("click", () => {
       const link = document.createElement("a");
       link.href = preview.src;

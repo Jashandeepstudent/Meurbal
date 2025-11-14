@@ -2358,7 +2358,7 @@ addEpConfirmBtn.addEventListener('click', ()=>{
   editorDiv.id = 'editorPage';
   editorDiv.innerHTML = `
   ${(editType === 'serial' && opts.isEdit && opts.episodeIndex === 0) ? `
-    <div style="background:#fff8e1;border:1px solid #facc15; border-radius:10px;padding:10px;display: none;
+    <div style="background:#fff8e1;border:1px solid #facc15; border-radius:10px;padding:10px;
 margin-bottom:8px; text-align:center;font-weight:600;color:#92400e;">
       ⚠️ Please create a new sheet before writing your Episodes by clicking the + button.
     </div>` : ''}
@@ -2779,31 +2779,18 @@ if (isEdit) {
     sheetTextarea.value = sheets[0] ? sheets[0].content : '';
   }
 
-  else if (editType === 'serial') {
-    const ser = serialsData[opts.index] || { episodes: [] };
-
-    if (opts.episodeIndex != null) {
-      const ep = (ser.episodes || [])[opts.episodeIndex] || { sheets: [] };
-      sheets = (ep.sheets || []).map((s, i) => ({ id: i, content: s.content || s }));
-
-      // 🔥 SAFE FIX: auto create sheet if empty
-      if (sheets.length === 0) addNewSheet('');
-
-      activeSheetId = 0;
-      renderSheetsBar();
-      sheetTextarea.value = sheets[0] ? sheets[0].content : '';
-    }
-
-    else {
-      sheets = [];
-      addNewSheet('');
-    }
+} else if (editType === 'serial') {
+  const ser = serialsData[opts.index] || { episodes: [] };
+  if (opts.episodeIndex != null) {
+    const ep = (ser.episodes || [])[opts.episodeIndex] || { sheets: [] };
+    sheets = (ep.sheets || []).map((s, i) => ({ id: i, content: s.content || s }));
+    activeSheetId = 0;
+    renderSheetsBar();
+    sheetTextarea.value = sheets[0] ? sheets[0].content : '';
+  } else {
+    sheets = [];
+    addNewSheet('');
   }
-
-} else {
-  // new story or new episode
-  sheets = [];
-  addNewSheet('');
 }
 
 

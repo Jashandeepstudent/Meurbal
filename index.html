@@ -1492,7 +1492,7 @@ img.style.cssText = `
     </div>
   </div>
 
- <!-- Serial Create Popup -->
+<!-- Serial Create Popup -->
 <div id="serialCreatePopup" class="hidden popup">
   <div class="popup-content" style="max-width:480px;padding:16px;">
     <h3 style="margin-bottom:8px;">Create Series</h3>
@@ -1534,6 +1534,10 @@ img.style.cssText = `
       <label>Series Cover</label>
       <input type="file" id="serialCoverInput" accept="image/*">
 
+      <div style="font-size:12px;margin-top:4px;color:#444;">
+        JPG ONLY — PNG will show a warning popup.
+      </div>
+
       <!-- Writer + Publish Date -->
       <label>Writer Name</label>
       <input type="text" id="serialWriterNameInput" placeholder="e.g. John Doe">
@@ -1555,6 +1559,19 @@ img.style.cssText = `
   </div>
 </div>
 
+<!-- PNG ERROR POPUP -->
+<div id="pngPopup" class="hidden popup">
+  <div class="popup-content" style="max-width:420px; text-align:center;">
+    <h3>❌ PNG Not Allowed</h3>
+    <p>Sorry, you cannot upload a PNG file.<br>Please upload a JPG image.</p>
+
+    <div style="display:flex; gap:10px; justify-content:center; margin-top:15px;">
+      <button id="closePngPopup" class="btn btn-secondary">Close</button>
+      <button id="openConverterBtn" class="btn btn-primary">Open Converter Page</button>
+    </div>
+  </div>
+</div>
+
 <script>
 document.addEventListener('DOMContentLoaded', () => {
   const descInput = document.getElementById('seriesDescInput');
@@ -1568,15 +1585,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function validateForm() {
     const descWords = descInput.value.trim().split(/\s+/).filter(w => w.length > 0);
-    // Description is valid if empty OR 3–8 words
     const validDesc = descWords.length === 0 || (descWords.length >= 3 && descWords.length <= 8);
     const validTitle = titleInput.value.trim().length > 0;
 
-    // Show/hide warnings
     descWarn.style.display = validDesc ? 'none' : 'block';
     titleWarn.style.display = validTitle ? 'none' : 'block';
 
-    // Enable button only if episode 1 title is filled and description (if any) is valid
     createBtn.disabled = !(validTitle && validDesc);
   }
 
@@ -1584,10 +1598,38 @@ document.addEventListener('DOMContentLoaded', () => {
     el.addEventListener('input', validateForm);
   });
 
-  validateForm(); // Initial check
+  validateForm();
 });
 </script>
 
+<!-- PNG BLOCKING SCRIPT -->
+<script>
+const serialInput = document.getElementById("serialCoverInput");
+const pngPopup = document.getElementById("pngPopup");
+const closePngPopup = document.getElementById("closePngPopup");
+const openConverterBtn = document.getElementById("openConverterBtn");
+
+// Block PNG file upload
+serialInput.addEventListener("change", () => {
+  const file = serialInput.files[0];
+  if (!file) return;
+
+  if (file.type === "image/png") {
+    pngPopup.classList.remove("hidden");
+    serialInput.value = ""; // reset
+  }
+});
+
+// Close PNG popup
+closePngPopup.addEventListener("click", () => {
+  pngPopup.classList.add("hidden");
+});
+
+// Open converter page
+openConverterBtn.addEventListener("click", () => {
+  window.open("converter.html", "_blank");
+});
+</script>
 
 
 
@@ -12444,7 +12486,7 @@ function openVoiceChatSidebar() {
   const bar = document.createElement('div');
   bar.id = 'voiceChatSidebar';
   bar.style.cssText = `
-    position: fixed; top: 0; right: 0; width: 300px; height: 100vh;
+    position: fixed; top: 0; right: 0; width: 210px; height: 100vh;
     background: rgba(20, 20, 30, 0.95); backdrop-filter: blur(20px);
     color: #fff; font-family: 'Poppins','Inter',sans-serif;
     display: flex; flex-direction: column;

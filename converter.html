@@ -37,7 +37,6 @@
       border-radius: 8px;
     }
 
-    /* NEW: Center preview using flex */
     #previewBox {
       margin-top: 25px;
       display: flex;
@@ -54,16 +53,6 @@
       box-shadow: 0 6px 18px rgba(0,0,0,0.15);
       transition: 0.2s ease;
     }
-
-    #previewImg:hover {
-      transform: scale(1.03);
-    }
-
-    #note {
-      margin-top: 10px;
-      color: #555;
-      font-size: 14px;
-    }
   </style>
 </head>
 
@@ -76,7 +65,6 @@
     <p id="note">Upload a PNG — JPG will auto-generate</p>
   </div>
 
-  <!-- Centered preview container -->
   <div id="previewBox">
     <img id="previewImg" alt="Converted JPG Preview">
   </div>
@@ -90,6 +78,11 @@
       if (!file) return;
 
       const img = new Image();
+
+      // ---- iPHONE FIX ----
+      img.crossOrigin = "anonymous";
+      // ---------------------
+
       img.src = URL.createObjectURL(file);
 
       img.onload = () => {
@@ -102,7 +95,6 @@
 
         canvas.toBlob((blob) => {
           const jpgName = file.name.replace(/\.[^/.]+$/, "") + ".jpg";
-
           const url = URL.createObjectURL(blob);
 
           preview.src = url;
@@ -113,7 +105,6 @@
       };
     });
 
-    // CLICK IMAGE → DOWNLOAD JPG
     preview.addEventListener("click", () => {
       const link = document.createElement("a");
       link.href = preview.src;

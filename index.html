@@ -2767,44 +2767,31 @@ aiCloseBtn.addEventListener('click', () => toggleAIPopup(false));  // ✅ CLOSE
   });
 
   // ---------- Initialize: load existing or new ----------
-// Load sheets for story or serial; always ensure at least one sheet exists
-if (editType === 'story') {
-  if (isEdit) {
+if (isEdit) {
+  if (editType === 'story') {
     const obj = storiesData[opts.index] || { sheets: [] };
-    sheets = (obj.sheets || []).map((s, i) => ({ id: i, content: s.content ?? s }));
-  } else {
-    // creating a new story
-    sheets = [];
-  }
+    sheets = (obj.sheets || []).map((s, i) => ({ id: i, content: s.content || s }));
 
-  // always have one sheet
-  if (sheets.length === 0) addNewSheet('');
-  activeSheetId = 0;
-  renderSheetsBar();
-  sheetTextarea.value = sheets[activeSheetId]?.content || '';
+    // 🔥 SAFE FIX: auto create sheet if empty
+    if (sheets.length === 0) addNewSheet('');
+
+    activeSheetId = 0;
+    renderSheetsBar();
+    sheetTextarea.value = sheets[0] ? sheets[0].content : '';
+  }
 
 } else if (editType === 'serial') {
-  if (isEdit) {
-    const ser = serialsData[opts.index] || { episodes: [] };
-
-    if (opts.episodeIndex != null) {
-      // editing an existing episode -> load its sheets
-      const ep = (ser.episodes || [])[opts.episodeIndex] || { sheets: [] };
-      sheets = (ep.sheets || []).map((s, i) => ({ id: i, content: s.content ?? s }));
-    } else {
-      // editing the serial but creating a new episode -> start empty
-      sheets = [];
-    }
+  const ser = serialsData[opts.index] || { episodes: [] };
+  if (opts.episodeIndex != null) {
+    const ep = (ser.episodes || [])[opts.episodeIndex] || { sheets: [] };
+    sheets = (ep.sheets || []).map((s, i) => ({ id: i, content: s.content || s }));
+    activeSheetId = 0;
+    renderSheetsBar();
+    sheetTextarea.value = sheets[0] ? sheets[0].content : '';
   } else {
-    // creating a brand new serial (and its first episode)
     sheets = [];
+    addNewSheet('');
   }
-
-  // always create at least one sheet for new or existing episodes
-  if (sheets.length === 0) addNewSheet('');
-  activeSheetId = 0;
-  renderSheetsBar();
-  sheetTextarea.value = sheets[activeSheetId]?.content || '';
 }
 
 
@@ -3141,7 +3128,7 @@ savedCards.forEach(c => {
     // Analysis button
     const analysisBtn = document.createElement('button');
     analysisBtn.className = 'small-btn btn btn-info';
-    analysisBtn.textContent = '📊 Analytics';
+    analysisBtn.textContent = '📊 Analysis';
     analysisBtn.style.background = '#3f74f0';
     analysisBtn.style.color = 'white';
     analysisBtn.addEventListener('click', () => {
@@ -3218,7 +3205,7 @@ savedCards.forEach(c => {
 
     const analyticsBtn = document.createElement('button');
     analyticsBtn.className = 'small-btn btn btn-primary';
-    analyticsBtn.textContent = 'Analytics';
+    analyticsBtn.textContent = 'Analysis';
     analyticsBtn.addEventListener('click', () => {
       const serial = window.serialsData?.find(
         x => (x.title || '').trim().toLowerCase() === c.title.trim().toLowerCase()
@@ -3436,7 +3423,7 @@ function openSerialOptions(serial, serialIndex) {
   popup.className = 'popup';
   popup.innerHTML = `
     <div class="popup-content">
-      <h3>${serial.title} — Series Options</h3>
+      <h3>${serial.title} — Serial Options</h3>
 
       <button id="addEpNowBtn" class="btn btn-primary" style="margin-top:12px;">
         ➕ Add New Episode
@@ -10211,7 +10198,7 @@ function openSerialOptions(serial, serialIndex) {
   popup.innerHTML = `
     <div class="popup-content" 
          style="background:white;padding:20px 24px;border-radius:12px;max-width:420px;width:90%;box-shadow:0 6px 20px rgba(0,0,0,0.2);text-align:center;">
-      <h3 style="margin-bottom:12px;font-size:20px;">${serial.title} — Series Options</h3>
+      <h3 style="margin-bottom:12px;font-size:20px;">${serial.title} — Serial Options</h3>
 
       <button id="addEpNowBtn" class="btn btn-primary" style="margin-top:8px;width:100%;padding:10px;border:none;border-radius:8px;background:#3b82f6;color:white;font-weight:600;">
         ➕ Add New Episode
@@ -13512,7 +13499,7 @@ function openSerialOptions(serial, serialIndex) {
   popup.className = 'popup';
   popup.innerHTML = `
     <div class="popup-content">
-      <h3>${serial.title} — Series Options</h3>
+      <h3>${serial.title} — Serial Options</h3>
 
       <button id="addEpNowBtn" class="btn btn-primary" style="margin-top:12px;">
         ➕ Add New Episode

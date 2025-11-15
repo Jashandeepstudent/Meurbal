@@ -13558,47 +13558,61 @@ document.getElementById('addEpNowBtn').onclick = () => {
     }
   };
 
-  // ---- Delete Episode ----
-  document.getElementById('deleteEpisodeBtn').onclick = async () => {
-    if (!serial.episodes || serial.episodes.length === 0) {
-      alert('No episodes to delete.');
-      return;
-    }
+// ---- Delete Episode ----
+// ---- Delete Episode ----
+document.getElementById('deleteEpisodeBtn').onclick = async () => {
+  if (!serial.episodes || serial.episodes.length === 0) {
+    alert('No episodes to delete.');
+    return;
+  }
 
-    const list = serial.episodes.map((ep, i) => `${i + 1}. ${ep.title}`).join('\n');
-    const choice = prompt(`Enter episode number to delete:\n${list}`);
-    const index = parseInt(choice) - 1;
+  // Show episode list
+  const list = serial.episodes.map((ep, i) => `${i + 1}. ${ep.title}`).join('\n');
+  const choice = prompt(`Enter episode number to delete:\n${list}`);
+  const index = parseInt(choice) - 1;
 
-    if (isNaN(index) || index < 0 || index >= serial.episodes.length) {
-      alert('Invalid episode number.');
-      return;
-    }
+  if (isNaN(index) || index < 0 || index >= serial.episodes.length) {
+    alert('Invalid episode number.');
+    return;
+  }
 
-    const epTitle = serial.episodes[index].title;
-    if (!confirm(`Delete episode "${epTitle}"?`)) return;
+  const epTitle = serial.episodes[index].title;
+  if (!confirm(`Delete episode "${epTitle}"?`)) return;
 
-    try {
-      serial.episodes.splice(index, 1);
+  try {
+    // Remove from current serial object
+    serial.episodes.splice(index, 1);
 
-      // ✅ Save updated serial to Firebase
-      const db = window._firebase?.db;
-      const refFunc = window._firebase?.ref;
-      const setFunc = window._firebase?.set;
+    // ---- Save to Firebase ----
+    const { db, ref, set } = window._firebase;
+    await set(ref(db, `serials/${encodeURIComponent(serial.title)}`), serial);
 
-      await setFunc(refFunc(db, `serials/${encodeURIComponent(serial.title)}`), serial);
+    // ---- Save to Local ----
+    serialsData[serialIndex] = serial;
+    localStorage.setItem('serialsData', JSON.stringify(serialsData));
 
-      // ✅ Update localStorage
-      serialsData[serialIndex] = serial;
-      localStorage.setItem('serialsData', JSON.stringify(serialsData));
+    // ---- Remove Episode Card from the openSerialPreview ----
+    const card = document.querySelector(
+      `.episode-card[data-episode-index="${index}"]`
+    );
 
-      alert(`✅ Episode "${epTitle}" deleted successfully.`);
-      popup.remove();
-    } catch (err) {
-      console.error('❌ Failed to delete episode:', err);
-      alert('Error deleting episode. Please check console.');
-    }
-  };
-}
+    if (card) card.remove();
+
+    // ---- Re-index remaining episode cards ----
+    document.querySelectorAll('.episode-card').forEach((c, idx) => {
+      c.dataset.episodeIndex = idx;
+      const num = c.querySelector('.episode-number');
+      if (num) num.textContent = `Episode ${idx + 1}`;
+    });
+
+    alert(`✅ Episode "${epTitle}" deleted successfully.`);
+    popup.remove();
+  } catch (err) {
+    console.error('❌ Failed to delete episode:', err);
+    alert('Error deleting episode. Please check console.');
+  }
+};
+
 
 
 function showAddEpisodeModal(serial, serialIndex) {

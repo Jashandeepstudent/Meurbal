@@ -4,9 +4,7 @@
 <head>
 <style>#profileBtn,#profileDropdown{display:none!important;}</style>
   <meta charset="UTF-8" />
-  <meta name="viewport" 
-      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-
+  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
   <title>Meurbal - Where Dream.Write.Live</title>
 <!-- Favicon setup for Meurbal -->
 <link rel="icon" type="image/png" sizes="96x96" href="melogo.png">
@@ -107,10 +105,6 @@
   cursor:pointer;
 }
 .small-note { color:#6b7280; font-size:13px; margin-top:8px; }
-input, select, textarea {
-    font-size: 16px !important; /* prevents Safari zoom bug */
-    touch-action: manipulation;
-}
 
     /* Header */
     header{position:fixed;top:12px;left:12px;z-index:60}
@@ -1639,6 +1633,9 @@ openConverterBtn.addEventListener("click", () => {
 
 
 
+
+
+
   <!-- Add Episode Popup -->
   <div id="addEpisodePopup" class="hidden popup">
     <div class="popup-content">
@@ -2358,8 +2355,7 @@ addEpConfirmBtn.addEventListener('click', ()=>{
   editorDiv.id = 'editorPage';
   editorDiv.innerHTML = `
   ${(editType === 'serial' && opts.isEdit && opts.episodeIndex === 0) ? `
-    <div style="background:#fff8e1;border:1px solid #facc15; border-radius:10px;padding:10px;
-margin-bottom:8px; text-align:center;font-weight:600;color:#92400e;">
+    <div style="background:#fff8e1;border:1px solid #facc15; border-radius:10px;padding:10px;margin-bottom:8px; text-align:center;font-weight:600;color:#92400e;">
       ⚠️ Please create a new sheet before writing your Episodes by clicking the + button.
     </div>` : ''}
 
@@ -2766,31 +2762,44 @@ aiCloseBtn.addEventListener('click', () => toggleAIPopup(false));  // ✅ CLOSE
   });
 
   // ---------- Initialize: load existing or new ----------
-if (isEdit) {
-  if (editType === 'story') {
+// Load sheets for story or serial; always ensure at least one sheet exists
+if (editType === 'story') {
+  if (isEdit) {
     const obj = storiesData[opts.index] || { sheets: [] };
-    sheets = (obj.sheets || []).map((s, i) => ({ id: i, content: s.content || s }));
-
-    // 🔥 SAFE FIX: auto create sheet if empty
-    if (sheets.length === 0) addNewSheet('');
-
-    activeSheetId = 0;
-    renderSheetsBar();
-    sheetTextarea.value = sheets[0] ? sheets[0].content : '';
+    sheets = (obj.sheets || []).map((s, i) => ({ id: i, content: s.content ?? s }));
+  } else {
+    // creating a new story
+    sheets = [];
   }
+
+  // always have one sheet
+  if (sheets.length === 0) addNewSheet('');
+  activeSheetId = 0;
+  renderSheetsBar();
+  sheetTextarea.value = sheets[activeSheetId]?.content || '';
 
 } else if (editType === 'serial') {
-  const ser = serialsData[opts.index] || { episodes: [] };
-  if (opts.episodeIndex != null) {
-    const ep = (ser.episodes || [])[opts.episodeIndex] || { sheets: [] };
-    sheets = (ep.sheets || []).map((s, i) => ({ id: i, content: s.content || s }));
-    activeSheetId = 0;
-    renderSheetsBar();
-    sheetTextarea.value = sheets[0] ? sheets[0].content : '';
+  if (isEdit) {
+    const ser = serialsData[opts.index] || { episodes: [] };
+
+    if (opts.episodeIndex != null) {
+      // editing an existing episode -> load its sheets
+      const ep = (ser.episodes || [])[opts.episodeIndex] || { sheets: [] };
+      sheets = (ep.sheets || []).map((s, i) => ({ id: i, content: s.content ?? s }));
+    } else {
+      // editing the serial but creating a new episode -> start empty
+      sheets = [];
+    }
   } else {
+    // creating a brand new serial (and its first episode)
     sheets = [];
-    addNewSheet('');
   }
+
+  // always create at least one sheet for new or existing episodes
+  if (sheets.length === 0) addNewSheet('');
+  activeSheetId = 0;
+  renderSheetsBar();
+  sheetTextarea.value = sheets[activeSheetId]?.content || '';
 }
 
 
@@ -3127,7 +3136,7 @@ savedCards.forEach(c => {
     // Analysis button
     const analysisBtn = document.createElement('button');
     analysisBtn.className = 'small-btn btn btn-info';
-    analysisBtn.textContent = '📊 Analysis';
+    analysisBtn.textContent = '📊 Analytics';
     analysisBtn.style.background = '#3f74f0';
     analysisBtn.style.color = 'white';
     analysisBtn.addEventListener('click', () => {
@@ -3204,7 +3213,7 @@ savedCards.forEach(c => {
 
     const analyticsBtn = document.createElement('button');
     analyticsBtn.className = 'small-btn btn btn-primary';
-    analyticsBtn.textContent = 'Analysis';
+    analyticsBtn.textContent = 'Analytics';
     analyticsBtn.addEventListener('click', () => {
       const serial = window.serialsData?.find(
         x => (x.title || '').trim().toLowerCase() === c.title.trim().toLowerCase()
@@ -3332,7 +3341,7 @@ function loadDashboardCards(type = 'stories') {
         // Analysis button for saved story cards
         const analysisBtn = document.createElement('button');
         analysisBtn.className = 'small-btn btn btn-info';
-        analysisBtn.textContent = '📊 Analysis';
+        analysisBtn.textContent = '📊 Analytics';
         analysisBtn.style.background = '#3f74f0';
         analysisBtn.style.color = 'white';
         analysisBtn.addEventListener('click', () => {
@@ -3373,7 +3382,7 @@ function loadDashboardCards(type = 'stories') {
         // Analysis button for saved serial cards
         const analyticsBtn = document.createElement('button');
         analyticsBtn.className = 'small-btn btn btn-primary';
-        analyticsBtn.textContent = 'Analysis';
+        analyticsBtn.textContent = 'Analytics';
         analyticsBtn.addEventListener('click', () => {
           const serial = window.serialsData?.find(
             x => (x.title || '').trim().toLowerCase() === c.title.trim().toLowerCase()
@@ -12495,7 +12504,7 @@ function openVoiceChatSidebar() {
   const bar = document.createElement('div');
   bar.id = 'voiceChatSidebar';
   bar.style.cssText = `
-    position: fixed; top: 0; right: 0; width: 210px; height: 100vh;
+    position: fixed; top: 0; right: 0; width: 300px; height: 100vh;
     background: rgba(20, 20, 30, 0.95); backdrop-filter: blur(20px);
     color: #fff; font-family: 'Poppins','Inter',sans-serif;
     display: flex; flex-direction: column;
@@ -12603,175 +12612,7 @@ function showSessionList(){
     openVoiceAssistant(txt);
   });
 }
-/* 
-   🔥 UNIVERSAL SPA NAVIGATION SYSTEM FOR MEURBAL 🔥
-   - Auto-detects all pages, popups, modals
-   - Enables browser Back / Forward
-   - Saves last page & restores on refresh
-   - ZERO need to manually list any IDs
-   ====================================================== 
-*/
 
-// 🔍 Auto-detect all sections that count as a "page"
-function detectPages() {
-  const selectors = [
-    '[id$="Page"]',
-    '[id$="Popup"]',
-    '[id$="Modal"]',
-    '#editorPage',
-    '#previewFull'
-  ];
-
-  const pages = new Set();
-  selectors.forEach(sel => {
-    document.querySelectorAll(sel).forEach(el => pages.add(el.id));
-  });
-
-  return Array.from(pages);
-}
-
-window.__ALL_PAGES = detectPages();
-
-// ======================================================
-// 🚀 Main Navigation Function
-// ======================================================
-window.showPage = function (pageId) {
-
-  window.__ALL_PAGES.forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.classList.add("hidden");
-  });
-
-  const page = document.getElementById(pageId);
-  if (page) page.classList.remove("hidden");
-
-  history.pushState({ page: pageId }, "", "#" + pageId);
-
-  localStorage.setItem("meurbal_last_page", pageId);
-};
-
-// ======================================================
-// ⬅️➡️ Handle Browser Back/Forward Buttons
-// ======================================================
-window.addEventListener("popstate", (event) => {
-  const page = event.state?.page || "welcomePage";
-  window.showPage(page);
-});
-
-// ======================================================
-// 🔄 Restore last page on refresh / reopen
-// ======================================================
-document.addEventListener("DOMContentLoaded", () => {
-  window.__ALL_PAGES = detectPages();
-
-  const last = localStorage.getItem("meurbal_last_page") || "welcomePage";
-  window.showPage(last);
-});
-
-// ======================================================
-// 🧩 data-nav Helper
-// ======================================================
-document.addEventListener("click", (e) => {
-  const target = e.target.closest("[data-nav]");
-  if (!target) return;
-
-  const page = target.getAttribute("data-nav");
-  if (page) window.showPage(page);
-});
-
-
-/* ======================================================
-   SESSION PAGE MEMORY & WRAPPERS PATCH
-   ====================================================== */
-(function(){
-  function saveCurrentPage(id){
-    try { sessionStorage.setItem("currentPage", id); } catch(e){}
-  }
-
-  function hideAllPages() {
-    [
-      'welcomePage',
-      'dashboardPage',
-      'profileFormPage',
-      'slidesPage',
-      'categoriesPage',
-      'serialCategoriesPage',
-      'writerGatePage'
-    ].forEach(id => {
-      const el = document.getElementById(id);
-      if (el) el.classList.add('hidden');
-    });
-  }
-
-  function restoreLastPage(){
-    try {
-      const last = sessionStorage.getItem("currentPage");
-      if (!last) {
-        if (typeof showHomePage === 'function') showHomePage();
-        else document.getElementById('welcomePage')?.classList.remove('hidden');
-        return;
-      }
-      hideAllPages();
-      const page = document.getElementById(last);
-      if (page) page.classList.remove('hidden');
-
-      try { if (last === 'dashboardPage' && typeof showDashboard === 'function') showDashboard(); } catch(e){}
-      try { if (last === 'categoriesPage' && typeof openCategoriesPage === 'function') openCategoriesPage(); } catch(e){}
-      try { if (last === 'serialCategoriesPage' && typeof openSerialCategoriesPage === 'function') openSerialCategoriesPage(); } catch(e){}
-      try { if (last === 'writerGatePage' && typeof showWriterGateway === 'function') showWriterGateway(); } catch(e){}
-
-    } catch(e){}
-  }
-
-  function wrapFunction(name, saveId){
-    const orig = window[name];
-    if (typeof orig === 'function') {
-      window[name] = function(...args){
-        saveCurrentPage(saveId);
-        return orig.apply(this, args);
-      };
-    }
-  }
-
-  document.addEventListener('DOMContentLoaded', () => {
-    restoreLastPage();
-
-    const map = {
-      homeBtn: 'welcomePage',
-      writerBtn: 'writerGatePage',
-      browseStoriesBtn: 'categoriesPage',
-      browseSerialsBtn: 'serialCategoriesPage',
-      createContentBtn: 'writerGatePage',
-      categoriesBackBtn: 'welcomePage',
-      serialCategoriesBackBtn: 'welcomePage'
-    };
-
-    Object.entries(map).forEach(([id, pageId])=>{
-      const el = document.getElementById(id);
-      if (el) el.addEventListener('click', ()=> saveCurrentPage(pageId));
-    });
-
-    wrapFunction('showHomePage', 'welcomePage');
-    wrapFunction('showDashboard', 'dashboardPage');
-    wrapFunction('openCategoriesPage', 'categoriesPage');
-    wrapFunction('openSerialCategoriesPage', 'serialCategoriesPage');
-    wrapFunction('showWriterGateway', 'writerGatePage');
-
-    const writerAction = document.getElementById('writerGateActionBtn');
-    if (writerAction) {
-      writerAction.addEventListener('click', ()=> saveCurrentPage('dashboardPage'));
-    }
-
-    window.addEventListener('popstate', () => {
-      const last = sessionStorage.getItem("currentPage");
-      hideAllPages();
-      if (last) document.getElementById(last)?.classList.remove('hidden');
-    });
-  });
-
-  window.saveCurrentPage = saveCurrentPage;
-  window.hideAllPages = hideAllPages;
-})();
 // --- Language Chooser ---
 function chooseLanguage(){
   return new Promise(res=>{
@@ -13303,178 +13144,8 @@ function attachAnalyticsButtons() {
   });
 }
 document.addEventListener('DOMContentLoaded', attachAnalyticsButtons);
-<script>
-/* 
-   🔥 UNIVERSAL SPA NAVIGATION SYSTEM FOR MEURBAL 🔥
-   - Auto-detects all pages, popups, modals
-   - Enables browser Back / Forward
-   - Saves last page & restores on refresh
-   - ZERO need to manually list any IDs
-   ====================================================== 
-*/
-
-// 🔍 Auto-detect all sections that count as a "page"
-function detectPages() {
-  const selectors = [
-    '[id$="Page"]',
-    '[id$="Popup"]',
-    '[id$="Modal"]',
-    '#editorPage',
-    '#previewFull'
-  ];
-
-  const pages = new Set();
-  selectors.forEach(sel => {
-    document.querySelectorAll(sel).forEach(el => pages.add(el.id));
-  });
-
-  return Array.from(pages);
-}
-
-window.__ALL_PAGES = detectPages();
-
-// ======================================================
-// 🚀 Main Navigation Function
-// ======================================================
-window.showPage = function (pageId) {
-
-  window.__ALL_PAGES.forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.classList.add("hidden");
-  });
-
-  const page = document.getElementById(pageId);
-  if (page) page.classList.remove("hidden");
-
-  history.pushState({ page: pageId }, "", "#" + pageId);
-
-  localStorage.setItem("meurbal_last_page", pageId);
-};
-
-// ======================================================
-// ⬅️➡️ Handle Browser Back/Forward Buttons
-// ======================================================
-window.addEventListener("popstate", (event) => {
-  const page = event.state?.page || "welcomePage";
-  window.showPage(page);
-});
-
-// ======================================================
-// 🔄 Restore last page on refresh / reopen
-// ======================================================
-document.addEventListener("DOMContentLoaded", () => {
-  window.__ALL_PAGES = detectPages();
-
-  const last = localStorage.getItem("meurbal_last_page") || "welcomePage";
-  window.showPage(last);
-});
-
-// ======================================================
-// 🧩 data-nav Helper
-// ======================================================
-document.addEventListener("click", (e) => {
-  const target = e.target.closest("[data-nav]");
-  if (!target) return;
-
-  const page = target.getAttribute("data-nav");
-  if (page) window.showPage(page);
-});
-
-
-/* ======================================================
-   SESSION PAGE MEMORY & WRAPPERS PATCH
-   ====================================================== */
-(function(){
-  function saveCurrentPage(id){
-    try { sessionStorage.setItem("currentPage", id); } catch(e){}
-  }
-
-  function hideAllPages() {
-    [
-      'welcomePage',
-      'dashboardPage',
-      'profileFormPage',
-      'slidesPage',
-      'categoriesPage',
-      'serialCategoriesPage',
-      'writerGatePage'
-    ].forEach(id => {
-      const el = document.getElementById(id);
-      if (el) el.classList.add('hidden');
-    });
-  }
-
-  function restoreLastPage(){
-    try {
-      const last = sessionStorage.getItem("currentPage");
-      if (!last) {
-        if (typeof showHomePage === 'function') showHomePage();
-        else document.getElementById('welcomePage')?.classList.remove('hidden');
-        return;
-      }
-      hideAllPages();
-      const page = document.getElementById(last);
-      if (page) page.classList.remove('hidden');
-
-      try { if (last === 'dashboardPage' && typeof showDashboard === 'function') showDashboard(); } catch(e){}
-      try { if (last === 'categoriesPage' && typeof openCategoriesPage === 'function') openCategoriesPage(); } catch(e){}
-      try { if (last === 'serialCategoriesPage' && typeof openSerialCategoriesPage === 'function') openSerialCategoriesPage(); } catch(e){}
-      try { if (last === 'writerGatePage' && typeof showWriterGateway === 'function') showWriterGateway(); } catch(e){}
-
-    } catch(e){}
-  }
-
-  function wrapFunction(name, saveId){
-    const orig = window[name];
-    if (typeof orig === 'function') {
-      window[name] = function(...args){
-        saveCurrentPage(saveId);
-        return orig.apply(this, args);
-      };
-    }
-  }
-
-  document.addEventListener('DOMContentLoaded', () => {
-    restoreLastPage();
-
-    const map = {
-      homeBtn: 'welcomePage',
-      writerBtn: 'writerGatePage',
-      browseStoriesBtn: 'categoriesPage',
-      browseSerialsBtn: 'serialCategoriesPage',
-      createContentBtn: 'writerGatePage',
-      categoriesBackBtn: 'welcomePage',
-      serialCategoriesBackBtn: 'welcomePage'
-    };
-
-    Object.entries(map).forEach(([id, pageId])=>{
-      const el = document.getElementById(id);
-      if (el) el.addEventListener('click', ()=> saveCurrentPage(pageId));
-    });
-
-    wrapFunction('showHomePage', 'welcomePage');
-    wrapFunction('showDashboard', 'dashboardPage');
-    wrapFunction('openCategoriesPage', 'categoriesPage');
-    wrapFunction('openSerialCategoriesPage', 'serialCategoriesPage');
-    wrapFunction('showWriterGateway', 'writerGatePage');
-
-    const writerAction = document.getElementById('writerGateActionBtn');
-    if (writerAction) {
-      writerAction.addEventListener('click', ()=> saveCurrentPage('dashboardPage'));
-    }
-
-    window.addEventListener('popstate', () => {
-      const last = sessionStorage.getItem("currentPage");
-      hideAllPages();
-      if (last) document.getElementById(last)?.classList.remove('hidden');
-    });
-  });
-
-  window.saveCurrentPage = saveCurrentPage;
-  window.hideAllPages = hideAllPages;
-})();
 </script>
-<!-- END: SESSION PAGE MEMORY & WRAPPERS PATCH -->
+
 </body>
 
 

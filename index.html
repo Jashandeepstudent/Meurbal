@@ -580,16 +580,15 @@ async function loadCurrentUsername() {
 }
 loadCurrentUsername();
 
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
-  apiKey: "AIzaSyCANgdHr3UXxiiq2SzO8mwpt3YTyq8H-O4",
-  authDomain: "meurbal-b6d3b.firebaseapp.com",
-  databaseURL: "https://meurbal-b6d3b-default-rtdb.firebaseio.com",
-  projectId: "meurbal-b6d3b",
-  storageBucket: "meurbal-b6d3b.firebasestorage.app",
-  messagingSenderId: "333343993217",
-  appId: "1:333343993217:web:3a91248868b26420a3cc80",
-  measurementId: "G-BMBVGELM18"
+  apiKey: "AIzaSyCgTh6FzKWYCGyRgBmeclvGKxuuFL3L81Y",
+  authDomain: "meurbal.firebaseapp.com",
+  databaseURL: "https://meurbal-default-rtdb.firebaseio.com",
+  projectId: "meurbal",
+  storageBucket: "meurbal.firebasestorage.app",
+  messagingSenderId: "917148598257",
+  appId: "1:917148598257:web:dd42e5d690b56d2ac08e50",
+  measurementId: "G-EHJVB3XC90"
 };
 
 const app = initializeApp(firebaseConfig);
@@ -1188,7 +1187,7 @@ document.addEventListener('DOMContentLoaded', showHomePage);
 
   <button id="writerGateActionBtn" style="padding:14px 24px; border-radius:14px; border:none; background:linear-gradient(135deg, #4facfe, #ffffff); color:white; font-weight:700; font-size:17px; cursor:pointer; box-shadow:0 4px 14px rgba(0,0,0,0.45); transition:transform .15s, box-shadow .15s;">Continue</button>
 
-  <button id="writerGateWorkspaceBtn" style="margin-top:14px; padding:14px 24px; border-radius:14px; border:none; background:linear-gradient(135deg, #4facfe, #00f2fe); color:white; font-weight:700; font-size:17px; cursor:pointer; box-shadow:0 4px 14px rgba(0,0,0,0.45);">Your Writing Workspace</button>
+  <button id="writerGateWorkspaceBtn" style="margin-top:14px; padding:14px 24px; border-radius:14px; border:none; background:linear-gradient(135deg, #4facfe, #00f2fe); color:white; font-weight:700; font-size:17px; cursor:pointer; box-shadow:0 4px 14px rgba(0,0,0,0.45);">Your Creation Workspace</button>
 
   <!-- NEW: Your Writing Assistant button -->
   <button id="writerGateAssistantBtn" style="margin-top:14px; padding:12px 22px; border-radius:12px; border:none; background:linear-gradient(135deg,#5b9bff,#00d4ff); color:white; font-weight:700; font-size:16px; cursor:pointer; box-shadow:0 6px 18px rgba(0,0,0,0.12); display:flex; align-items:center; gap:10px;">
@@ -2591,7 +2590,7 @@ aiCloseBtn.addEventListener('click', () => toggleAIPopup(false));  // ✅ CLOSE
       <li>Then you can publish your Episode or Story from here safely.</li>
     </ul>
     <p style="margin-top:14px; font-size:0.95rem; color:#ccc; line-height:1.5;">
-      The <strong>Writing Workspace</strong> is available in the Writer Section .
+      The <strong>Creation Workspace</strong> is available in the Writer Section .
     </p>
     <button id="closeCreationNoteBtn" disabled style="
       margin-top:24px;
@@ -3333,7 +3332,7 @@ function loadDashboardCards(type = 'stories') {
         // Analysis button for saved story cards
         const analysisBtn = document.createElement('button');
         analysisBtn.className = 'small-btn btn btn-info';
-        analysisBtn.textContent = '📊 Analytics';
+        analysisBtn.textContent = '📊 Analysis';
         analysisBtn.style.background = '#3f74f0';
         analysisBtn.style.color = 'white';
         analysisBtn.addEventListener('click', () => {
@@ -3374,7 +3373,7 @@ function loadDashboardCards(type = 'stories') {
         // Analysis button for saved serial cards
         const analyticsBtn = document.createElement('button');
         analyticsBtn.className = 'small-btn btn btn-primary';
-        analyticsBtn.textContent = 'Analytics';
+        analyticsBtn.textContent = 'Analysis';
         analyticsBtn.addEventListener('click', () => {
           const serial = window.serialsData?.find(
             x => (x.title || '').trim().toLowerCase() === c.title.trim().toLowerCase()
@@ -9131,10 +9130,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
     container.innerHTML = `
       <div id="ws_backdrop" role="dialog" aria-modal="true">
-        <div id="ws_modal_box" aria-label="Writing Workspace- Paper Book">
+        <div id="ws_modal_box" aria-label="Creation Workspaces - Paper Book">
           <div id="ws_header">
             <div>
-              <div class="ws_title">Writing Workspace</div>
+              <div class="ws_title">Creation Workspaces</div>
               <div class="ws_sub">Organize your stories and series content here. Content is saved in workspace only.</div>
             </div>
             <div class="ws_controls">
@@ -10079,16 +10078,15 @@ const auth = getAuth(window._firebase.app);
 import { getDatabase, ref, get, set, update } from "https://www.gstatic.com/firebasejs/10.14.0/firebase-database.js";
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.0/firebase-app.js";
 
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
-  apiKey: "AIzaSyCANgdHr3UXxiiq2SzO8mwpt3YTyq8H-O4",
-  authDomain: "meurbal-b6d3b.firebaseapp.com",
-  databaseURL: "https://meurbal-b6d3b-default-rtdb.firebaseio.com",
-  projectId: "meurbal-b6d3b",
-  storageBucket: "meurbal-b6d3b.firebasestorage.app",
-  messagingSenderId: "333343993217",
-  appId: "1:333343993217:web:3a91248868b26420a3cc80",
-  measurementId: "G-BMBVGELM18"
+  apiKey: "AIzaSyCgTh6FzKWYCGyRgBmeclvGKxuuFL3L81Y",
+  authDomain: "meurbal.firebaseapp.com",
+  databaseURL: "https://meurbal-default-rtdb.firebaseio.com",
+  projectId: "meurbal",
+  storageBucket: "meurbal.firebasestorage.app",
+  messagingSenderId: "917148598257",
+  appId: "1:917148598257:web:dd42e5d690b56d2ac08e50",
+  measurementId: "G-EHJVB3XC90"
 };
 
 const app = initializeApp(firebaseConfig);
@@ -11078,17 +11076,17 @@ document.addEventListener('DOMContentLoaded', function(){
 import { getDatabase, ref, get, set, update } from "https://www.gstatic.com/firebasejs/10.14.0/firebase-database.js";
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.0/firebase-app.js";
 
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
-  apiKey: "AIzaSyCANgdHr3UXxiiq2SzO8mwpt3YTyq8H-O4",
-  authDomain: "meurbal-b6d3b.firebaseapp.com",
-  databaseURL: "https://meurbal-b6d3b-default-rtdb.firebaseio.com",
-  projectId: "meurbal-b6d3b",
-  storageBucket: "meurbal-b6d3b.firebasestorage.app",
-  messagingSenderId: "333343993217",
-  appId: "1:333343993217:web:3a91248868b26420a3cc80",
-  measurementId: "G-BMBVGELM18"
+  apiKey: "AIzaSyCgTh6FzKWYCGyRgBmeclvGKxuuFL3L81Y",
+  authDomain: "meurbal.firebaseapp.com",
+  databaseURL: "https://meurbal-default-rtdb.firebaseio.com",
+  projectId: "meurbal",
+  storageBucket: "meurbal.firebasestorage.app",
+  messagingSenderId: "917148598257",
+  appId: "1:917148598257:web:dd42e5d690b56d2ac08e50",
+  measurementId: "G-EHJVB3XC90"
 };
+
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 (function setupMeurbalSplash() {
@@ -11800,17 +11798,17 @@ document.addEventListener('DOMContentLoaded', function(){
 import { getDatabase, ref, get, set, update } from "https://www.gstatic.com/firebasejs/10.14.0/firebase-database.js";
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.0/firebase-app.js";
 
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
-  apiKey: "AIzaSyCANgdHr3UXxiiq2SzO8mwpt3YTyq8H-O4",
-  authDomain: "meurbal-b6d3b.firebaseapp.com",
-  databaseURL: "https://meurbal-b6d3b-default-rtdb.firebaseio.com",
-  projectId: "meurbal-b6d3b",
-  storageBucket: "meurbal-b6d3b.firebasestorage.app",
-  messagingSenderId: "333343993217",
-  appId: "1:333343993217:web:3a91248868b26420a3cc80",
-  measurementId: "G-BMBVGELM18"
+  apiKey: "AIzaSyCgTh6FzKWYCGyRgBmeclvGKxuuFL3L81Y",
+  authDomain: "meurbal.firebaseapp.com",
+  databaseURL: "https://meurbal-default-rtdb.firebaseio.com",
+  projectId: "meurbal",
+  storageBucket: "meurbal.firebasestorage.app",
+  messagingSenderId: "917148598257",
+  appId: "1:917148598257:web:dd42e5d690b56d2ac08e50",
+  measurementId: "G-EHJVB3XC90"
 };
+
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
@@ -11900,16 +11898,15 @@ document.addEventListener('DOMContentLoaded', attachAnalyticsButtons);
 
 
 <script>
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
-  apiKey: "AIzaSyCANgdHr3UXxiiq2SzO8mwpt3YTyq8H-O4",
-  authDomain: "meurbal-b6d3b.firebaseapp.com",
-  databaseURL: "https://meurbal-b6d3b-default-rtdb.firebaseio.com",
-  projectId: "meurbal-b6d3b",
-  storageBucket: "meurbal-b6d3b.firebasestorage.app",
-  messagingSenderId: "333343993217",
-  appId: "1:333343993217:web:3a91248868b26420a3cc80",
-  measurementId: "G-BMBVGELM18"
+  apiKey: "AIzaSyCgTh6FzKWYCGyRgBmeclvGKxuuFL3L81Y",
+  authDomain: "meurbal.firebaseapp.com",
+  databaseURL: "https://meurbal-default-rtdb.firebaseio.com",
+  projectId: "meurbal",
+  storageBucket: "meurbal.firebasestorage.app",
+  messagingSenderId: "917148598257",
+  appId: "1:917148598257:web:dd42e5d690b56d2ac08e50",
+  measurementId: "G-EHJVB3XC90"
 };
 
 // ---- Create status box ----
@@ -12495,23 +12492,16 @@ function loadSessions() {
 // --- Sidebar ---
 function openVoiceChatSidebar() {
   if (document.getElementById('voiceChatSidebar')) return;
-
-  // Detect device: Mobile = 200px, Desktop = 320px
-  const isMobile = window.innerWidth <= 768;
-  const sidebarWidth = isMobile ? 200 : 320;
-
   const bar = document.createElement('div');
   bar.id = 'voiceChatSidebar';
-
   bar.style.cssText = `
-    position: fixed; top: 0; right: 0; width: ${sidebarWidth}px; height: 100vh;
+    position: fixed; top: 0; right: 0; width: 210px; height: 100vh;
     background: rgba(20, 20, 30, 0.95); backdrop-filter: blur(20px);
     color: #fff; font-family: 'Poppins','Inter',sans-serif;
     display: flex; flex-direction: column;
     transform: translateX(100%); transition: transform .3s ease;
     z-index: 1301; box-shadow: -8px 0 20px rgba(0,0,0,0.5); overflow: hidden;
   `;
-
   bar.innerHTML = `
     <div style="
       position: sticky; top: 0; display: grid; grid-template-columns: 1fr auto 1fr;
@@ -12535,27 +12525,23 @@ function openVoiceChatSidebar() {
       </div>
     </div>
   `;
-
   document.body.appendChild(bar);
-
   setTimeout(() => bar.style.transform = 'translateX(0)', 30);
-
   document.getElementById('closeVoiceChatBtn').onclick = () => {
     bar.style.transform = 'translateX(100%)';
     setTimeout(() => bar.remove(), 300);
   };
-
   document.getElementById('sessionsBtn').onclick = showSessionList;
-
   document.getElementById('copyBtn').onclick = async () => {
     const text = document.getElementById('liveVoiceBubble')?.textContent || '';
     if (!text) return alert('Nothing to copy!');
     await navigator.clipboard.writeText(text);
     const ta = safeTextarea();
-    if (ta) { ta.value = text; ta.dispatchEvent(new Event('input', { bubbles: true })); }
+    if(ta){ ta.value = text; ta.dispatchEvent(new Event('input', { bubbles: true })); }
     alert('✅ Copied!');
   };
 }
+
 // --- Chat Message ---
 function addVoiceMessage(t){
   const chat = document.getElementById('voiceChatMessages'); if(!chat) return;
@@ -13093,16 +13079,15 @@ document.addEventListener('DOMContentLoaded', function(){
 import { getDatabase, ref, get, set, update } from "https://www.gstatic.com/firebasejs/10.14.0/firebase-database.js";
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.0/firebase-app.js";
 
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
-  apiKey: "AIzaSyCANgdHr3UXxiiq2SzO8mwpt3YTyq8H-O4",
-  authDomain: "meurbal-b6d3b.firebaseapp.com",
-  databaseURL: "https://meurbal-b6d3b-default-rtdb.firebaseio.com",
-  projectId: "meurbal-b6d3b",
-  storageBucket: "meurbal-b6d3b.firebasestorage.app",
-  messagingSenderId: "333343993217",
-  appId: "1:333343993217:web:3a91248868b26420a3cc80",
-  measurementId: "G-BMBVGELM18"
+  apiKey: "AIzaSyCgTh6FzKWYCGyRgBmeclvGKxuuFL3L81Y",
+  authDomain: "meurbal.firebaseapp.com",
+  databaseURL: "https://meurbal-default-rtdb.firebaseio.com",
+  projectId: "meurbal",
+  storageBucket: "meurbal.firebasestorage.app",
+  messagingSenderId: "917148598257",
+  appId: "1:917148598257:web:dd42e5d690b56d2ac08e50",
+  measurementId: "G-EHJVB3XC90"
 };
 
 const app = initializeApp(firebaseConfig);
@@ -13562,61 +13547,47 @@ document.getElementById('addEpNowBtn').onclick = () => {
     }
   };
 
-// ---- Delete Episode ----
-// ---- Delete Episode ----
-document.getElementById('deleteEpisodeBtn').onclick = async () => {
-  if (!serial.episodes || serial.episodes.length === 0) {
-    alert('No episodes to delete.');
-    return;
-  }
+  // ---- Delete Episode ----
+  document.getElementById('deleteEpisodeBtn').onclick = async () => {
+    if (!serial.episodes || serial.episodes.length === 0) {
+      alert('No episodes to delete.');
+      return;
+    }
 
-  // Show episode list
-  const list = serial.episodes.map((ep, i) => `${i + 1}. ${ep.title}`).join('\n');
-  const choice = prompt(`Enter episode number to delete:\n${list}`);
-  const index = parseInt(choice) - 1;
+    const list = serial.episodes.map((ep, i) => `${i + 1}. ${ep.title}`).join('\n');
+    const choice = prompt(`Enter episode number to delete:\n${list}`);
+    const index = parseInt(choice) - 1;
 
-  if (isNaN(index) || index < 0 || index >= serial.episodes.length) {
-    alert('Invalid episode number.');
-    return;
-  }
+    if (isNaN(index) || index < 0 || index >= serial.episodes.length) {
+      alert('Invalid episode number.');
+      return;
+    }
 
-  const epTitle = serial.episodes[index].title;
-  if (!confirm(`Delete episode "${epTitle}"?`)) return;
+    const epTitle = serial.episodes[index].title;
+    if (!confirm(`Delete episode "${epTitle}"?`)) return;
 
-  try {
-    // Remove from current serial object
-    serial.episodes.splice(index, 1);
+    try {
+      serial.episodes.splice(index, 1);
 
-    // ---- Save to Firebase ----
-    const { db, ref, set } = window._firebase;
-    await set(ref(db, `serials/${encodeURIComponent(serial.title)}`), serial);
+      // ✅ Save updated serial to Firebase
+      const db = window._firebase?.db;
+      const refFunc = window._firebase?.ref;
+      const setFunc = window._firebase?.set;
 
-    // ---- Save to Local ----
-    serialsData[serialIndex] = serial;
-    localStorage.setItem('serialsData', JSON.stringify(serialsData));
+      await setFunc(refFunc(db, `serials/${encodeURIComponent(serial.title)}`), serial);
 
-    // ---- Remove Episode Card from the openSerialPreview ----
-    const card = document.querySelector(
-      `.episode-card[data-episode-index="${index}"]`
-    );
+      // ✅ Update localStorage
+      serialsData[serialIndex] = serial;
+      localStorage.setItem('serialsData', JSON.stringify(serialsData));
 
-    if (card) card.remove();
-
-    // ---- Re-index remaining episode cards ----
-    document.querySelectorAll('.episode-card').forEach((c, idx) => {
-      c.dataset.episodeIndex = idx;
-      const num = c.querySelector('.episode-number');
-      if (num) num.textContent = `Episode ${idx + 1}`;
-    });
-
-    alert(`✅ Episode "${epTitle}" deleted successfully.`);
-    popup.remove();
-  } catch (err) {
-    console.error('❌ Failed to delete episode:', err);
-    alert('Error deleting episode. Please check console.');
-  }
-};
-
+      alert(`✅ Episode "${epTitle}" deleted successfully.`);
+      popup.remove();
+    } catch (err) {
+      console.error('❌ Failed to delete episode:', err);
+      alert('Error deleting episode. Please check console.');
+    }
+  };
+}
 
 
 function showAddEpisodeModal(serial, serialIndex) {

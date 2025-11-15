@@ -2762,45 +2762,30 @@ aiCloseBtn.addEventListener('click', () => toggleAIPopup(false));  // ✅ CLOSE
   });
 
   // ---------- Initialize: load existing or new ----------
-// Load sheets for story or serial; always ensure at least one sheet exists
-if (editType === 'story') {
   if (isEdit) {
-    const obj = storiesData[opts.index] || { sheets: [] };
-    sheets = (obj.sheets || []).map((s, i) => ({ id: i, content: s.content ?? s }));
-  } else {
-    // creating a new story
-    sheets = [];
-  }
-
-  // always have one sheet
-  if (sheets.length === 0) addNewSheet('');
-  activeSheetId = 0;
-  renderSheetsBar();
-  sheetTextarea.value = sheets[activeSheetId]?.content || '';
-
-} else if (editType === 'serial') {
-  if (isEdit) {
-    const ser = serialsData[opts.index] || { episodes: [] };
-
-    if (opts.episodeIndex != null) {
-      // editing an existing episode -> load its sheets
-      const ep = (ser.episodes || [])[opts.episodeIndex] || { sheets: [] };
-      sheets = (ep.sheets || []).map((s, i) => ({ id: i, content: s.content ?? s }));
-    } else {
-      // editing the serial but creating a new episode -> start empty
-      sheets = [];
+    if (editType === 'story') {
+      const obj = storiesData[opts.index] || { sheets: [] };
+      sheets = (obj.sheets || []).map((s, i) => ({ id: i, content: s.content || s }));
+      activeSheetId = 0;
+      renderSheetsBar();
+      sheetTextarea.value = sheets[0] ? sheets[0].content : '';
+    } else if (editType === 'serial') {
+      const ser = serialsData[opts.index] || { episodes: [] };
+      if (opts.episodeIndex != null) {
+        const ep = (ser.episodes || [])[opts.episodeIndex] || { sheets: [] };
+        sheets = (ep.sheets || []).map((s, i) => ({ id: i, content: s.content || s }));
+        activeSheetId = 0;
+        renderSheetsBar();
+        sheetTextarea.value = sheets[0] ? sheets[0].content : '';
+      } else {
+        sheets = [];
+        addNewSheet('');
+      }
     }
   } else {
-    // creating a brand new serial (and its first episode)
-    sheets = [];
+    // new story or new episode
+    addNewSheet('');
   }
-
-  // always create at least one sheet for new or existing episodes
-  if (sheets.length === 0) addNewSheet('');
-  activeSheetId = 0;
-  renderSheetsBar();
-  sheetTextarea.value = sheets[activeSheetId]?.content || '';
-}
 
 
 

@@ -1575,6 +1575,7 @@ img.style.cssText = `
     <div style="display:flex; gap:10px; justify-content:center; margin-top:15px;">
       <button id="closePngPopup" class="btn btn-secondary">Close</button>
       <button id="openConverterBtn" class="btn btn-primary">Open Converter Page</button>
+
     </div>
   </div>
 </div>
@@ -3117,21 +3118,19 @@ savedCards.forEach(c => {
     (type === 'serials' && c.type !== 'serial')
   ) return;
 
-  const card = document.createElement('div');
-  card.className = 'dashboard-card';
-  card.innerHTML = `
-    <div class="left">
-      <div style="max-width:65%">
-        <h3>${c.title}</h3>
-        <div class="meta">${c.meta}</div>
-        <p class="desc">${
-          c.type === 'serial' ? 'Episodes: ' + (c.episodesCount || '0') : ''
-        }</p>
-        <p>Status: <span class="status-public">Public</span></p>
-      </div>
+const card = document.createElement('div');
+card.className = 'dashboard-card';
+
+card.innerHTML = `
+  <div class="left">
+    <div style="max-width:65%">
+      <h3>${c.title}</h3>
+      <div class="meta">${c.meta}</div>
+      <p>Status: <span class="status-public">Public</span></p>
     </div>
-    <div class="card-actions"></div>
-  `;
+  </div>
+  <div class="card-actions"></div>
+`;
 
   const actions = card.querySelector('.card-actions');
 

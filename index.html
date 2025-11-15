@@ -5990,6 +5990,93 @@ function createRecentCard(r, allSerials) {
 
   return card;
 }
+// ---------- NEW: Recently-read rendering ----------
+
+function renderRecentlyReadSection(container, allSerials) {
+  if (!container) container = document.getElementById('serialsBrowseList');
+  if (!container) return;
+
+  // Remove old section if present
+  const old = container.querySelector('[data-rr-section="recently-read"]');
+  if (old) old.remove();
+
+  const recent = loadRecentlyRead(); // returns array from localStorage
+  if (!recent || !recent.length) return;
+
+  const section = document.createElement('div');
+  section.dataset.rrSection = 'recently-read';
+  section.setAttribute('data-rr-section', 'recently-read');
+  section.style.margin = '18px 0';
+  section.style.display = 'flex';
+  section.style.flexDirection = 'column';
+
+  const heading = document.createElement('h3');
+  heading.textContent = '🕘 Recently read';
+  heading.style.margin = '6px 12px';
+  heading.style.textAlign = 'left';
+  section.appendChild(heading);
+
+  const scrollWrap = document.createElement('div');
+  scrollWrap.className = 'scroll-wrap recently-read-wrap';
+  scrollWrap.style.display = 'flex';
+  scrollWrap.style.overflowX = 'auto';
+  scrollWrap.style.gap = '12px';
+  scrollWrap.style.padding = '12px';
+  scrollWrap.style.scrollBehavior = 'smooth';
+  scrollWrap.style.scrollSnapType = 'x mandatory';
+  scrollWrap.style.scrollbarWidth = 'thin';
+
+  // Render recent items using createRecentCard (which expects allSerials for opens)
+  recent.forEach(r => {
+    const card = createRecentCard(r, allSerials || []);
+    scrollWrap.appendChild(card);
+  });
+
+  section.appendChild(scrollWrap);
+
+  // Insert near top: if Trending exists, insert after trending; otherwise insert at top
+  const trending = container.querySelector('[data-genre="Trending"], [data-genre="Trending"]');
+  if (trending && trending.parentNode === container) {
+    container.insertBefore(section, trending.nextSibling);
+  } else {
+    container.insertBefore(section, container.firstChild);
+  }
+}
+
+// Call to refresh only the recently-read UI
+function updateRecentlyReadUI(allSerials) {
+  const container = document.getElementById('serialsBrowseList');
+  if (!container) return;
+  try {
+    renderRecentlyReadSection(container, allSerials || (window.serialsData || []));
+  } catch (e) {
+    console.warn('updateRecentlyReadUI error', e);
+  }
+}
+
+// ---------- PATCH openSerialPreviewAndRecord to update UI immediately ----------
+function openSerialPreviewAndRecord(serial) {
+  try { recordRecentlyRead(serial); } catch (e) { console.warn('recordRecentlyRead failed', e); }
+
+  // Update UI (best-effort). Uses window.serialsData fallback so cards can link back to full objects.
+  try { updateRecentlyReadUI(window.serialsData || []); } catch (e) { /* ignore */ }
+
+  if (typeof openSerialPreview === 'function') {
+    if (serial.id) openSerialPreview(serial.id);
+    else if (serial.slug) openSerialPreview(serial.slug);
+    else openSerialPreview(serial.title || '');
+  } else {
+    console.warn('openSerialPreview not defined');
+  }
+}
+
+// ---------- Ensure renderBrowseSerials invokes the recently-read renderer ----------
+// At the end of renderBrowseSerials, after you finished building container and sections,
+// add this single-line call (you can place it just before the final console.log):
+
+// updateRecentlyReadUI(serialsRaw);
+
+// ---------------- END PATCH ----------------
 
 // ---------------- MAIN renderBrowseSerials (Full integration) ----------------
 
@@ -13474,7 +13561,36 @@ document.addEventListener("click", (e) => {
   window.hideAllPages = hideAllPages;
 })();
 </script>
-<!-- END: SESSION PAGE MEMORY & WRAPPERS PATCH -->
+<script>
+const appPages = ["welcomePage","categoriesPage","serialCategoriesPage","writerGatePage","dashboardPage","profileFormPage","storyFormPage","slidesPage","editorPage","cleanSerialsPage","serialReaderFull"];
+function navigateTo(pageId, push=true){
+  appPages.forEach(id=>{const el=document.getElementById(id); if(el) el.classList.add("hidden");});
+  const t=document.getElementById(pageId); if(t) t.classList.remove("hidden");
+  if(push) history.pushState({page:pageId},"","#"+pageId);
+}
+window.onpopstate = e=>{
+  if(e.state && e.state.page) navigateTo(e.state.page,false);
+};
+window.addEventListener("load",()=>{
+  const h=location.hash.replace("#",""); 
+  if(h && document.getElementById(h)) navigateTo(h,false);
+});
+
+// Auto-detect page changes
+const mo = new MutationObserver(()=> {
+  appPages.forEach(id=>{
+    const el=document.getElementById(id);
+    if(el && !el.classList.contains("hidden")){
+      const current=history.state?.page;
+      if(current!==id){
+        history.pushState({page:id},"","#"+id);
+      }
+    }
+  });
+});
+mo.observe(document.body,{attributes:true,subtree:true,attributeFilter:["class"]});
+</script>
+
 </body>
 
 

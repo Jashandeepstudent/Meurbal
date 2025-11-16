@@ -574,15 +574,17 @@ async function loadCurrentUsername() {
 }
 loadCurrentUsername();
 
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
-  apiKey: "AIzaSyCgTh6FzKWYCGyRgBmeclvGKxuuFL3L81Y",
-  authDomain: "meurbal.firebaseapp.com",
-  databaseURL: "https://meurbal-default-rtdb.firebaseio.com",
-  projectId: "meurbal",
-  storageBucket: "meurbal.firebasestorage.app",
-  messagingSenderId: "917148598257",
-  appId: "1:917148598257:web:dd42e5d690b56d2ac08e50",
-  measurementId: "G-EHJVB3XC90"
+  apiKey: "AIzaSyCANgdHr3UXxiiq2SzO8mwpt3YTyq8H-O4",
+  authDomain: "meurbal-b6d3b.firebaseapp.com",
+  databaseURL: "https://meurbal-b6d3b-default-rtdb.firebaseio.com",
+  projectId: "meurbal-b6d3b",
+  storageBucket: "meurbal-b6d3b.firebasestorage.app",
+  messagingSenderId: "333343993217",
+  appId: "1:333343993217:web:3a91248868b26420a3cc80",
+  measurementId: "G-BMBVGELM18"
 };
 
 const app = initializeApp(firebaseConfig);
@@ -1181,7 +1183,7 @@ document.addEventListener('DOMContentLoaded', showHomePage);
 
   <button id="writerGateActionBtn" style="padding:14px 24px; border-radius:14px; border:none; background:linear-gradient(135deg, #4facfe, #ffffff); color:white; font-weight:700; font-size:17px; cursor:pointer; box-shadow:0 4px 14px rgba(0,0,0,0.45); transition:transform .15s, box-shadow .15s;">Continue</button>
 
-  <button id="writerGateWorkspaceBtn" style="margin-top:14px; padding:14px 24px; border-radius:14px; border:none; background:linear-gradient(135deg, #4facfe, #00f2fe); color:white; font-weight:700; font-size:17px; cursor:pointer; box-shadow:0 4px 14px rgba(0,0,0,0.45);">Your Creation Workspace</button>
+  <button id="writerGateWorkspaceBtn" style="margin-top:14px; padding:14px 24px; border-radius:14px; border:none; background:linear-gradient(135deg, #4facfe, #00f2fe); color:white; font-weight:700; font-size:17px; cursor:pointer; box-shadow:0 4px 14px rgba(0,0,0,0.45);">Your Writing Workspace</button>
 
   <!-- NEW: Your Writing Assistant button -->
   <button id="writerGateAssistantBtn" style="margin-top:14px; padding:12px 22px; border-radius:12px; border:none; background:linear-gradient(135deg,#5b9bff,#00d4ff); color:white; font-weight:700; font-size:16px; cursor:pointer; box-shadow:0 6px 18px rgba(0,0,0,0.12); display:flex; align-items:center; gap:10px;">
@@ -1193,35 +1195,23 @@ document.addEventListener('DOMContentLoaded', showHomePage);
 <script>
 /* --- Attach a small AI logo + popup safely (enhanced centered glass version) --- */
 (function attachAiBadge() {
-  // try to find an editor container if present, otherwise fallback to body
-  const editorDiv = document.getElementById('editorDiv') || document.querySelector('.editor') || document.body;
+  const existingPopup = document.getElementById('editor_ai_popup');
+  if (existingPopup) return;
 
-  // if popup already exists, don't recreate
-  if (document.getElementById('editor_ai_popup')) return;
+  const img = document.createElement('img');
+  img.src = 'meurballogo.jpg';
+  img.alt = 'AI Logo';
+  img.style.cssText = `
+    width:38px;height:38px;border-radius:10px;cursor:pointer;
+    object-fit:cover;border:0;margin-right:6px;
+  `;
 
-// create small AI image (for editor area)
-const img = document.createElement('img');
-img.src = 'meurballogo.jpg';
-img.alt = 'AI Logo';
-img.style.cssText = `
-  width:38px;
-  height:38px;
-  border-radius:10px;
-  cursor:pointer;
-  object-fit:cover;
-  border:0;
-  margin-right:6px;
-  display:none;
-`;
-
-
-  // try to insert near editor close button or a toolbar; otherwise append to editorDiv
-  const closeBtn = editorDiv.querySelector('#closeEditorBtn');
-  if (closeBtn) closeBtn.parentNode.insertBefore(img, closeBtn);
-  else {
-    const maybeToolbar = editorDiv.querySelector('div[style*="display:flex"][style*="gap:8px"]');
-    if (maybeToolbar) maybeToolbar.appendChild(img);
-    else editorDiv.appendChild(img);
+  // ⭐ FIXED — works in Story + Serial editor
+  const headerRow = editorDiv.querySelector('div[style*="justify-content:space-between"]');
+  if (headerRow) {
+    headerRow.appendChild(img);
+  } else {
+    editorDiv.prepend(img);
   }
 
   // create centered glass popup
@@ -1409,7 +1399,7 @@ img.style.cssText = `
       <h2>Browse Series</h2>
       <div style="max-width:980px;margin:8px auto 0;display:flex;gap:8px;align-items:center;justify-content:space-between">
         <div style="flex:1">
-          <input id="serialsSearchInput" placeholder="Search your serials..." style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px" />
+          <input id="serialsSearchInput" placeholder="Search your series..." style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px" />
         </div>
         <div style="min-width:140px;text-align:right">
           <button id="serialsClearSearchBtn" class="btn btn-secondary" style="padding:8px 10px">Clear</button>
@@ -2355,7 +2345,7 @@ addEpConfirmBtn.addEventListener('click', ()=>{
   editorDiv.id = 'editorPage';
   editorDiv.innerHTML = `
   ${(editType === 'serial' && opts.isEdit && opts.episodeIndex === 0) ? `
-    <div style="background:#fff8e1;border:1px solid #facc15; border-radius:10px;padding:10px;margin-bottom:8px; text-align:center;font-weight:600;color:#92400e;">
+    <div style="background:#fff8e1;border:1px solid #facc15; border-radius:10px;display:none;padding:10px;margin-bottom:8px; text-align:center;font-weight:600;color:#92400e;">
       ⚠️ Please create a new sheet before writing your Episodes by clicking the + button.
     </div>` : ''}
 
@@ -2586,7 +2576,7 @@ aiCloseBtn.addEventListener('click', () => toggleAIPopup(false));  // ✅ CLOSE
       <li>Then you can publish your Episode or Story from here safely.</li>
     </ul>
     <p style="margin-top:14px; font-size:0.95rem; color:#ccc; line-height:1.5;">
-      The <strong>Creation Workspace</strong> is available in the Writer Section .
+      The <strong>Writing Workspace</strong> is available in the Writer Section .
     </p>
     <button id="closeCreationNoteBtn" disabled style="
       margin-top:24px;
@@ -2786,7 +2776,22 @@ aiCloseBtn.addEventListener('click', () => toggleAIPopup(false));  // ✅ CLOSE
     // new story or new episode
     addNewSheet('');
   }
-
+if (sheets.length === 0) {
+    const warn = document.createElement('div');
+    warn.style.cssText = `
+      background:#fff7d6;
+      border:1px solid #ffcc33;
+      padding:10px;
+      color:#8a5a00;
+      font-weight:600;
+      border-radius:8px;
+      margin:10px 0;
+      text-align:center;
+    `;
+    warn.innerHTML = "⚠️ You have no sheets. Click the ➕ button to create one!";
+    
+    editorDiv.insertBefore(warn, editorDiv.firstChild);
+}
 
 
       publishStoryBtn.addEventListener('click', async ()=>{
@@ -7082,6 +7087,14 @@ narrateBtn.style.marginLeft = '8px';
 pagerRow.appendChild(narrateBtn);
 
 narrateBtn.addEventListener('click', () => {
+// Prevent narrator from stealing focus and jumping page to top
+document.activeElement?.blur();
+
+if (speechSynthesis.speaking || speechSynthesis.pending) {
+    console.log("Already narrating, ignoring click");
+    return;
+}
+
   const text = (sheetsArray[currentPage] && sheetsArray[currentPage].content) || '';
   if (!text.trim()) return alert('No text to narrate.');
 
@@ -7385,7 +7398,86 @@ function renderPage(idx) {
 prevPageBtn.addEventListener('click', () => renderPage(currentPage - 1));
 nextPageBtn.addEventListener('click', () => renderPage(currentPage + 1));
 
-// --- Mark Last Read Button ---
+
+// ---------- Helpers ----------
+function escapeRegExp(s) {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function removeExistingMarkHighlights() {
+  const prev = pageBox.querySelectorAll('.marked-last-word');
+  prev.forEach(p => {
+    const parent = p.parentNode;
+    parent.replaceChild(document.createTextNode(p.textContent), p);
+    parent.normalize && parent.normalize(); // merge text nodes
+  });
+}
+
+/**
+ * Highlight a specific occurrence of `word` on the page.
+ * If `occurrenceIndex` is undefined, highlights the first match.
+ * Returns true if the target occurrence was found & highlighted.
+ */
+function highlightMarkedWord(word, occurrenceIndex) {
+  if (!word) return false;
+  removeExistingMarkHighlights();
+
+  const wordRegex = new RegExp('\\b' + escapeRegExp(word) + '\\b', 'i'); // case-insensitive
+  const walker = document.createTreeWalker(pageBox, NodeFilter.SHOW_TEXT, null, false);
+
+  let node;
+  let globalCount = 0; // counts each match across text nodes
+
+  while ((node = walker.nextNode())) {
+    const txt = node.textContent;
+    let m;
+    // we need to iterate all matches in this text node
+    const regexAll = new RegExp('\\b' + escapeRegExp(word) + '\\b', 'ig');
+    while ((m = regexAll.exec(txt)) !== null) {
+      // if occurrenceIndex is undefined -> we want the first match
+      const isTarget = (typeof occurrenceIndex === 'undefined') ? (globalCount === 0) : (globalCount === occurrenceIndex);
+      if (isTarget) {
+        const start = m.index;
+        const end = start + m[0].length;
+
+        const before = document.createTextNode(txt.slice(0, start));
+        const matched = document.createElement('span');
+        matched.className = 'marked-last-word';
+        matched.style.background = 'yellow';
+        matched.style.borderRadius = '3px';
+        matched.textContent = txt.slice(start, end);
+        const after = document.createTextNode(txt.slice(end));
+
+        const parent = node.parentNode;
+        parent.replaceChild(after, node);         // replace node with 'after'
+        parent.insertBefore(matched, after);      // insert matched before 'after'
+        parent.insertBefore(before, matched);     // insert before before matched
+
+        // scroll into view
+        matched.scrollIntoView({ block: 'center', behavior: 'smooth' });
+        return true;
+      }
+      globalCount += 1;
+    }
+  }
+  return false;
+}
+
+// ---------- Utility to get caret range from point ----------
+function getRangeFromPoint(x, y) {
+  if (document.caretRangeFromPoint) return document.caretRangeFromPoint(x, y);
+  if (document.caretPositionFromPoint) {
+    const pos = document.caretPositionFromPoint(x, y);
+    if (!pos) return null;
+    const r = document.createRange();
+    r.setStart(pos.offsetNode, pos.offset);
+    r.setEnd(pos.offsetNode, pos.offset);
+    return r;
+  }
+  return null;
+}
+
+// ---------- Mark Last Read (with occurrence index) ----------
 markLastReadBtn.addEventListener('click', () => {
   const popup = document.createElement('div');
   popup.innerHTML = `<div style="background:white;padding:20px 30px;border-radius:12px;
@@ -7406,43 +7498,104 @@ markLastReadBtn.addEventListener('click', () => {
   function handleClick(e) {
     popup.remove();
 
-    const range = document.caretRangeFromPoint
-      ? document.caretRangeFromPoint(e.clientX, e.clientY)
-      : document.caretPositionFromPoint
-      ? (() => {
-          const p = document.caretPositionFromPoint(e.clientX, e.clientY);
-          const r = document.createRange();
-          r.setStart(p.offsetNode, p.offset);
-          r.setEnd(p.offsetNode, p.offset);
-          return r;
-        })()
-      : null;
-
-    if (!range) return alert('⚠️ Could not detect word.');
-    const node = range.startContainer;
-    if (!node || !node.textContent) return alert('⚠️ Invalid click.');
-
-    const text = node.textContent;
-    const offset = range.startOffset;
-
-    // Find the word at clicked offset
-    const words = text.split(/(\s+)/); // keep spaces
-    let charCount = 0;
-    let clickedWord = '';
-    for (let w of words) {
-      const wordLength = w.length;
-      if (offset >= charCount && offset <= charCount + wordLength) {
-        clickedWord = w.trim();
-        break;
-      }
-      charCount += wordLength;
+    const range = getRangeFromPoint(e.clientX, e.clientY);
+    if (!range) {
+      alert('⚠️ Could not detect position. Try clicking directly on text.');
+      cleanup();
+      return;
     }
 
-    if (!clickedWord) return alert('⚠️ Could not detect word.');
-    localStorage.setItem(lastReadKey, JSON.stringify({ page: currentPage, word: clickedWord }));
-    alert(`✅ Marked last read at "${clickedWord}"`);
-    highlightMarkedWord(clickedWord);
+    let node = range.startContainer;
+    let offset = range.startOffset;
 
+    // ensure we have a text node
+    if (node.nodeType !== Node.TEXT_NODE) {
+      const child = node.childNodes[offset] || node.childNodes[offset - 1];
+      if (child && child.nodeType === Node.TEXT_NODE) {
+        node = child;
+        offset = Math.min(offset, child.textContent.length);
+      } else {
+        const walkerInside = document.createTreeWalker(node, NodeFilter.SHOW_TEXT, null, false);
+        const firstText = walkerInside.nextNode();
+        if (firstText) {
+          node = firstText;
+          offset = 0;
+        } else {
+          alert('⚠️ Could not find text at click location.');
+          cleanup();
+          return;
+        }
+      }
+    }
+
+    const text = node.textContent || '';
+    offset = Math.max(0, Math.min(offset, text.length));
+
+    // find the word that contains the character offset inside this text node
+    const wordRegexLocal = /\b[\w']+\b/g;
+    let clickedWord = '';
+    let localMatchStart = -1;
+    let localMatchEnd = -1;
+    let lm;
+    while ((lm = wordRegexLocal.exec(text)) !== null) {
+      const s = lm.index;
+      const e = s + lm[0].length;
+      if (offset >= s && offset <= e) {
+        clickedWord = lm[0];
+        localMatchStart = s;
+        localMatchEnd = e;
+        break;
+      }
+    }
+
+    if (!clickedWord) {
+      alert('⚠️ Could not detect word. Try clicking nearer the middle of the word.');
+      cleanup();
+      return;
+    }
+
+    // compute the global occurrence index of this matched token across the page
+    // iterate through all text nodes up to (and including) this node and count matches
+    const walker = document.createTreeWalker(pageBox, NodeFilter.SHOW_TEXT, null, false);
+    let cur;
+    let globalCount = 0;
+    let found = false;
+    while ((cur = walker.nextNode())) {
+      if (cur === node) {
+        // count matches in this node up to the localMatchStart
+        const txt = cur.textContent;
+        const regexAll = new RegExp('\\b' + escapeRegExp(clickedWord) + '\\b', 'ig');
+        let mm;
+        while ((mm = regexAll.exec(txt)) !== null) {
+          if (mm.index === localMatchStart && mm[0].toLowerCase() === clickedWord.toLowerCase()) {
+            found = true;
+            break;
+          }
+          globalCount += 1;
+        }
+        if (found) break;
+      } else {
+        // count all matches in this node
+        const txt = cur.textContent || '';
+        const regexAll = new RegExp('\\b' + escapeRegExp(clickedWord) + '\\b', 'ig');
+        while (regexAll.exec(txt) !== null) {
+          globalCount += 1;
+        }
+      }
+    }
+
+    // Save the word and the occurrence index
+    const markObj = { page: Number(currentPage), word: clickedWord, occurrence: globalCount };
+    localStorage.setItem(lastReadKey, JSON.stringify(markObj));
+ alert(`✅ Marked last read at "${clickedWord}"`);
+
+    // highlight the exact occurrence
+    setTimeout(() => highlightMarkedWord(clickedWord, globalCount), 50);
+
+    cleanup();
+  }
+
+  function cleanup() {
     completeMarkBtn.style.display = 'none';
     markLastReadBtn.style.display = 'inline-block';
     pageBox.style.cursor = '';
@@ -7453,36 +7606,72 @@ markLastReadBtn.addEventListener('click', () => {
   pageBox.addEventListener('click', handleClick);
 });
 
+// ---------- Complete / Cancel ----------
 completeMarkBtn.addEventListener('click', () => {
   completeMarkBtn.style.display = 'none';
   markLastReadBtn.style.display = 'inline-block';
+  pageBox.style.cursor = '';
 });
 
-// --- Remove Last Read ---
+// ---------- Remove Last Read ----------
 removeMarkBtn.addEventListener('click', () => {
   localStorage.removeItem(lastReadKey);
+  removeExistingMarkHighlights();
   alert('🗑️ Last read mark removed.');
   renderPage(currentPage);
 });
 
-// --- Resume Prompt on Reader Open ---
-// --- Resume Prompt on Reader Open ---
+// ---------- Resume Prompt on Reader Open ----------
+// ---------- Robust Resume Prompt with retry ----------
 const savedMark = localStorage.getItem(lastReadKey);
 if (savedMark) {
   try {
     const mark = JSON.parse(savedMark);
-    if (mark.page >= 0 && mark.word) {
-      const resume = confirm(`Resume from where you left off: "${mark.word}" on page ${mark.page + 1}?`);
-      if (resume) {
-        currentPage = mark.page;
-        renderPage(currentPage);
-        highlightMarkedWord(mark.word);
+    if (typeof mark.page !== 'undefined' && mark.word) {
+      const pageNum = Number(mark.page);
+      if (!Number.isNaN(pageNum) && pageNum >= 0) {
+        const resume = confirm(`Resume from where you left off: "${mark.word}" on page ${pageNum + 1}?`);
+        if (resume) {
+          // Immediately set requested page and render once
+          currentPage = pageNum;
+          renderPage(currentPage);
 
-        // ✅ Automatically remove the mark after resuming
-        localStorage.removeItem(lastReadKey);
+          // Retry logic: try to highlight the saved occurrence repeatedly,
+          // because renderPage or async content loads may overwrite the DOM.
+          let attempts = 0;
+          const maxAttempts = 20;     // try for ~4 seconds (20 * 200ms)
+          const attemptInterval = 200; // ms
+
+          function tryHighlight() {
+            attempts += 1;
+            const ok = highlightMarkedWord(mark.word, mark.occurrence);
+            if (ok) {
+              // success: cleanup saved mark and stop retrying
+              localStorage.removeItem(lastReadKey);
+              console.log('Highlighted saved mark after', attempts, 'attempts');
+              return;
+            }
+            if (attempts >= maxAttempts) {
+              // couldn't highlight after retries. leave the saved mark in storage
+              // so user can try again later. optionally inform user.
+              console.warn('Could not find saved word to highlight after retries.');
+              return;
+            }
+            // Re-apply page render in case some later init moved page back to 1:
+            // this forces the reader to the intended page again on each retry.
+            currentPage = pageNum;
+            renderPage(currentPage);
+            setTimeout(tryHighlight, attemptInterval);
+          }
+
+          // start retries shortly after initial render to give any microtasks time
+          setTimeout(tryHighlight, 120);
+        }
       }
     }
-  } catch {}
+  } catch (err) {
+    console.error('Error parsing lastReadKey', err);
+  }
 }
 
   if (sheetsArray.length === 0) sheetsArray.push({ content: '(No content in this episode yet)' });
@@ -7692,19 +7881,45 @@ footer.append(prevBtn, nextBtn, zenShieldBtn);
 panel.append(header, body, footer);
 
   // --- Button Actions ---
-  document.getElementById('backToSerialBtn').addEventListener('click', () => {
+document.getElementById('backToSerialBtn').addEventListener('click', () => {
+
+    // 🔥 Stop AI narrator immediately
+    speechSynthesis.cancel();
+
+    // Your existing close logic
     panel.remove();
-    if (typeof openSerialPreview === 'function') openSerialPreview(serial);
-  });
 
-  prevBtn.addEventListener('click', () => {
-    if (episodeIndex > 0) openSerialReader(serial.title, episodeIndex - 1);
-  });
+    if (typeof openSerialPreview === 'function') {
+        openSerialPreview(serial);
+    }
+});
 
-  nextBtn.addEventListener('click', () => {
-    if (episodeIndex < (serial.episodes || []).length - 1)
-      openSerialReader(serial.title, episodeIndex + 1);
-  });
+prevBtn.addEventListener('click', () => {
+
+    // stop narrator so no ghost voice
+    if (speechSynthesis.speaking || speechSynthesis.pending) {
+        speechSynthesis.cancel();
+    }
+
+    if (episodeIndex > 0) {
+        openSerialReader(serial.title, episodeIndex - 1);
+    }
+});
+
+
+nextBtn.addEventListener('click', () => {
+
+    // ⭐ STOP AI NARRATOR immediately
+    if (speechSynthesis.speaking || speechSynthesis.pending) {
+        speechSynthesis.cancel();
+    }
+
+    // ⭐ Then go to next episode
+    if (episodeIndex < (serial.episodes || []).length - 1) {
+        openSerialReader(serial.title, episodeIndex + 1);
+    }
+});
+
 
 zenShieldBtn.addEventListener('click', () => {
   // Find the reader panel container
@@ -9124,10 +9339,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
     container.innerHTML = `
       <div id="ws_backdrop" role="dialog" aria-modal="true">
-        <div id="ws_modal_box" aria-label="Creation Workspaces - Paper Book">
+        <div id="ws_modal_box" aria-label="Writing Workspace - Paper Book">
           <div id="ws_header">
             <div>
-              <div class="ws_title">Creation Workspaces</div>
+              <div class="ws_title">Writing Workspace</div>
               <div class="ws_sub">Organize your stories and series content here. Content is saved in workspace only.</div>
             </div>
             <div class="ws_controls">
@@ -10072,15 +10287,16 @@ const auth = getAuth(window._firebase.app);
 import { getDatabase, ref, get, set, update } from "https://www.gstatic.com/firebasejs/10.14.0/firebase-database.js";
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.0/firebase-app.js";
 
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
-  apiKey: "AIzaSyCgTh6FzKWYCGyRgBmeclvGKxuuFL3L81Y",
-  authDomain: "meurbal.firebaseapp.com",
-  databaseURL: "https://meurbal-default-rtdb.firebaseio.com",
-  projectId: "meurbal",
-  storageBucket: "meurbal.firebasestorage.app",
-  messagingSenderId: "917148598257",
-  appId: "1:917148598257:web:dd42e5d690b56d2ac08e50",
-  measurementId: "G-EHJVB3XC90"
+  apiKey: "AIzaSyCANgdHr3UXxiiq2SzO8mwpt3YTyq8H-O4",
+  authDomain: "meurbal-b6d3b.firebaseapp.com",
+  databaseURL: "https://meurbal-b6d3b-default-rtdb.firebaseio.com",
+  projectId: "meurbal-b6d3b",
+  storageBucket: "meurbal-b6d3b.firebasestorage.app",
+  messagingSenderId: "333343993217",
+  appId: "1:333343993217:web:3a91248868b26420a3cc80",
+  measurementId: "G-BMBVGELM18"
 };
 
 const app = initializeApp(firebaseConfig);
@@ -11070,15 +11286,16 @@ document.addEventListener('DOMContentLoaded', function(){
 import { getDatabase, ref, get, set, update } from "https://www.gstatic.com/firebasejs/10.14.0/firebase-database.js";
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.0/firebase-app.js";
 
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
-  apiKey: "AIzaSyCgTh6FzKWYCGyRgBmeclvGKxuuFL3L81Y",
-  authDomain: "meurbal.firebaseapp.com",
-  databaseURL: "https://meurbal-default-rtdb.firebaseio.com",
-  projectId: "meurbal",
-  storageBucket: "meurbal.firebasestorage.app",
-  messagingSenderId: "917148598257",
-  appId: "1:917148598257:web:dd42e5d690b56d2ac08e50",
-  measurementId: "G-EHJVB3XC90"
+  apiKey: "AIzaSyCANgdHr3UXxiiq2SzO8mwpt3YTyq8H-O4",
+  authDomain: "meurbal-b6d3b.firebaseapp.com",
+  databaseURL: "https://meurbal-b6d3b-default-rtdb.firebaseio.com",
+  projectId: "meurbal-b6d3b",
+  storageBucket: "meurbal-b6d3b.firebasestorage.app",
+  messagingSenderId: "333343993217",
+  appId: "1:333343993217:web:3a91248868b26420a3cc80",
+  measurementId: "G-BMBVGELM18"
 };
 
 const app = initializeApp(firebaseConfig);
@@ -11792,17 +12009,17 @@ document.addEventListener('DOMContentLoaded', function(){
 import { getDatabase, ref, get, set, update } from "https://www.gstatic.com/firebasejs/10.14.0/firebase-database.js";
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.0/firebase-app.js";
 
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
-  apiKey: "AIzaSyCgTh6FzKWYCGyRgBmeclvGKxuuFL3L81Y",
-  authDomain: "meurbal.firebaseapp.com",
-  databaseURL: "https://meurbal-default-rtdb.firebaseio.com",
-  projectId: "meurbal",
-  storageBucket: "meurbal.firebasestorage.app",
-  messagingSenderId: "917148598257",
-  appId: "1:917148598257:web:dd42e5d690b56d2ac08e50",
-  measurementId: "G-EHJVB3XC90"
+  apiKey: "AIzaSyCANgdHr3UXxiiq2SzO8mwpt3YTyq8H-O4",
+  authDomain: "meurbal-b6d3b.firebaseapp.com",
+  databaseURL: "https://meurbal-b6d3b-default-rtdb.firebaseio.com",
+  projectId: "meurbal-b6d3b",
+  storageBucket: "meurbal-b6d3b.firebasestorage.app",
+  messagingSenderId: "333343993217",
+  appId: "1:333343993217:web:3a91248868b26420a3cc80",
+  measurementId: "G-BMBVGELM18"
 };
-
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
@@ -11892,15 +12109,16 @@ document.addEventListener('DOMContentLoaded', attachAnalyticsButtons);
 
 
 <script>
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
-  apiKey: "AIzaSyCgTh6FzKWYCGyRgBmeclvGKxuuFL3L81Y",
-  authDomain: "meurbal.firebaseapp.com",
-  databaseURL: "https://meurbal-default-rtdb.firebaseio.com",
-  projectId: "meurbal",
-  storageBucket: "meurbal.firebasestorage.app",
-  messagingSenderId: "917148598257",
-  appId: "1:917148598257:web:dd42e5d690b56d2ac08e50",
-  measurementId: "G-EHJVB3XC90"
+  apiKey: "AIzaSyCANgdHr3UXxiiq2SzO8mwpt3YTyq8H-O4",
+  authDomain: "meurbal-b6d3b.firebaseapp.com",
+  databaseURL: "https://meurbal-b6d3b-default-rtdb.firebaseio.com",
+  projectId: "meurbal-b6d3b",
+  storageBucket: "meurbal-b6d3b.firebasestorage.app",
+  messagingSenderId: "333343993217",
+  appId: "1:333343993217:web:3a91248868b26420a3cc80",
+  measurementId: "G-BMBVGELM18"
 };
 
 // ---- Create status box ----
@@ -12486,16 +12704,23 @@ function loadSessions() {
 // --- Sidebar ---
 function openVoiceChatSidebar() {
   if (document.getElementById('voiceChatSidebar')) return;
+
+  // Detect device: Mobile = 250px, Desktop = 320px
+  const isMobile = window.innerWidth <= 768;
+  const sidebarWidth = isMobile ? 250 : 320;
+
   const bar = document.createElement('div');
   bar.id = 'voiceChatSidebar';
+
   bar.style.cssText = `
-    position: fixed; top: 0; right: 0; width: 300px; height: 100vh;
+    position: fixed; top: 0; right: 0; width: ${sidebarWidth}px; height: 100vh;
     background: rgba(20, 20, 30, 0.95); backdrop-filter: blur(20px);
     color: #fff; font-family: 'Poppins','Inter',sans-serif;
     display: flex; flex-direction: column;
     transform: translateX(100%); transition: transform .3s ease;
     z-index: 1301; box-shadow: -8px 0 20px rgba(0,0,0,0.5); overflow: hidden;
   `;
+
   bar.innerHTML = `
     <div style="
       position: sticky; top: 0; display: grid; grid-template-columns: 1fr auto 1fr;
@@ -12519,19 +12744,24 @@ function openVoiceChatSidebar() {
       </div>
     </div>
   `;
+
   document.body.appendChild(bar);
+
   setTimeout(() => bar.style.transform = 'translateX(0)', 30);
+
   document.getElementById('closeVoiceChatBtn').onclick = () => {
     bar.style.transform = 'translateX(100%)';
     setTimeout(() => bar.remove(), 300);
   };
+
   document.getElementById('sessionsBtn').onclick = showSessionList;
+
   document.getElementById('copyBtn').onclick = async () => {
     const text = document.getElementById('liveVoiceBubble')?.textContent || '';
     if (!text) return alert('Nothing to copy!');
     await navigator.clipboard.writeText(text);
     const ta = safeTextarea();
-    if(ta){ ta.value = text; ta.dispatchEvent(new Event('input', { bubbles: true })); }
+    if (ta) { ta.value = text; ta.dispatchEvent(new Event('input', { bubbles: true })); }
     alert('✅ Copied!');
   };
 }
@@ -12905,15 +13135,16 @@ document.addEventListener('DOMContentLoaded', function(){
 import { getDatabase, ref, get, set, update } from "https://www.gstatic.com/firebasejs/10.14.0/firebase-database.js";
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.0/firebase-app.js";
 
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
-  apiKey: "AIzaSyCgTh6FzKWYCGyRgBmeclvGKxuuFL3L81Y",
-  authDomain: "meurbal.firebaseapp.com",
-  databaseURL: "https://meurbal-default-rtdb.firebaseio.com",
-  projectId: "meurbal",
-  storageBucket: "meurbal.firebasestorage.app",
-  messagingSenderId: "917148598257",
-  appId: "1:917148598257:web:dd42e5d690b56d2ac08e50",
-  measurementId: "G-EHJVB3XC90"
+  apiKey: "AIzaSyCANgdHr3UXxiiq2SzO8mwpt3YTyq8H-O4",
+  authDomain: "meurbal-b6d3b.firebaseapp.com",
+  databaseURL: "https://meurbal-b6d3b-default-rtdb.firebaseio.com",
+  projectId: "meurbal-b6d3b",
+  storageBucket: "meurbal-b6d3b.firebasestorage.app",
+  messagingSenderId: "333343993217",
+  appId: "1:333343993217:web:3a91248868b26420a3cc80",
+  measurementId: "G-BMBVGELM18"
 };
 
 const app = initializeApp(firebaseConfig);
@@ -13129,6 +13360,177 @@ function attachAnalyticsButtons() {
   });
 }
 document.addEventListener('DOMContentLoaded', attachAnalyticsButtons);
+</script>
+<script>
+/* 
+   🔥 UNIVERSAL SPA NAVIGATION SYSTEM FOR MEURBAL 🔥
+   - Auto-detects all pages, popups, modals
+   - Enables browser Back / Forward
+   - Saves last page & restores on refresh
+   - ZERO need to manually list any IDs
+   ====================================================== 
+*/
+
+// 🔍 Auto-detect all sections that count as a "page"
+function detectPages() {
+  const selectors = [
+    '[id$="Page"]',
+    '[id$="Popup"]',
+    '[id$="Modal"]',
+    '#editorPage',
+    '#previewFull'
+  ];
+
+  const pages = new Set();
+  selectors.forEach(sel => {
+    document.querySelectorAll(sel).forEach(el => pages.add(el.id));
+  });
+
+  return Array.from(pages);
+}
+
+window.__ALL_PAGES = detectPages();
+
+// ======================================================
+// 🚀 Main Navigation Function
+// ======================================================
+window.showPage = function (pageId) {
+
+  window.__ALL_PAGES.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.classList.add("hidden");
+  });
+
+  const page = document.getElementById(pageId);
+  if (page) page.classList.remove("hidden");
+
+  history.pushState({ page: pageId }, "", "#" + pageId);
+
+  localStorage.setItem("meurbal_last_page", pageId);
+};
+
+// ======================================================
+// ⬅️➡️ Handle Browser Back/Forward Buttons
+// ======================================================
+window.addEventListener("popstate", (event) => {
+  const page = event.state?.page || "welcomePage";
+  window.showPage(page);
+});
+
+// ======================================================
+// 🔄 Restore last page on refresh / reopen
+// ======================================================
+document.addEventListener("DOMContentLoaded", () => {
+  window.__ALL_PAGES = detectPages();
+
+  const last = localStorage.getItem("meurbal_last_page") || "welcomePage";
+  window.showPage(last);
+});
+
+// ======================================================
+// 🧩 data-nav Helper
+// ======================================================
+document.addEventListener("click", (e) => {
+  const target = e.target.closest("[data-nav]");
+  if (!target) return;
+
+  const page = target.getAttribute("data-nav");
+  if (page) window.showPage(page);
+});
+
+
+/* ======================================================
+   SESSION PAGE MEMORY & WRAPPERS PATCH
+   ====================================================== */
+(function(){
+  function saveCurrentPage(id){
+    try { sessionStorage.setItem("currentPage", id); } catch(e){}
+  }
+
+  function hideAllPages() {
+    [
+      'welcomePage',
+      'dashboardPage',
+      'profileFormPage',
+      'slidesPage',
+      'categoriesPage',
+      'serialCategoriesPage',
+      'writerGatePage'
+    ].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.classList.add('hidden');
+    });
+  }
+
+  function restoreLastPage(){
+    try {
+      const last = sessionStorage.getItem("currentPage");
+      if (!last) {
+        if (typeof showHomePage === 'function') showHomePage();
+        else document.getElementById('welcomePage')?.classList.remove('hidden');
+        return;
+      }
+      hideAllPages();
+      const page = document.getElementById(last);
+      if (page) page.classList.remove('hidden');
+
+      try { if (last === 'dashboardPage' && typeof showDashboard === 'function') showDashboard(); } catch(e){}
+      try { if (last === 'categoriesPage' && typeof openCategoriesPage === 'function') openCategoriesPage(); } catch(e){}
+      try { if (last === 'serialCategoriesPage' && typeof openSerialCategoriesPage === 'function') openSerialCategoriesPage(); } catch(e){}
+      try { if (last === 'writerGatePage' && typeof showWriterGateway === 'function') showWriterGateway(); } catch(e){}
+
+    } catch(e){}
+  }
+
+  function wrapFunction(name, saveId){
+    const orig = window[name];
+    if (typeof orig === 'function') {
+      window[name] = function(...args){
+        saveCurrentPage(saveId);
+        return orig.apply(this, args);
+      };
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    restoreLastPage();
+
+    const map = {
+      homeBtn: 'welcomePage',
+      writerBtn: 'writerGatePage',
+      browseStoriesBtn: 'categoriesPage',
+      browseSerialsBtn: 'serialCategoriesPage',
+      createContentBtn: 'writerGatePage',
+      categoriesBackBtn: 'welcomePage',
+      serialCategoriesBackBtn: 'welcomePage'
+    };
+
+    Object.entries(map).forEach(([id, pageId])=>{
+      const el = document.getElementById(id);
+      if (el) el.addEventListener('click', ()=> saveCurrentPage(pageId));
+    });
+
+    wrapFunction('showHomePage', 'welcomePage');
+    wrapFunction('showDashboard', 'dashboardPage');
+    wrapFunction('openCategoriesPage', 'categoriesPage');
+    wrapFunction('openSerialCategoriesPage', 'serialCategoriesPage');
+    wrapFunction('showWriterGateway', 'writerGatePage');
+
+    const writerAction = document.getElementById('writerGateActionBtn');
+    if (writerAction) {
+      writerAction.addEventListener('click', ()=> saveCurrentPage('dashboardPage'));
+    }
+
+    window.addEventListener('popstate', () => {
+      const last = sessionStorage.getItem("currentPage");
+      hideAllPages();
+      if (last) document.getElementById(last)?.classList.remove('hidden');
+    });
+  });
+
+  window.saveCurrentPage = saveCurrentPage;
+  window.hideAllPages = hideAllPages;
+})();
 </script>
 
 </body>

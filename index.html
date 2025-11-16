@@ -773,7 +773,11 @@ onValue(ref(db, 'serials'), snap => {
 // Replace with this:
 async function saveSerialToFirebase(ser) {
   try {
-    await set(ref(window._firebase.db, `serials/${ser.title}`), ser);
+    await set(
+  ref(window._firebase.db, `serials/${encodeURIComponent(ser.title.trim())}`),
+  ser
+);
+
     console.log(`✅ Serial "${ser.title}" saved successfully to Firebase.`);
   } catch (err) {
     console.error('❌ Error saving serial to Firebase:', err);
@@ -3624,7 +3628,11 @@ function openSerialOptions(serial, serialIndex) {
 }
 async function saveSerialToFirebase(serial) {
   try {
-    await set(ref(window._firebase.db, `serials/${serial.title}`), serial);
+    await set(
+  ref(window._firebase.db, `serials/${encodeURIComponent(serial.title.trim())}`),
+  serial
+);
+
     console.log(`✅ Serial "${serial.title}" saved to Firebase`);
   } catch (err) {
     console.error(`❌ Failed to save serial:`, err);
@@ -7456,8 +7464,16 @@ function renderPage(idx) {
   applyLastMark();
 }
 
-prevPageBtn.addEventListener('click', () => renderPage(currentPage - 1));
-nextPageBtn.addEventListener('click', () => renderPage(currentPage + 1));
+prevPageBtn.addEventListener('click', () => {
+  speechSynthesis.cancel();  // ⛔ stop speaking
+  renderPage(currentPage - 1);
+});
+
+nextPageBtn.addEventListener('click', () => {
+  speechSynthesis.cancel();  // ⛔ stop speaking
+  renderPage(currentPage + 1);
+});
+
 
 
 // ---------- Helpers ----------
@@ -9079,19 +9095,29 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Override save functions to include base64 cover when present
   // Note: these will replace existing definitions in the page
-  window.saveSerialToFirebase = async function(ser) {
-    try {
-      if (window._currentSerialCover) ser.cover = window._currentSerialCover;
-      if (!window._firebase || !window._firebase.db) {
-        console.error('Firebase not ready for saveSerialToFirebase');
-        return;
-      }
-      await window._firebase.set(window._firebase.ref(window._firebase.db, `serials/${ser.title}`), ser);
-      console.log(`✅ Serial "${ser.title}" saved (with cover if provided).`);
-    } catch (err) {
-      console.error('❌ Error saving serial (patched):', err);
+window.saveSerialToFirebase = async function(ser) {
+  try {
+    if (window._currentSerialCover) ser.cover = window._currentSerialCover;
+
+    if (!window._firebase || !window._firebase.db) {
+      console.error('Firebase not ready for saveSerialToFirebase');
+      return;
     }
-  };
+
+    // 🔥 ALWAYS ENCODE THE TITLE
+    const key = encodeURIComponent(ser.title.trim());
+
+    await window._firebase.set(
+      window._firebase.ref(window._firebase.db, `serials/${key}`),
+      ser
+    );
+
+    console.log(`✅ Serial "${ser.title}" saved (with cover if provided).`);
+  } catch (err) {
+    console.error('❌ Error saving serial (patched):', err);
+  }
+};
+
 
   window.saveStoryToFirebase = async function(story) {
     try {
@@ -11045,20 +11071,28 @@ document.addEventListener("DOMContentLoaded", () => {
   wireCoverInput('serialCoverInput', 'serialCoverPreview', '_currentSerialCover');
 
   // Override save functions to include base64 cover when present
-  // Note: these will replace existing definitions in the page
-  window.saveSerialToFirebase = async function(ser) {
-    try {
-      if (window._currentSerialCover) ser.cover = window._currentSerialCover;
-      if (!window._firebase || !window._firebase.db) {
-        console.error('Firebase not ready for saveSerialToFirebase');
-        return;
-      }
-      await window._firebase.set(window._firebase.ref(window._firebase.db, `serials/${ser.title}`), ser);
-      console.log(`✅ Serial "${ser.title}" saved (with cover if provided).`);
-    } catch (err) {
-      console.error('❌ Error saving serial (patched):', err);
+window.saveSerialToFirebase = async function(ser) {
+  try {
+    if (window._currentSerialCover) ser.cover = window._currentSerialCover;
+
+    if (!window._firebase || !window._firebase.db) {
+      console.error('Firebase not ready for saveSerialToFirebase');
+      return;
     }
-  };
+
+    const key = encodeURIComponent(ser.title.trim());
+
+    await window._firebase.set(
+      window._firebase.ref(window._firebase.db, `serials/${key}`),
+      ser
+    );
+
+    console.log(`✅ Serial "${ser.title}" saved (with cover if provided).`);
+  } catch (err) {
+    console.error('❌ Error saving serial (patched):', err);
+  }
+};
+
 
   window.saveStoryToFirebase = async function(story) {
     try {
@@ -11795,20 +11829,28 @@ document.addEventListener("DOMContentLoaded", () => {
   wireCoverInput('serialCoverInput', 'serialCoverPreview', '_currentSerialCover');
 
   // Override save functions to include base64 cover when present
-  // Note: these will replace existing definitions in the page
-  window.saveSerialToFirebase = async function(ser) {
-    try {
-      if (window._currentSerialCover) ser.cover = window._currentSerialCover;
-      if (!window._firebase || !window._firebase.db) {
-        console.error('Firebase not ready for saveSerialToFirebase');
-        return;
-      }
-      await window._firebase.set(window._firebase.ref(window._firebase.db, `serials/${ser.title}`), ser);
-      console.log(`✅ Serial "${ser.title}" saved (with cover if provided).`);
-    } catch (err) {
-      console.error('❌ Error saving serial (patched):', err);
+window.saveSerialToFirebase = async function(ser) {
+  try {
+    if (window._currentSerialCover) ser.cover = window._currentSerialCover;
+
+    if (!window._firebase || !window._firebase.db) {
+      console.error('Firebase not ready for saveSerialToFirebase');
+      return;
     }
-  };
+
+    const key = encodeURIComponent(ser.title.trim());
+
+    await window._firebase.set(
+      window._firebase.ref(window._firebase.db, `serials/${key}`),
+      ser
+    );
+
+    console.log(`✅ Serial "${ser.title}" saved (with cover if provided).`);
+  } catch (err) {
+    console.error('❌ Error saving serial (patched):', err);
+  }
+};
+
 
   window.saveStoryToFirebase = async function(story) {
     try {
@@ -12552,19 +12594,27 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Override save functions to include base64 cover when present
   // Note: these will replace existing definitions in the page
-  window.saveSerialToFirebase = async function(ser) {
-    try {
-      if (window._currentSerialCover) ser.cover = window._currentSerialCover;
-      if (!window._firebase || !window._firebase.db) {
-        console.error('Firebase not ready for saveSerialToFirebase');
-        return;
-      }
-      await window._firebase.set(window._firebase.ref(window._firebase.db, `serials/${ser.title}`), ser);
-      console.log(`✅ Serial "${ser.title}" saved (with cover if provided).`);
-    } catch (err) {
-      console.error('❌ Error saving serial (patched):', err);
+window.saveSerialToFirebase = async function(ser) {
+  try {
+    if (window._currentSerialCover) ser.cover = window._currentSerialCover;
+
+    if (!window._firebase || !window._firebase.db) {
+      console.error('Firebase not ready for saveSerialToFirebase');
+      return;
     }
-  };
+
+    const key = encodeURIComponent(ser.title.trim());
+
+    await window._firebase.set(
+      window._firebase.ref(window._firebase.db, `serials/${key}`),
+      ser
+    );
+
+    console.log(`✅ Serial "${ser.title}" saved (with cover if provided).`);
+  } catch (err) {
+    console.error('❌ Error saving serial (patched):', err);
+  }
+};
 
   window.saveStoryToFirebase = async function(story) {
     try {

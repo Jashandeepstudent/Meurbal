@@ -3650,7 +3650,7 @@ async function saveSerialToFirebase(serial) {
 
 async function openSerialAnalyticsModal(serialTitle) {
   try {
-    const url = `https://meurbal-default-rtdb.firebaseio.com/meurbal_v1/serials.json`;
+    const url = `https://meurbal-b6d3b-default-rtdb.firebaseio.com/serials.json`;
     const res = await fetch(url);
     const serialsData = await res.json();
 

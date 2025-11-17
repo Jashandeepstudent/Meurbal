@@ -2894,8 +2894,23 @@ if (sheets.length === 0) {
           return;
         }
         // serial path
-        if(editType === 'serial'){
-          const ser = serialsData[opts.index]; if(!ser){ alert('Serial not found'); return; }
+  if (editType === 'serial') {
+
+  // ✅ SAFE LOOKUP (never fails)
+  const ser = window.serialsData.find(s =>
+    (s.title || '').trim().toLowerCase() === (opts.originalTitle || '').trim().toLowerCase()
+  );
+
+  if (!ser) {
+    alert("Serial not found (safe title lookup)");
+    console.log("DEBUG originalTitle =", opts.originalTitle);
+    console.log("DEBUG available serial titles =", window.serialsData.map(x => x.title));
+    return;
+  }
+
+  // 🔥 Correct serial index
+  const serialIndex = window.serialsData.indexOf(ser);
+
           if(isEdit && opts.episodeIndex!=null){
             ser.episodes[opts.episodeIndex] = Object.assign({}, ser.episodes[opts.episodeIndex], { title: title, description: desc, sheets: payloadSheets, status: 'Public' });
             serialsData[opts.index] = ser;
@@ -3523,7 +3538,7 @@ document.getElementById('addEpNowBtn').onclick = () => {
   const desc = prompt("Enter Short Episode Description (optional):") || "";
 
   // 🚫 DO NOT ADD EPISODE HERE
-  // 🚫 DO NOT SAVE TO FIREBASE
+  // 🚫 DO NOT SAVE ANYTHING HERE
 
   createEditorPage(
     title.trim(),
@@ -3534,7 +3549,8 @@ document.getElementById('addEpNowBtn').onclick = () => {
       editType: "serial",
       index: serialIndex,
       episodeIndex: null,
-      isNewEpisode: true   // 🔥 The important part
+      isNewEpisode: true,       // 🔥 episode created only after publish
+      originalTitle: serial.title.trim() // ⭐ FIXES "Serial not found"
     }
   );
 };

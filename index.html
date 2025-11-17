@@ -3514,45 +3514,32 @@ function openSerialOptions(serial, serialIndex) {
   // ---- Close ----
   document.getElementById('closeSerialOpts').onclick = () => popup.remove();
 
-  // ---- Add Episode (original logic) ----
-  document.getElementById('addEpNowBtn').onclick = () => {
-    popup.remove();
+document.getElementById('addEpNowBtn').onclick = () => {
+  popup.remove();
 
-    const title = prompt("Enter Episode Title:");
-    if (!title || !title.trim()) return;
+  const title = prompt("Enter Episode Title:");
+  if (!title || !title.trim()) return;
 
-    const desc = prompt("Enter Short Episode Description (optional):") || "";
+  const desc = prompt("Enter Short Episode Description (optional):") || "";
 
-    serial.episodes = serial.episodes || [];
-    serial.episodes.push({
-      title: title.trim(),
-      description: desc.trim(),
-      sheets: [],
-      status: "Draft"
-    });
+  // 🚫 DO NOT ADD EPISODE HERE
+  // 🚫 DO NOT SAVE TO FIREBASE
 
-    const newIndex = serial.episodes.length - 1;
+  createEditorPage(
+    title.trim(),
+    serial.genre,
+    desc.trim(),
+    {
+      isEdit: false,
+      editType: "serial",
+      index: serialIndex,
+      episodeIndex: null,
+      isNewEpisode: true   // 🔥 The important part
+    }
+  );
+};
 
-    // ✅ Save to Firebase
-    saveSerialToFirebase(serial);
 
-    // ✅ Update localStorage copy
-    serialsData[serialIndex] = serial;
-    localStorage.setItem("serialsData", JSON.stringify(serialsData));
-
-    // ✅ Open editor for new episode
-    createEditorPage(
-      title.trim(),
-      serial.genre,
-      desc.trim(),
-      {
-        isEdit: true,
-        editType: "serial",
-        index: serialIndex,
-        episodeIndex: newIndex
-      }
-    );
-  };
 
   // ---- Delete Serial ----
   document.getElementById('deleteSerialBtn').onclick = async () => {

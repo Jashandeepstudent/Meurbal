@@ -4,7 +4,8 @@
 <head>
 <style>#profileBtn,#profileDropdown{display:none!important;}</style>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
   <title>Meurbal - Where Dream.Write.Live</title>
 <!-- Favicon setup for Meurbal -->
 <link rel="icon" type="image/png" sizes="96x96" href="melogo.png">
@@ -1206,17 +1207,20 @@ document.addEventListener('DOMContentLoaded', showHomePage);
   img.src = 'meurballogo.jpg';
   img.alt = 'AI Logo';
   img.style.cssText = `
-    width:38px;height:38px;border-radius:10px;cursor:pointer;
+    width:38px;height:38px;border-radius:10px;cursor:pointer;display:none;
     object-fit:cover;border:0;margin-right:6px;
   `;
 
   // ⭐ FIXED — works in Story + Serial editor
-  const headerRow = editorDiv.querySelector('div[style*="justify-content:space-between"]');
-  if (headerRow) {
+const editorDiv = document.getElementById("editorPage") || document.body;
+
+const headerRow = editorDiv.querySelector('div[style*="justify-content:space-between"]');
+
+if (headerRow) {
     headerRow.appendChild(img);
-  } else {
-    editorDiv.prepend(img);
-  }
+} else {
+    document.body.appendChild(img); // fallback
+}
 
   // create centered glass popup
   const aiPopup = document.createElement('div');

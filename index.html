@@ -12648,6 +12648,25 @@ window.saveSerialToFirebase = async function(ser) {
 
 
 
+<script>
+// Prevent browser back from exiting the app
+history.pushState(null, null, location.href);
+
+window.addEventListener("popstate", function (e) {
+    // Always go to welcome page
+    const welcome = document.getElementById("welcomePage");
+
+    // Hide all pages
+    document.querySelectorAll("main, div[id$='Page'], #editorPage")
+      .forEach(p => p.classList.add('hidden'));
+
+    // Show welcome
+    if (welcome) welcome.classList.remove("hidden");
+
+    // Push history again so back button never leaves the app
+    history.pushState(null, null, location.href);
+});
+</script>
 
 
 

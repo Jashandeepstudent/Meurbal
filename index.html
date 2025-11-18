@@ -2469,6 +2469,139 @@ addEpConfirmBtn.addEventListener('click', ()=>{
   const addSheetBtn = editorDiv.querySelector('#addSheetBtn');
   const sheetTextarea = editorDiv.querySelector('#sheetTextarea');
   const publishStoryBtn = editorDiv.querySelector('#publishStoryBtn');
+
+  // ---- BEGIN: Robust publish/update handler inserted by assistant ----
+  publishStoryBtn.onclick = async function (e) {
+    e.preventDefault();
+    try {
+      // collect editor state
+      const isSerial = (opts && opts.editType === 'serial');
+      const editorTitle = (editorDiv.querySelector('#editorTitleInput') || { value: title }).value || title || '';
+      // collect sheets from UI (do not clear existing sheets; merge/update)
+      const sheetsUI = Array.from(editorDiv.querySelectorAll('.sheet-item, .sheet-thumb'));
+      const sheets = sheetsUI.map(si => {
+        try {
+          return {
+            id: si.dataset.sheetId || null,
+            text: (si.querySelector('textarea') || si.querySelector('input') || si).value || si.textContent || ''
+          };
+        } catch (e) {
+          return { id: null, text: '' };
+        }
+      }).filter(s=>s && (s.text || s.id !== null));
+
+      // Build payload for story OR episode
+      if (!isSerial) {
+        // story flow: update or create story object in window.storiesData
+        window.storiesData = window.storiesData || [];
+        const payload = {
+          title: editorTitle,
+          genre: (opts && opts.genre) || genre || '',
+          description: (editorDiv.querySelector('#editorDesc') || { value: desc }).value || desc || '',
+          sheets: sheets
+        };
+
+        if (opts && opts.isEdit && typeof opts.index === 'number') {
+          // update existing story (merge sheets, do not wipe)
+          const existing = window.storiesData[opts.index] || {};
+          existing.title = payload.title;
+          existing.genre = payload.genre;
+          existing.description = payload.description;
+          existing.sheets = payload.sheets.length ? payload.sheets : (existing.sheets || []);
+          window.storiesData[opts.index] = existing;
+        } else {
+          // new story - push
+          window.storiesData.push(payload);
+        }
+
+        // persist and save
+        if (typeof saveToFirebase === 'function') setTimeout(saveToFirebase, 400);
+      } else {
+        // serial / episode flow
+        window.serialsData = window.serialsData || [];
+        const serialIndex = (typeof opts.index === 'number') ? opts.index :
+                            (window.serialsData || []).findIndex(s => (s.title || '').trim().toLowerCase() === ((opts && opts.originalTitle) || title || '').trim().toLowerCase());
+        let serial = (serialIndex >= 0) ? window.serialsData[serialIndex] : null;
+
+        if (!serial) {
+          // try safeFindSerial
+          try { serial = await safeFindSerial((opts && opts.originalTitle) || editorTitle); } catch(e){}
+        }
+
+        if (!serial) {
+          // create placeholder serial
+          serial = {
+            title: (opts && opts.originalTitle) || editorTitle || 'Untitled Serial',
+            genre: (opts && opts.genre) || genre || '',
+            description: (opts && opts.description) || desc || '',
+            cover: window._currentSerialCover || '',
+            episodes: []
+          };
+          window.serialsData.push(serial);
+        }
+
+        // ensure episodes array exists
+        serial.episodes = serial.episodes || [];
+
+        // determine episode index
+        const epIdx = (typeof opts.episodeIndex === 'number' && opts.episodeIndex >= 0) ? opts.episodeIndex :
+                      ((opts && opts.isNewEpisode) ? serial.episodes.length : 0);
+
+        // prepare episode object (merge with existing if present)
+        const existingEp = serial.episodes[epIdx] || {};
+        const episodePayload = Object.assign({}, existingEp, {
+          title: editorTitle,
+          description: (editorDiv.querySelector('#editorDesc') || { value: desc }).value || desc || '',
+          sheets: sheets.length ? sheets : (existingEp.sheets || [])
+        });
+
+        // IMPORTANT: if this is an update (not new ep), replace the episode instead of pushing a duplicate
+        if (opts && opts.isNewEpisode) {
+          serial.episodes.push(episodePayload);
+        } else {
+          serial.episodes[epIdx] = episodePayload;
+        }
+
+        // persist locally first
+        try { localStorage.setItem('serialsData', JSON.stringify(window.serialsData)); } catch(e){}
+
+        // Save to firebase via wrapper (robust)
+        if (typeof saveSerialAndSync === 'function') {
+          await saveSerialAndSync(serial);
+        } else if (typeof saveSerialToFirebase === 'function') {
+          await saveSerialToFirebase(serial);
+        } else if (window._firebase && window._firebase.set && window._firebase.ref && window._firebase.db) {
+          const key = encodeURIComponent((serial.title || '').trim());
+          await window._firebase.set(window._firebase.ref(window._firebase.db, `serials/${key}`), serial);
+        }
+
+        // update UI lists (but avoid creating duplicate card)
+        if (typeof renderBrowseSerials === 'function') renderBrowseSerials(window.serialsData, { mergeWithSaved: false });
+        if (typeof renderSlots === 'function') renderSlots();
+      }
+
+      // success toast
+      if (typeof showToast === 'function') showToast('Saved ✓');
+
+      // CLOSE / clean editor properly
+      try {
+        const closeBtn = editorDiv.querySelector('#closeEditorBtn');
+        if (closeBtn) closeBtn.click();
+        else editorDiv.remove();
+      } catch (err) {
+        editorDiv.classList.add('hidden');
+      }
+
+      // final persistence (also triggers global autosave)
+      if (typeof saveToFirebase === 'function') setTimeout(saveToFirebase, 500);
+    } catch (err) {
+      console.error('Publish/update failed:', err);
+      alert('Failed to save. Check console.');
+    }
+  };
+  // ---- END: Robust publish/update handler inserted by assistant ----
+
+
   const saveDraftBtnLocal = editorDiv.querySelector('#saveDraftBtn');
   const closeEditorBtn = editorDiv.querySelector('#closeEditorBtn');
   const deleteSheetBtn = editorDiv.querySelector('#deleteSheetBtn');
@@ -3120,7 +3253,7 @@ console.log('Saved serial to Firebase:', ser.title);
         }
       });
 
-      closeEditorBtn.addEventListener('click', ()=>{ if(confirm('Close editor? Your Writing Progress will not be saved it will only be saved in your writing workspace')) editorDiv.remove(); });
+      closeEditorBtn.addEventListener('click', ()=>{ if(confirm('Close editor?')) editorDiv.remove(); });
     }
 // ---------- Dashboard UI ----------
 // ---------- Show Dashboard ----------
@@ -13679,6 +13812,233 @@ document.addEventListener("click", (e) => {
 })();
 </script>
 
+
+<!-- START ROOT FIX MODULE: Serial/Episode robust core -->
+<script>
+(function(){
+  // Helper: safe normalize
+  function norm(s){ return (s||'').toString().trim(); }
+  function normKey(s){ return encodeURIComponent(norm(s).toLowerCase()); }
+
+  // Ensure window.serialsData exists and is an array
+  window.serialsData = window.serialsData || (function(){
+    try{
+      const raw = localStorage.getItem('serialsData');
+      if(raw) return JSON.parse(raw);
+    }catch(e){}
+    return [];
+  })();
+
+  // Save local helper
+  function persistSerialsLocal(){
+    try { localStorage.setItem('serialsData', JSON.stringify(window.serialsData)); } catch(e){ console.warn('persistSerialsLocal failed', e); }
+  }
+
+  // Safe find: look locally first, then try firebase snapshot if available
+  async function safeFindSerial(title){
+    title = norm(title);
+    if(!title) return null;
+    let ser = (window.serialsData||[]).find(s => norm(s.title).toLowerCase() === title.toLowerCase());
+    if(ser) return ser;
+
+    // try firebase direct fetch if firebase available
+    try {
+      if(window._firebase && window._firebase.db && window._firebase.get && window._firebase.ref){
+        const key = normKey(title);
+        const snap = await window._firebase.get(window._firebase.ref(window._firebase.db, `serials/${key}`));
+        if(snap && snap.exists && snap.exists()){
+          ser = snap.val();
+          // sync into local array
+          window.serialsData = window.serialsData || [];
+          // avoid duplicates
+          if(!window.serialsData.find(s => norm(s.title).toLowerCase() === title.toLowerCase())){
+            window.serialsData.push(ser);
+            persistSerialsLocal();
+          }
+          return ser;
+        }
+      }
+    } catch(e){
+      console.warn('safeFindSerial: firebase fetch failed', e);
+    }
+
+    return null;
+  }
+
+  // Save serial to firebase wrapper (best-effort). Also ensures local cache updated.
+  async function saveSerialAndSync(ser){
+    if(!ser || !ser.title) throw new Error('invalid serial');
+    window.serialsData = window.serialsData || [];
+    const existing = window.serialsData.find(s => norm(s.title).toLowerCase() === norm(ser.title).toLowerCase());
+    if(existing){
+      // merge shallow
+      Object.assign(existing, ser);
+      ser = existing;
+    } else {
+      window.serialsData.push(ser);
+    }
+    persistSerialsLocal();
+
+    // try firebase save
+    try {
+      if(typeof saveSerialToFirebase === 'function'){
+        await saveSerialToFirebase(ser);
+      } else if(window._firebase && window._firebase.set && window._firebase.ref && window._firebase.db){
+        const key = normKey(ser.title);
+        await window._firebase.set(window._firebase.ref(window._firebase.db, `serials/${key}`), ser);
+      }
+    } catch(e){
+      console.warn('saveSerialAndSync: firebase save failed', e);
+    }
+    return ser;
+  }
+
+  // Robust open editor for a serial episode. Ensures serial exists and sets opts correctly.
+  async function openEditorForSerialEpisode(title, episodeIndex, opts){
+    opts = opts || {};
+    title = norm(title);
+    if(!title) {
+      console.error('openEditorForSerialEpisode: title required');
+      return;
+    }
+    // ensure serial exists locally or fetch
+    let ser = null;
+    if(typeof opts.index === 'number'){
+      ser = (window.serialsData || [])[opts.index];
+      if(ser && norm(ser.title).toLowerCase() !== title.toLowerCase()){
+        // mismatch - try lookup by title
+        ser = null;
+      }
+    }
+    if(!ser) ser = (window.serialsData || []).find(s => norm(s.title).toLowerCase() === title.toLowerCase());
+    if(!ser) {
+      ser = await safeFindSerial(title);
+    }
+    if(!ser){
+      // serial not found: create placeholder serial so editor can open and user can publish properly
+      ser = {
+        title: title,
+        genre: opts.genre || '',
+        description: opts.description || '',
+        writerName: opts.writerName || 'Unknown',
+        publishDate: opts.publishDate || new Date().toISOString().split('T')[0],
+        cover: window._currentSerialCover || '',
+        episodes: []
+      };
+      // add placeholder episodes up to requested index
+      const idx = (typeof episodeIndex === 'number' && episodeIndex >= 0) ? episodeIndex : 0;
+      for(let i = 0; i <= idx; i++){
+        ser.episodes[i] = ser.episodes[i] || { title: i===idx ? (opts.episodeTitle || 'Episode '+(i+1)) : ('Episode '+(i+1)), description: '' , sheets: [] };
+      }
+      await saveSerialAndSync(ser);
+    }
+
+    // find index again
+    const serialIndex = (window.serialsData || []).findIndex(s => norm(s.title).toLowerCase() === norm(ser.title).toLowerCase());
+
+    // prepare episode data
+    const epIdx = (typeof episodeIndex === 'number') ? episodeIndex : 0;
+    const ep = (ser.episodes && ser.episodes[epIdx]) ? ser.episodes[epIdx] : { title: opts.episodeTitle || 'Episode '+(epIdx+1), description: '', sheets: [] };
+
+    // ensure opts filled so editor logic finds serial
+    opts = Object.assign({}, opts, {
+      isEdit: true,                 // we treat opening existing serial episodes as edit
+      editType: 'serial',
+      originalTitle: ser.title,
+      index: serialIndex,
+      episodeIndex: epIdx
+    });
+
+    // ensure global function exists
+    if(typeof window.createEditorPage === 'function'){
+      // call the original editor
+      window.createEditorPage(ep.title || ser.title, ser.genre, ep.description || ser.description || '', opts);
+    } else {
+      console.error('createEditorPage not found - cannot open editor.');
+      alert('Editor not available.');
+    }
+  }
+
+  // Expose helpers globally for other code to call
+  window.safeFindSerial = safeFindSerial;
+  window.saveSerialAndSync = saveSerialAndSync;
+  window.openEditorForSerialEpisode = openEditorForSerialEpisode;
+
+  // Monkeypatch (wrap) createEditorPage so that callers that open serial editors without proper opts will be fixed automatically.
+  try {
+    if(typeof window.createEditorPage === 'function'){
+      const originalCreateEditorPage = window.createEditorPage;
+      window.createEditorPage = function(title, genre, desc, opts){
+        opts = opts || {};
+        // if it's a serial but missing originalTitle/index, use our safe opener
+        if((opts.editType === 'serial' || window.location.href.indexOf('serial')>-1) && (opts.originalTitle == null || opts.index == null)){
+          // open robustly and return
+          openEditorForSerialEpisode(title, opts.episodeIndex || 0, Object.assign({}, opts, { genre: genre, description: desc, episodeTitle: title })).catch(e=>{
+            console.error('Wrapped createEditorPage openEditorForSerialEpisode error', e);
+          });
+          return;
+        }
+        // otherwise call original directly
+        return originalCreateEditorPage(title, genre, desc, opts);
+      };
+    } else {
+      // if createEditorPage not defined yet, set a delayed wrapper after load
+      document.addEventListener('DOMContentLoaded', function(){
+        if(typeof window.createEditorPage === 'function') return;
+        // nothing to wrap if never defined; our openEditorForSerialEpisode will still work
+      });
+    }
+  } catch(e){
+    console.warn('createEditorPage wrapping failed', e);
+  }
+
+  // Patch UI flows that create new serials: try to wire common button IDs if they exist
+  // This is a best-effort hook: if your app uses different IDs, keep using openEditorForSerialEpisode after creation.
+  document.addEventListener('click', function(ev){
+    try {
+      const target = ev.target;
+      if(!target) return;
+      // if user clicked a "Create Serial" confirm button and it has known id
+      if(target.id === 'serialCreateConfirmBtn' || target.id === 'createSerialConfirmBtn'){
+        // small delay to let form inputs update
+        setTimeout(async ()=> {
+          // try to read title inputs from common ids
+          const titleEl = document.getElementById('seriesTitleInput') || document.getElementById('serialTitleInput') || document.getElementById('serialNameInput');
+          const ep1TitleEl = document.getElementById('ep1TitleInput') || document.getElementById('serialEp1Title');
+          const title = titleEl ? titleEl.value.trim() : null;
+          const ep1 = ep1TitleEl ? ep1TitleEl.value.trim() : null;
+          if(title){
+            // ensure serial saved and then open editor for episode 0
+            try {
+              const ser = await safeFindSerial(title) || null;
+              if(!ser){
+                // construct and save minimal serial then open
+                const newSer = {
+                  title: title,
+                  genre: (document.getElementById('seriesGenreInput')||{}).value || '',
+                  description: (document.getElementById('seriesDescInput')||{}).value || '',
+                  writerName: (document.getElementById('serialWriterNameInput')||{}).value || 'Unknown',
+                  publishDate: (document.getElementById('serialPublishDateInput')||{}).value || new Date().toISOString().split('T')[0],
+                  cover: window._currentSerialCover || '',
+                  episodes: [{ title: ep1 || 'Episode 1', description: (document.getElementById('ep1DescInput')||{}).value || '' }]
+                };
+                await saveSerialAndSync(newSer);
+              }
+              // open editor for episode 0
+              openEditorForSerialEpisode(title, 0, {});
+            } catch(e){
+              console.error('Auto-open after create serial failed', e);
+            }
+          }
+        }, 120);
+      }
+    } catch(e){ /* swallow */ }
+  }, true);
+
+  console.log('✅ Root serial/episode module installed (safeFindSerial, saveSerialAndSync, openEditorForSerialEpisode).');
+})();
+</script>
+<!-- END ROOT FIX MODULE -->
 </body>
 
 

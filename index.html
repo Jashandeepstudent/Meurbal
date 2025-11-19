@@ -2585,12 +2585,14 @@ addEpConfirmBtn.addEventListener('click', ()=>{
 
       // CLOSE / clean editor properly
       try {
-        const closeBtn = editorDiv.querySelector('#closeEditorBtn');
-        if (closeBtn) closeBtn.click();
-        else editorDiv.remove();
-      } catch (err) {
-        editorDiv.classList.add('hidden');
-      }
+    const ask = confirm("✅ Episode updated!\n\nRefresh the app now?");
+    if (ask) {
+        location.reload();  // 🔥 Instant refresh — clean reset
+    }
+} catch (err) {
+    console.error(err);
+}
+
 
       // final persistence (also triggers global autosave)
       if (typeof saveToFirebase === 'function') setTimeout(saveToFirebase, 500);
